@@ -1,10 +1,12 @@
 import Link from "next/link";
+import Image from "next/image";
 import { cookies } from "next/headers";
 import { brand } from "@/lib/brand";
 import { isLocale, translate, type Locale } from "@/lib/i18n";
 import { getCurrentUser } from "@/server/auth";
 import { PublicNav, PublicFooter } from "@/components/public-chrome";
 import { TraceIcon } from "@/components/tracelab/trace-icon";
+import { PrototypeRobotViewer } from "@/components/tracelab/prototype-robot-viewer";
 
 export const dynamic = "force-dynamic";
 
@@ -26,23 +28,6 @@ const HERO: Record<Locale, { lead: string; why: string; supporting: string }> = 
   },
 };
 
-function TraceStep({ icon, eyebrow, title, body, tone = "source" }: { icon: string; eyebrow: string; title: string; body: string; tone?: string }) {
-  return (
-    <article className="evidence-card relative z-10 p-3.5 sm:p-4" data-tone={tone}>
-      <div className="flex items-start gap-3">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[12px] bg-canvas text-text-2">
-          <TraceIcon name={icon} size={17} />
-        </span>
-        <div className="min-w-0">
-          <div className="trace-meta text-[9px] uppercase text-text-3">{eyebrow}</div>
-          <h3 className="mt-0.5 text-sm font-semibold leading-5 text-ink">{title}</h3>
-          <p className="mt-1 text-xs leading-5 text-text-2">{body}</p>
-        </div>
-      </div>
-    </article>
-  );
-}
-
 export default async function LandingPage() {
   const jar = await cookies();
   const raw = jar.get("pt_lang")?.value;
@@ -50,63 +35,63 @@ export default async function LandingPage() {
   const user = await getCurrentUser();
   const t = (key: Parameters<typeof translate>[1]) => translate(locale, key);
   const hero = HERO[locale];
+  const prototypeCopy = locale === "ru"
+    ? { label: "Живой прототип", status: "Тестовая модель", builder: "Автор прототипа", inspect: "Интерактивная 3D-модель" }
+    : locale === "kk"
+      ? { label: "Жанды прототип", status: "Сынақ моделі", builder: "Прототип авторы", inspect: "Интерактивті 3D-модель" }
+      : { label: "Live prototype", status: "Test model", builder: "Prototype builder", inspect: "Interactive 3D model" };
 
   return (
     <div className="min-h-dvh bg-canvas text-ink">
       <PublicNav signedIn={!!user} locale={locale} />
       <main id="main">
-        <section className="relative overflow-hidden border-b border-border-subtle">
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blueprint/50 to-transparent" />
-          <div className="mx-auto grid max-w-[1280px] gap-12 px-5 py-14 sm:px-7 sm:py-20 lg:grid-cols-[0.88fr_1.12fr] lg:items-center lg:py-24">
-            <div className="max-w-[650px]">
-              <div className="mb-5 flex flex-wrap items-center gap-2">
-                <span className="trace-chip">Student engineering evidence</span>
-                <span className="trace-chip">Private by default</span>
+        <section className="prototype-hero relative overflow-hidden border-b border-white/10 bg-[#101215] text-white">
+          <div className="prototype-noise" aria-hidden />
+          <div className="mx-auto grid min-h-[calc(100svh-4rem)] max-w-[1440px] gap-10 px-5 py-10 sm:px-7 lg:grid-cols-[0.78fr_1.22fr] lg:items-center lg:px-10 lg:py-12">
+            <div className="relative z-10 max-w-[650px]">
+              <div className="mb-6 flex flex-wrap items-center gap-2">
+                <span className="prototype-kicker"><span className="h-1.5 w-1.5 rounded-full bg-signal" /> {prototypeCopy.label}</span>
+                <span className="prototype-kicker text-white/45">RKNP · DARYN</span>
               </div>
-              <h1 className="text-balance text-[48px] font-semibold leading-[0.98] tracking-[-0.05em] sm:text-[64px] lg:text-[72px]">
+              <h1 className="text-balance text-[50px] font-semibold leading-[0.9] tracking-[-0.06em] sm:text-[68px] xl:text-[86px]">
                 {hero.lead}
-                <span className="mt-2 block text-blueprint">{hero.why}</span>
+                <span className="mt-2 block text-[#88a0ff]">{hero.why}</span>
               </h1>
-              <p className="mt-6 max-w-[610px] text-[17px] leading-7 text-text-2 sm:text-lg">{hero.supporting}</p>
+              <p className="mt-6 max-w-[610px] text-[16px] leading-7 text-white/58 sm:text-lg">{hero.supporting}</p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link href={user ? "/app" : "/auth?mode=signup"} className="trace-button trace-button-expressive trace-button-primary min-w-[164px] rounded-full px-6">
-                  {user ? "Open workspace" : t("hero.cta")}
-                  <span aria-hidden>→</span>
+                <Link href={user ? "/app" : "/auth?mode=signup"} className="prototype-primary-action">
+                  {user ? "Open workspace" : t("hero.cta")} <span aria-hidden>↗</span>
                 </Link>
-                <Link href="/showcase" className="trace-button min-h-13 rounded-full px-5">Play the 60-second trace</Link>
+                <a href="#prototype-999" className="prototype-secondary-action">Inspect Prototype 999</a>
               </div>
-              <div className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-xs text-text-3">
-                <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-verified-green" /> Student-authored rationale</span>
-                <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-blueprint" /> Source preserved</span>
-                <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-signal" /> Competition-aware</span>
-              </div>
-            </div>
-
-            <div id="trace" className="relative mx-auto w-full max-w-[650px]">
-              <div className="absolute bottom-10 left-[31px] top-10 w-px bg-border-strong sm:left-[35px]" aria-hidden />
-              <div className="space-y-3">
-                <TraceStep icon="cad" eyebrow="ONSHAPE · REV 23" title="Intake side plate · roller spacing 36 mm" body="CAD revision captured with author, timestamp and original source identity preserved." />
-
-                <article className="evidence-card relative z-10 overflow-hidden" data-tone="neutral">
-                  <div className="grid sm:grid-cols-[170px_1fr]">
-                    <div className="relative min-h-[150px] overflow-hidden bg-[#111315]">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/evidence/demo-robot.jpg" alt="Student competition robot used as real engineering evidence" className="absolute inset-0 h-full w-full object-cover opacity-90" />
-                      <div className="absolute inset-x-2 bottom-2 rounded-[9px] bg-black/65 px-2 py-1.5 text-[9px] font-medium uppercase tracking-[0.08em] text-white/90 backdrop-blur-sm">PHOTO · INTAKE / REV 04</div>
-                    </div>
-                    <div className="p-4 sm:p-5">
-                      <div className="trace-meta text-[9px] uppercase text-blueprint">Student context</div>
-                      <h3 className="mt-1 text-lg font-semibold leading-6">Why did you make this change?</h3>
-                      <blockquote className="mt-3 border-l-2 border-blueprint pl-3 text-sm leading-6 text-text-2">“We moved the rollers apart after the previous version kept wedging the game piece during fast intake.”</blockquote>
-                      <div className="mt-3 flex flex-wrap gap-2"><span className="badge badge-success">Student-authored</span><span className="badge">AI did not modify</span></div>
-                    </div>
-                  </div>
-                </article>
-
-                <TraceStep icon="test" eyebrow="TEST · SAME PROCEDURE" title="20 trials · success 11/20 → 17/20" body="The comparison stays linked to the exact 32 mm and 36 mm revisions it tested." tone="verified" />
-                <TraceStep icon="decision" eyebrow="DECISION · 36 MM" title="Keep the 36 mm roller spacing" body="The decision keeps its student rationale, supporting tests and next-step context." tone="decision" />
+              <div className="mt-9 grid max-w-[600px] grid-cols-3 border-y border-white/10 py-4">
+                <div><div className="prototype-stat-label">UNIT</div><div className="prototype-stat-value">999</div></div>
+                <div className="border-l border-white/10 pl-4"><div className="prototype-stat-label">STATUS</div><div className="prototype-stat-value text-signal">ACTIVE</div></div>
+                <div className="border-l border-white/10 pl-4"><div className="prototype-stat-label">SOURCE</div><div className="prototype-stat-value">OBJ / CAD</div></div>
               </div>
             </div>
+
+            <div id="prototype-999" className="prototype-stage relative min-h-[540px] overflow-hidden sm:min-h-[660px] lg:min-h-[720px]">
+              <div className="absolute left-5 top-5 z-10">
+                <div className="prototype-stage-label">{prototypeCopy.inspect}</div>
+                <div className="mt-1 text-xs text-white/40">DECODE SIMPLE BOT · WEB GLB</div>
+              </div>
+              <div className="prototype-number" aria-hidden>999</div>
+              <PrototypeRobotViewer />
+              <div className="prototype-callout left-[6%] top-[31%] hidden sm:block"><span>01</span> DRIVE SYSTEM</div>
+              <div className="prototype-callout right-[5%] top-[43%] hidden sm:block"><span>02</span> FRAME ASSEMBLY</div>
+              <div className="prototype-callout bottom-[23%] left-[11%] hidden sm:block"><span>03</span> EVIDENCE SOURCE</div>
+              <div className="absolute inset-x-4 bottom-4 z-10 flex items-center justify-between gap-3 border-t border-white/10 pt-3 text-[9px] uppercase tracking-[0.15em] text-white/40 sm:inset-x-6">
+                <span>{prototypeCopy.status}</span><span>REV 001 · 24.09.2026</span>
+              </div>
+            </div>
+          </div>
+          <div className="mx-auto grid max-w-[1440px] gap-3 border-t border-white/10 px-5 py-5 sm:px-7 lg:grid-cols-[1fr_auto] lg:items-center lg:px-10">
+            <div className="flex items-center gap-3">
+              <Image src="/team/prototype-builder.jpeg" alt="Prototype builder" width={48} height={48} priority className="h-12 w-12 rounded-full border border-white/20 object-cover object-[50%_32%] grayscale" />
+              <div><div className="text-xs font-semibold">@bolaternur</div><div className="mt-1 text-[9px] uppercase tracking-[0.14em] text-white/40">{prototypeCopy.builder}</div></div>
+            </div>
+            <div className="text-xs leading-5 text-white/45 lg:max-w-[460px] lg:text-right">Prototype content is temporary. The evidence engine is ready for future robot models, workshop photography and test footage.</div>
           </div>
         </section>
 
@@ -125,6 +110,18 @@ export default async function LandingPage() {
                 <div className="my-6 flex items-center gap-3" aria-hidden><div className="h-px flex-1 bg-border-default" /><span className="trace-meta text-[9px] uppercase text-text-3">context gets lost</span><div className="h-px flex-1 bg-border-default" /></div>
                 <div className="rounded-[20px] border border-blueprint/20 bg-blueprint-bg px-4 py-4">
                   <div className="flex items-center gap-3"><TraceIcon name="graph" size={20} className="text-blueprint" /><div><div className="text-sm font-semibold text-ink">One connected engineering history</div><div className="mt-0.5 text-xs text-text-2">Source → rationale → test → decision → next iteration</div></div></div>
+                </div>
+                <div className="mt-3 grid overflow-hidden rounded-[20px] border border-border-subtle bg-surface sm:grid-cols-[150px_1fr]">
+                  <div className="relative min-h-[120px] bg-[#111315]">
+                    <Image src="/evidence/demo-robot.jpg" alt="Robot intake test evidence" fill sizes="(max-width: 640px) 100vw, 150px" className="object-cover opacity-90" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
+                  </div>
+                  <div className="p-4">
+                    <div className="trace-meta text-[9px] uppercase text-test">Test record · same procedure</div>
+                    <div className="mt-2 text-base font-semibold">20 trials · success 11/20 → 17/20</div>
+                    <p className="mt-1.5 text-xs leading-5 text-text-2">The result stays linked to the exact mechanism revision and the student decision it supported.</p>
+                    <div className="mt-3"><span className="badge badge-blueprint">Source preserved</span></div>
+                  </div>
                 </div>
               </div>
             </div>

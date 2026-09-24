@@ -21,18 +21,19 @@ export function PublicNav({ signedIn, locale }: { signedIn: boolean; locale: Loc
           <Link href="/docs" className="hover:text-ink">Docs</Link>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2">
-          <form action={setLocale} className="hidden items-center sm:flex">
+          <form action={setLocale} className="flex items-center">
             <label className="sr-only" htmlFor="lang">Language</label>
-            <select id="lang" name="locale" defaultValue={locale} className="select !min-h-11 !w-auto rounded-full !py-0 text-xs">
+            <select id="lang" name="locale" defaultValue={locale} className="select !min-h-11 !w-[62px] rounded-full !px-2 !py-0 text-xs sm:!w-auto sm:!px-3">
               {LOCALES.map((l) => <option key={l} value={l}>{LOCALE_LABELS[l]}</option>)}
             </select>
-            <button className="trace-button ml-1 min-h-11 rounded-full px-3 text-xs" type="submit">Set</button>
+            <button className="trace-button ml-1 !hidden min-h-11 rounded-full px-3 text-xs sm:!inline-flex" type="submit">Set</button>
+            <button className="trace-button ml-1 grid min-h-11 w-11 place-items-center rounded-full px-0 text-xs sm:!hidden" type="submit" aria-label="Apply language">↵</button>
           </form>
           {signedIn ? (
             <Link href="/app" className="trace-button trace-button-primary min-h-11 rounded-full px-4">Workspace</Link>
           ) : (
             <>
-              <Link href="/auth?mode=signin" className="trace-button min-h-11 rounded-full px-3 sm:px-4">Sign in</Link>
+              <Link href="/auth?mode=signin" className="trace-button !hidden min-h-11 rounded-full px-3 sm:!inline-flex sm:px-4">Sign in</Link>
               <Link href="/auth?mode=signup" className="trace-button trace-button-primary min-h-11 rounded-full px-3 sm:px-4"><span className="hidden sm:inline">Create account</span><span className="sm:hidden">Join</span></Link>
             </>
           )}
