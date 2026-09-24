@@ -1,0 +1,53 @@
+{
+  "name": "tracelab-student-engineering-evidence",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:push": "drizzle-kit push --config=drizzle.config.ts",
+    "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
+    "db:seed": "tsx src/db/seed.ts",
+    "db:migrate": "drizzle-kit migrate --config=drizzle.config.ts",
+    "frontend:contract": "node --experimental-strip-types --test tests/frontend-contract.node.test.ts",
+    "frontend:audit": "node scripts/frontend-static-audit.mjs",
+    "frontend:syntax": "node scripts/frontend-syntax-check.cjs",
+    "frontend:verify": "npm run frontend:contract && npm run frontend:model && npm run frontend:audit && npm run frontend:syntax",
+    "frontend:model": "node --experimental-strip-types --test tests/workbench-model.node.test.ts tests/evidence-trace-model.node.test.ts tests/engineering-timeline-model.node.test.ts tests/spatial-capture-model.node.test.ts tests/spatial-motion-model.node.test.ts tests/rknp-study-summary.node.test.ts",
+    "research:summary": "node scripts/rknp-study-summary.mjs"
+  },
+  "dependencies": {
+    "@xyflow/react": "12.11.6",
+    "dotenv": "17.3.1",
+    "drizzle-orm": "0.45.2",
+    "motion": "12.35.0",
+    "next": "16.3.6",
+    "pg": "8.20.0",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "react-resizable-panels": "4.7.0",
+    "tsx": "^4.23.13",
+    "vitest": "^5.0.0",
+    "zod": "^4.5.4",
+    "zustand": "^4.5.7",
+    "elkjs": "0.9.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.1.17",
+    "@types/node": "22.19.15",
+    "@types/pg": "8.18.0",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "drizzle-kit": "0.31.10",
+    "eslint": "9.39.4",
+    "eslint-config-next": "16.3.6",
+    "postcss": "8.5.8",
+    "tailwindcss": "4.1.17",
+    "typescript": "5.9.3"
+  },
+  "version": "0.3.0-rknp",
+  "type": "module"
+}

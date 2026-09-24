@@ -1,0 +1,3 @@
+session_id,date,team_code,participant_code,condition,task_id,target_age_days,retrieval_seconds,supporting_evidence_seconds,documentation_seconds,decision_evidence_linked,task_success,notes
+S001,YYYY-MM-DD,T01,P01,baseline,Q01,60,,,,,,
+S002,YYYY-MM-DD,T01,P01,tracelab,Q02,60,,,,,,

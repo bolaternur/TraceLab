@@ -1,0 +1,26 @@
+import "dotenv/config";
+import { createHmac } from "node:crypto";
+import { db, pool } from "../src/db";
+import { sourceConnections, teams } from "../src/db/schema";
+import { encryptSecret } from "../src/server/storage";
+import { eq } from "drizzle-orm";
+const [team] = await db.select().from(teams).where(eq(teams.name, "Orion Robotics"));
+const secret = "wh-test-secret";
+const [conn] = await db.insert(sourceConnections).values({ teamId: team.id, provider: "github", label: "e2e", status: "active", encryptedSecret: encryptSecret(JSON.stringify({ webhookSecret: secret, token: null })), config: { identityMap: { anim: "anim@trace.demo" } } }).returning();
+const body = JSON.stringify({ ref: "refs/heads/main", repository: { full_name: "team/orion-robot" }, commits: [{ id: "e2e" + Date.now(), message: "feat: e2e webhook commit", timestamp: new Date().toISOString(), url: "https://github.com/x", author: { username: "anim" }, added: ["a"], modified: [], removed: [] }] });
+const sig = "sha256=" + createHmac("sha256", secret).update(body).digest("hex");
+const post = (s: string, d: string) => fetch(`http://127.0.0.1:3000/api/webhooks/github/${conn.id}`, { method: "POST", headers: { "content-type": "application/json", "x-hub-signature-256": s, "x-github-event": "push", "x-github-delivery": d }, body }).then(async (r) => `${r.status} ${await r.text()}`);
+console.log("valid   :", await post(sig, "d1-" + Date.now()));
+console.log("replay  :", await post(sig, "d1-replay"), "(second call with same delivery id below)");
+console.log("replay2 :", await post(sig, "d1-replay"));
+console.log("badsig  :", await post("sha256=deadbeef", "d2"));
+// sync idempotency
+const cid = "cap_e2e_" + Date.now();
+const sync = () => fetch("http://127.0.0.1:3000/api/sync", { method: "POST", headers: { "content-type": "application/json", cookie: `pt_session=${process.env.E2E_SESSION ?? ""}` }, body: JSON.stringify({ items: [{ clientId: cid, teamId: team.id, fields: { kind: "problem", body: "e2e offline problem", occurredAt: "2026-09-01T10:00:00Z" } }] }) }).then((r) => r.json());
+console.log("sync1   :", JSON.stringify(await sync()));
+console.log("sync2   :", JSON.stringify(await sync()));
+const [teamB] = await db.select().from(teams).where(eq(teams.name, "Isolated Team B"));
+const cross = await fetch("http://127.0.0.1:3000/api/sync", { method: "POST", headers: { "content-type": "application/json", cookie: `pt_session=${process.env.E2E_SESSION ?? ""}` }, body: JSON.stringify({ items: [{ clientId: "cap_x_" + Date.now(), teamId: teamB.id, fields: { kind: "problem", body: "should be rejected" } }] }) }).then((r) => r.json());
+console.log("crossTeam:", JSON.stringify(cross));
+await db.delete(sourceConnections).where(eq(sourceConnections.id, conn.id));
+await pool.end();
