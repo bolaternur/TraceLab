@@ -1,5 +1,5 @@
 import { createHash, createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 /**
@@ -9,22 +9,39 @@ import path from "node:path";
 export interface StorageAdapter {
   put(key: string, bytes: Buffer, contentType: string): Promise<void>;
   get(key: string): Promise<Buffer | null>;
+  delete(key: string): Promise<void>;
+  deletePrefix(prefix: string): Promise<void>;
 }
 
 const ROOT = process.env.STORAGE_ROOT ?? path.join(process.cwd(), ".data", "storage");
 
+function safeStoragePath(key: string): string {
+  const root = path.resolve(/* turbopackIgnore: true */ ROOT);
+  const file = path.resolve(root, key);
+  if (file !== root && !file.startsWith(`${root}${path.sep}`)) throw new Error("Invalid storage key");
+  return file;
+}
+
 class LocalDiskStorage implements StorageAdapter {
   async put(key: string, bytes: Buffer) {
-    const file = path.join(ROOT, key);
+    const file = safeStoragePath(key);
     await mkdir(path.dirname(file), { recursive: true });
     await writeFile(file, bytes);
   }
   async get(key: string) {
     try {
-      return await readFile(path.join(ROOT, key));
+      return await readFile(/* turbopackIgnore: true */ safeStoragePath(key));
     } catch {
       return null;
     }
+  }
+  async delete(key: string) {
+    await rm(safeStoragePath(key), { force: true });
+  }
+  async deletePrefix(prefix: string) {
+    const target = safeStoragePath(prefix);
+    if (target === path.resolve(/* turbopackIgnore: true */ ROOT)) throw new Error("Refusing to delete the storage root");
+    await rm(target, { recursive: true, force: true });
   }
 }
 

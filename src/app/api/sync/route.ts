@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUser, listUserTeams } from "@/server/auth";
-import { persistCapture, type CaptureInput } from "@/server/actions";
+import { persistCaptureInternal, type CaptureInput } from "@/server/capture";
 import { track } from "@/server/audit";
 
 export const runtime = "nodejs";
@@ -45,7 +45,7 @@ export async function POST(req: Request) {
         const bytes = Buffer.from(it.photo.dataBase64, "base64");
         file = new File([new Uint8Array(bytes)], it.photo.name, { type: it.photo.type });
       }
-      const r = await persistCapture(it.teamId, user.id, input, file);
+      const r = await persistCaptureInternal(it.teamId, user.id, input, file);
       results.push({ clientId: it.clientId, status: r.deduplicated ? "duplicate" : "synced", eventId: r.eventId });
       if (!r.deduplicated) await track("capture.synced", { teamId: it.teamId, userId: user.id, props: { kind: it.fields.kind } });
     } catch (err) {

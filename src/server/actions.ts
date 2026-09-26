@@ -1,6 +1,6 @@
 "use server";
 
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
@@ -10,6 +10,7 @@ import { db } from "@/db";
 import {
   annotations,
   artifacts,
+  auditEvents,
   competitionProfiles,
   decisions,
   exports as exportsTable,
@@ -35,9 +36,11 @@ import {
   AuthorizationError,
   assertRole,
   createSession,
+  DUMMY_PASSWORD_HASH,
   destroySession,
   getCurrentUser,
   hashPassword,
+  policyActorRole,
   requireTeam,
   requireUser,
   setCurrentTeamCookie,
@@ -45,13 +48,15 @@ import {
 } from "./auth";
 import { audit, enqueueJob, notify, track } from "./audit";
 import { gate, logAiAction } from "./policy";
-import { ALLOWED_IMAGE_TYPES, MAX_UPLOAD_BYTES, encryptSecret, newStorageKey, sha256, sniffContentType, storage, stripJpegMetadata } from "./storage";
+import { encryptSecret, newStorageKey, sha256, storage } from "./storage";
 import { explainWhy, getActiveSeasonAndProject, seasonHandoff, similarHistory, testResultLabel, type EntityType } from "./evidence";
 import { getAiProvider } from "@/modules/ai/provider";
 import { isLocale } from "@/lib/i18n";
 import { isPolicyAction, isPolicyDecision, POLICY_ACTIONS, type ActionMatrix } from "@/modules/policies/engine";
 import { brand } from "@/lib/brand";
 import { parseCsv } from "@/lib/csv";
+import { canInviteRole, developmentBillingEnabled, devSimulatorEnabled, entityTypeSchema, safeInternalPath } from "@/lib/security";
+import { captureSchema, persistCaptureInternal } from "./capture";
 
 export type ActionState = { ok: boolean; error?: string; message?: string; id?: string } | null;
 
@@ -89,7 +94,7 @@ export async function signUp(_: ActionState, formData: FormData): Promise<Action
     if (existing[0]) return fail("An account with this email already exists.");
     const [user] = await db
       .insert(users)
-      .values({ email: input.email, passwordHash: hashPassword(input.password), displayName: input.displayName, locale: isLocale(input.locale) ? input.locale : "en" })
+      .values({ email: input.email, passwordHash: await hashPassword(input.password), displayName: input.displayName, locale: isLocale(input.locale) ? input.locale : "en" })
       .returning();
     await createSession(user.id);
     await track("user.signed_up", { userId: user.id });
@@ -104,13 +109,14 @@ export async function signIn(_: ActionState, formData: FormData): Promise<Action
   try {
     const input = credentials.parse(fd(formData));
     const [user] = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
-    if (!user || !verifyPassword(input.password, user.passwordHash)) return fail("Invalid email or password.");
+    const passwordValid = await verifyPassword(input.password, user?.passwordHash ?? DUMMY_PASSWORD_HASH);
+    if (!user || !passwordValid) return fail("Invalid email or password.");
     await createSession(user.id);
   } catch (err) {
     return safeError(err);
   }
   const next = formData.get("next");
-  redirect(typeof next === "string" && next.startsWith("/") ? next : "/app");
+  redirect(safeInternalPath(next));
 }
 
 export async function signOut() {
@@ -208,6 +214,7 @@ export async function createInvite(formData: FormData) {
   const ctx = await requireTeam();
   assertRole(ctx, ["student_lead", "coach", "org_admin"]);
   const role = z.enum(["student", "student_lead", "coach"]).parse(formData.get("role"));
+  if (!canInviteRole(policyActorRole(ctx), role)) throw new AuthorizationError("You cannot invite this role.");
   const maxUses = z.coerce.number().int().min(1).max(50).parse(formData.get("maxUses") ?? 1);
   const code = randomBytes(9).toString("base64url");
   await db.insert(teamInvites).values({ teamId: ctx.team.id, code, role, maxUses, expiresAt: new Date(Date.now() + 7 * 86400_000), createdBy: ctx.user.id });
@@ -225,24 +232,40 @@ export async function revokeInvite(formData: FormData) {
 }
 
 export async function joinTeam(_: ActionState, formData: FormData): Promise<ActionState> {
+  let joinedTeamId = "";
   try {
     const user = await requireUser();
     const code = str(64).min(4).parse(formData.get("code"));
-    const [invite] = await db.select().from(teamInvites).where(eq(teamInvites.code, code)).limit(1);
-    if (!invite || invite.revokedAt || invite.expiresAt.getTime() < Date.now() || invite.uses >= invite.maxUses) return fail("This invite is invalid, expired, or already used.");
-    const existing = await db.select().from(teamMemberships).where(and(eq(teamMemberships.teamId, invite.teamId), eq(teamMemberships.userId, user.id))).limit(1);
-    if (existing[0]) {
-      await db.update(teamMemberships).set({ status: "active", leftAt: null }).where(eq(teamMemberships.id, existing[0].id));
-    } else {
-      await db.insert(teamMemberships).values({ teamId: invite.teamId, userId: user.id, role: invite.role });
-    }
-    await db.update(teamInvites).set({ uses: sql`${teamInvites.uses} + 1` }).where(eq(teamInvites.id, invite.id));
+    const invite = await db.transaction(async (tx) => {
+      const [consumed] = await tx
+        .update(teamInvites)
+        .set({ uses: sql`${teamInvites.uses} + 1` })
+        .where(and(eq(teamInvites.code, code), isNull(teamInvites.revokedAt), gt(teamInvites.expiresAt, new Date()), sql`${teamInvites.uses} < ${teamInvites.maxUses}`))
+        .returning();
+      if (!consumed) return null;
+
+      await tx
+        .insert(teamMemberships)
+        .values({ teamId: consumed.teamId, userId: user.id, role: consumed.role })
+        .onConflictDoUpdate({
+          target: [teamMemberships.teamId, teamMemberships.userId],
+          set: { role: consumed.role, status: "active", leftAt: null },
+        });
+      await tx.insert(auditEvents).values({
+        teamId: consumed.teamId,
+        actorUserId: user.id,
+        action: "member.joined",
+        metadata: { role: consumed.role, inviteId: consumed.id },
+      });
+      return consumed;
+    });
+    if (!invite) return fail("This invite is invalid, expired, or already used.");
+    joinedTeamId = invite.teamId;
     await setCurrentTeamCookie(invite.teamId);
-    await audit({ teamId: invite.teamId, actorUserId: user.id, action: "member.joined", metadata: { role: invite.role } });
   } catch (err) {
     return safeError(err);
   }
-  redirect("/app");
+  redirect(joinedTeamId ? "/app" : "/join");
 }
 
 // ---------------------------------------------------------------------------
@@ -283,11 +306,19 @@ export async function addAnnotation(formData: FormData) {
   }
   await assertEntityInTeam(ctx.team.id, input.entityType, input.entityId);
   await writeAnnotation({ teamId: ctx.team.id, ...input, authorUserId: ctx.user.id, provenance: input.field === "coach_note" ? "system" : "student" });
-  revalidatePath(input.returnTo);
+  revalidatePath(safeInternalPath(input.returnTo, "/app"));
 }
 
-async function assertEntityInTeam(teamId: string, type: string, id: string) {
-  const table = type === "iteration" ? iterations : type === "test" ? tests : type === "decision" ? decisions : type === "subsystem" ? subsystems : type === "artifact" ? artifacts : sourceEvents;
+async function assertEntityInTeam(teamId: string, rawType: string, id: string) {
+  const type = entityTypeSchema.parse(rawType);
+  const table =
+    type === "iteration" ? iterations
+      : type === "test" ? tests
+        : type === "decision" ? decisions
+          : type === "subsystem" ? subsystems
+            : type === "artifact" ? artifacts
+              : type === "project" ? projects
+                : sourceEvents;
   const rows = await db.select({ id: table.id }).from(table).where(and(eq(table.id, id), eq(table.teamId, teamId))).limit(1);
   if (!rows[0]) throw new AuthorizationError("Entity not found in this team.");
 }
@@ -295,177 +326,19 @@ async function assertEntityInTeam(teamId: string, type: string, id: string) {
 // ---------------------------------------------------------------------------
 // Capture (also used by the offline sync endpoint)
 // ---------------------------------------------------------------------------
-const captureSchema = z.object({
-  kind: z.enum(["photo", "problem", "test", "decision", "reflection"]),
-  clientId: z.string().trim().min(8).max(80),
-  occurredAt: z.string().optional(),
-  subsystemId: z.string().uuid().optional().or(z.literal("")),
-  iterationId: z.string().uuid().optional().or(z.literal("")),
-  caption: optStr(500),
-  body: optStr(5000),
-  severity: z.enum(["low", "medium", "high"]).optional().or(z.literal("")),
-  // test
-  title: optStr(200),
-  target: optStr(200),
-  trials: z.coerce.number().int().min(0).max(100000).optional().or(z.literal("")),
-  successes: z.coerce.number().int().min(0).max(100000).optional().or(z.literal("")),
-  value: optStr(40),
-  units: optStr(30),
-  outcome: z.enum(["pass", "fail", "inconclusive", "qualitative"]).optional().or(z.literal("")),
-  question: optStr(1000),
-  hypothesis: optStr(1000),
-  procedure: optStr(3000),
-  metricName: optStr(100),
-  passCriteria: optStr(500),
-  observations: optStr(3000),
-  // decision
-  rationale: optStr(5000),
-  alternatives: optStr(2000),
-  disposition: z.enum(["keep", "revert", "iterate", "defer", "reject", "unknown"]).optional().or(z.literal("")),
-  nextStep: optStr(2000),
-  testId: z.string().uuid().optional().or(z.literal("")),
-  // reflection
-  learned: optStr(5000),
-  failed: optStr(5000),
-  change: optStr(5000),
-});
-
-export type CaptureInput = z.infer<typeof captureSchema>;
-
 export async function createCapture(_: ActionState, formData: FormData): Promise<ActionState> {
   try {
     const ctx = await requireTeam();
     if (!ctx.canAuthorStudentContent) return fail("Coaches cannot create student captures. Ask a student to record this.");
     const input = captureSchema.parse(fd(formData));
     const file = formData.get("photo");
-    const result = await persistCapture(ctx.team.id, ctx.user.id, input, file instanceof File && file.size > 0 ? file : null);
+    const result = await persistCaptureInternal(ctx.team.id, ctx.user.id, input, file instanceof File && file.size > 0 ? file : null);
     await track(result.deduplicated ? "capture.deduplicated" : "capture.created", { teamId: ctx.team.id, userId: ctx.user.id, props: { kind: input.kind } });
     revalidatePath("/app");
     return { ok: true, message: result.deduplicated ? "Already saved." : "Saved.", id: result.eventId };
   } catch (err) {
     return safeError(err);
   }
-}
-
-/** Idempotent on clientId: replaying the same capture (offline retry) never duplicates. */
-export async function persistCapture(teamId: string, userId: string, input: CaptureInput, file: File | null) {
-  const existing = await db.select({ id: sourceEvents.id }).from(sourceEvents).where(and(eq(sourceEvents.teamId, teamId), eq(sourceEvents.clientId, input.clientId))).limit(1);
-  if (existing[0]) return { eventId: existing[0].id, deduplicated: true };
-  const { season, project } = await getActiveSeasonAndProject(teamId);
-  if (!project || !season) throw new Error("Team has no active project.");
-  const occurredAt = input.occurredAt && !Number.isNaN(Date.parse(input.occurredAt)) ? new Date(input.occurredAt) : new Date();
-  const subsystemId = input.subsystemId || null;
-  const iterationId = input.iterationId || null;
-  if (subsystemId) await assertEntityInTeam(teamId, "subsystem", subsystemId);
-  if (iterationId) await assertEntityInTeam(teamId, "iteration", iterationId);
-
-  const titles: Record<CaptureInput["kind"], string> = {
-    photo: input.caption || "Workshop photo",
-    problem: (input.body || "Problem observed").slice(0, 120),
-    test: input.title || `Test: ${input.target ?? "untitled"}`,
-    decision: input.title || (input.body || "Decision").slice(0, 120),
-    reflection: "Student reflection",
-  };
-  const payload = JSON.stringify({ ...input, userId });
-  const [event] = await db
-    .insert(sourceEvents)
-    .values({
-      teamId,
-      seasonId: season.id,
-      projectId: project.id,
-      subsystemId,
-      iterationId,
-      provider: "capture",
-      providerEventId: input.clientId,
-      clientId: input.clientId,
-      eventType: input.kind,
-      actorUserId: userId,
-      title: titles[input.kind],
-      summary: input.kind === "problem" ? input.body : input.kind === "photo" ? input.caption : null,
-      occurredAt,
-      rawMetadata: { severity: input.severity || null, capturedVia: "quick_capture" },
-      contentHash: sha256(payload),
-      status: iterationId ? "linked" : subsystemId ? "inbox" : "inbox",
-    })
-    .returning();
-
-  if (file) {
-    if (file.size > MAX_UPLOAD_BYTES) throw new Error("Photo exceeds the 15 MB upload limit.");
-    let bytes: Buffer = Buffer.from(await file.arrayBuffer());
-    const sniffed = sniffContentType(bytes);
-    if (!sniffed || !ALLOWED_IMAGE_TYPES.has(sniffed)) throw new Error("Only JPEG, PNG or WebP photos are accepted.");
-    if (sniffed === "image/jpeg") bytes = stripJpegMetadata(bytes);
-    const key = newStorageKey(teamId, sniffed === "image/png" ? "png" : sniffed === "image/webp" ? "webp" : "jpg");
-    await storage.put(key, bytes, sniffed);
-    await db.insert(artifacts).values({ teamId, sourceEventId: event.id, kind: "photo", storageKey: key, mimeType: sniffed, sizeBytes: bytes.length, sha256: sha256(bytes), metadata: { exifStripped: sniffed === "image/jpeg", originalName: file.name.slice(0, 120) } });
-  }
-
-  if (input.kind === "photo" && input.caption) await writeAnnotation({ teamId, entityType: "source_event", entityId: event.id, field: "caption", body: input.caption, authorUserId: userId });
-  if (input.kind === "problem" && input.body) await writeAnnotation({ teamId, entityType: "source_event", entityId: event.id, field: "note", body: input.body, authorUserId: userId });
-  if (input.kind === "reflection") {
-    if (input.learned) await writeAnnotation({ teamId, entityType: "source_event", entityId: event.id, field: "reflection", body: `Learned: ${input.learned}`, authorUserId: userId });
-    if (input.failed) await writeAnnotation({ teamId, entityType: "source_event", entityId: event.id, field: "reflection_failed", body: `Failed: ${input.failed}`, authorUserId: userId });
-    if (input.change) await writeAnnotation({ teamId, entityType: "source_event", entityId: event.id, field: "next_step", body: `Next: ${input.change}`, authorUserId: userId });
-  }
-
-  if (input.kind === "test") {
-    const trials = typeof input.trials === "number" ? input.trials : null;
-    const successes = typeof input.successes === "number" ? input.successes : null;
-    if (trials != null && successes != null && successes > trials) throw new Error("Successes cannot exceed trials.");
-    const [t] = await db
-      .insert(tests)
-      .values({
-        teamId,
-        projectId: project.id,
-        subsystemId,
-        iterationId,
-        title: titles.test,
-        targetType: "subsystem",
-        targetLabel: input.target,
-        question: input.question,
-        hypothesis: input.hypothesis,
-        procedure: input.procedure,
-        metricName: input.metricName ?? (trials != null ? "success rate" : null),
-        units: input.units,
-        trials,
-        successes,
-        value: input.value && !Number.isNaN(Number(input.value)) ? input.value : null,
-        passCriteria: input.passCriteria,
-        observations: input.observations ?? input.body,
-        outcome: input.outcome || (trials != null ? "inconclusive" : "qualitative"),
-        performedAt: occurredAt,
-        createdBy: userId,
-      })
-      .returning();
-    await db.insert(relations).values({ teamId, fromType: "test", fromId: t.id, toType: "source_event", toId: event.id, relationType: "DERIVED_FROM", origin: "system", createdBy: userId }).onConflictDoNothing();
-    if (input.observations || input.body) await writeAnnotation({ teamId, entityType: "test", entityId: t.id, field: "note", body: input.observations ?? input.body ?? "", authorUserId: userId });
-    await track("test.created", { teamId, userId });
-    if (iterationId) await db.update(iterations).set({ state: "testing" }).where(and(eq(iterations.id, iterationId), eq(iterations.state, "open")));
-  }
-
-  if (input.kind === "decision") {
-    if (!input.rationale) throw new Error("A decision requires the student's rationale (why).");
-    const alternatives = (input.alternatives ?? "").split("\n").map((s) => s.trim()).filter(Boolean);
-    const [d] = await db
-      .insert(decisions)
-      .values({ teamId, projectId: project.id, subsystemId, iterationId, title: titles.decision, disposition: input.disposition || "unknown", status: "closed", alternatives, decidedAt: occurredAt, authorUserId: userId })
-      .returning();
-    await writeAnnotation({ teamId, entityType: "decision", entityId: d.id, field: "rationale", body: input.rationale, authorUserId: userId });
-    if (input.nextStep) await writeAnnotation({ teamId, entityType: "decision", entityId: d.id, field: "next_step", body: input.nextStep, authorUserId: userId });
-    await db.insert(relations).values({ teamId, fromType: "decision", fromId: d.id, toType: "source_event", toId: event.id, relationType: "DERIVED_FROM", origin: "system", createdBy: userId }).onConflictDoNothing();
-    if (input.testId) {
-      await assertEntityInTeam(teamId, "test", input.testId);
-      await db.insert(relations).values({ teamId, fromType: "decision", fromId: d.id, toType: "test", toId: input.testId, relationType: "SUPPORTS", origin: "student", createdBy: userId }).onConflictDoNothing();
-      await track("decision.linked_to_test", { teamId, userId });
-    }
-    await track("decision.created", { teamId, userId });
-    if (iterationId && input.disposition && ["keep", "revert", "reject", "defer"].includes(input.disposition)) {
-      const outcome = input.disposition === "keep" ? "kept" : input.disposition === "revert" ? "reverted" : input.disposition === "reject" ? "rejected" : "deferred";
-      await db.update(iterations).set({ state: "closed", outcome, closedAt: occurredAt }).where(eq(iterations.id, iterationId));
-      await track("iteration.closed", { teamId, userId });
-    }
-  }
-  return { eventId: event.id, deduplicated: false };
 }
 
 // ---------------------------------------------------------------------------
@@ -570,7 +443,7 @@ export async function updateIteration(formData: FormData) {
 export async function addRelation(formData: FormData) {
   const ctx = await requireTeam();
   const input = z
-    .object({ fromType: str(20), fromId: uuid, toType: str(20), toId: uuid, relationType: z.enum(["RESPONDS_TO", "IMPLEMENTS", "MODIFIES", "TESTS", "SUPPORTS", "CONTRADICTS", "SUPERSEDES", "DERIVED_FROM", "CONTRIBUTED_BY", "LEADS_TO", "REFERENCES", "RELATED_TO"]), returnTo: str(200) })
+    .object({ fromType: entityTypeSchema, fromId: uuid, toType: entityTypeSchema, toId: uuid, relationType: z.enum(["RESPONDS_TO", "IMPLEMENTS", "MODIFIES", "TESTS", "SUPPORTS", "CONTRADICTS", "SUPERSEDES", "DERIVED_FROM", "CONTRIBUTED_BY", "LEADS_TO", "REFERENCES", "RELATED_TO"]), returnTo: str(200) })
     .parse(fd(formData));
   await assertEntityInTeam(ctx.team.id, input.fromType, input.fromId);
   await assertEntityInTeam(ctx.team.id, input.toType, input.toId);
@@ -578,7 +451,7 @@ export async function addRelation(formData: FormData) {
   if (input.fromType === "test" && input.toType === "iteration") await db.update(tests).set({ iterationId: input.toId }).where(eq(tests.id, input.fromId));
   if (input.fromType === "decision" && input.toType === "test") await track("decision.linked_to_test", { teamId: ctx.team.id, userId: ctx.user.id });
   if (input.fromType === "test") await track("test.linked", { teamId: ctx.team.id, userId: ctx.user.id });
-  revalidatePath(input.returnTo);
+  revalidatePath(safeInternalPath(input.returnTo, "/app"));
 }
 
 export async function resolveSuggestion(formData: FormData) {
@@ -594,7 +467,16 @@ export async function createSubsystem(formData: FormData) {
   const input = z.object({ name: str(80).min(1), parentId: z.string().optional() }).parse(fd(formData));
   const { project } = await getActiveSeasonAndProject(ctx.team.id);
   if (!project) return;
-  await db.insert(subsystems).values({ teamId: ctx.team.id, projectId: project.id, name: input.name, parentId: input.parentId ? uuid.parse(input.parentId) : null });
+  const parentId = input.parentId ? uuid.parse(input.parentId) : null;
+  if (parentId) {
+    const [parent] = await db
+      .select({ id: subsystems.id })
+      .from(subsystems)
+      .where(and(eq(subsystems.id, parentId), eq(subsystems.teamId, ctx.team.id), eq(subsystems.projectId, project.id)))
+      .limit(1);
+    if (!parent) throw new AuthorizationError("Parent subsystem is not in the active team project.");
+  }
+  await db.insert(subsystems).values({ teamId: ctx.team.id, projectId: project.id, name: input.name, parentId });
   revalidatePath("/app/timeline");
 }
 
@@ -625,29 +507,38 @@ export async function toggleStudentOwnedMode(formData: FormData) {
 export async function createPolicyVersion(_: ActionState, formData: FormData): Promise<ActionState> {
   try {
     const ctx = await requireTeam();
-    if (!(ctx.isCoach || ctx.orgRole === "admin" || ctx.user.platformRole === "platform_admin")) throw new AuthorizationError("Only coaches or organization admins may update policy versions.");
+    if (ctx.user.platformRole !== "platform_admin") throw new AuthorizationError("Only a platform administrator may publish global policy versions.");
     const input = z.object({ profileId: uuid, version: str(40).min(1), status: z.enum(["draft", "active", "needs_review"]), effectiveFrom: optStr(20), sourceUrls: optStr(2000), changelog: str(4000).min(1) }).parse(fd(formData));
     const matrix: ActionMatrix = {};
     for (const a of POLICY_ACTIONS) {
       const v = formData.get(`matrix.${a}`);
       if (isPolicyDecision(v)) matrix[a] = v;
     }
-    if (input.status === "active") {
-      await db.update(policyVersions).set({ status: "superseded" }).where(and(eq(policyVersions.profileId, input.profileId), eq(policyVersions.status, "active")));
-    }
-    await db.insert(policyVersions).values({
-      profileId: input.profileId,
-      version: input.version,
-      status: input.status,
-      effectiveFrom: input.effectiveFrom ? new Date(input.effectiveFrom) : null,
-      reviewedAt: new Date(),
-      reviewer: ctx.user.displayName,
-      sourceUrls: (input.sourceUrls ?? "").split(/\s+/).filter(Boolean),
-      changelog: input.changelog,
-      actionMatrix: matrix,
-      createdBy: ctx.user.id,
+    if (Object.keys(matrix).length !== POLICY_ACTIONS.length) return fail("Every policy action must have an explicit decision.");
+    await db.transaction(async (tx) => {
+      if (input.status === "active") {
+        await tx.update(policyVersions).set({ status: "superseded" }).where(and(eq(policyVersions.profileId, input.profileId), eq(policyVersions.status, "active")));
+      }
+      const [version] = await tx.insert(policyVersions).values({
+        profileId: input.profileId,
+        version: input.version,
+        status: input.status,
+        effectiveFrom: input.effectiveFrom ? new Date(input.effectiveFrom) : null,
+        reviewedAt: new Date(),
+        reviewer: ctx.user.displayName,
+        sourceUrls: (input.sourceUrls ?? "").split(/\s+/).filter(Boolean),
+        changelog: input.changelog,
+        actionMatrix: matrix,
+        createdBy: ctx.user.id,
+      }).returning({ id: policyVersions.id });
+      await tx.insert(auditEvents).values({
+        actorUserId: ctx.user.id,
+        action: "policy.version_created",
+        entityType: "policy_version",
+        entityId: version.id,
+        metadata: { profileId: input.profileId, version: input.version, status: input.status },
+      });
     });
-    await audit({ teamId: ctx.team.id, organizationId: ctx.team.organizationId, actorUserId: ctx.user.id, action: "policy.version_created", metadata: { profileId: input.profileId, version: input.version, status: input.status } });
     revalidatePath("/app/competition");
     return { ok: true, message: `Policy version ${input.version} recorded.` };
   } catch (err) {
@@ -896,7 +787,9 @@ export async function disconnectSource(formData: FormData) {
 
 /** Development simulator: injects a realistic provider event through the same normalisation path as webhooks. */
 export async function simulateSourceEvent(formData: FormData) {
+  if (!devSimulatorEnabled()) throw new AuthorizationError("Not found");
   const ctx = await requireTeam();
+  if (!ctx.canOrganize) throw new AuthorizationError();
   const provider = z.enum(["github", "onshape", "telegram"]).parse(formData.get("provider"));
   const { season, project } = await getActiveSeasonAndProject(ctx.team.id);
   const id = randomBytes(6).toString("hex");
@@ -957,6 +850,7 @@ export async function importCsv(_: ActionState, formData: FormData): Promise<Act
     const { season, project } = await getActiveSeasonAndProject(ctx.team.id);
     if (!project) return fail("No active project");
     const subsystemId = input.subsystemId ? uuid.parse(input.subsystemId) : null;
+    if (subsystemId) await assertEntityInTeam(ctx.team.id, "subsystem", subsystemId);
     const batch = randomBytes(6).toString("hex");
     let imported = 0;
     for (const p of parsed) {
@@ -1049,7 +943,8 @@ export async function updateOrganization(formData: FormData) {
       // Live billing: plan changes go through the Stripe adapter (checkout) — never set directly.
       throw new Error("Live billing is configured; change plans via the billing portal.");
     }
-    patch.plan = input.plan; // development billing adapter
+    if (!developmentBillingEnabled()) throw new Error("Billing is not configured on this deployment.");
+    patch.plan = input.plan;
     await db.update(subscriptions).set({ plan: input.plan, status: "active", updatedAt: new Date() }).where(eq(subscriptions.organizationId, ctx.team.organizationId));
   }
   await db.update(organizations).set(patch).where(eq(organizations.id, ctx.team.organizationId));

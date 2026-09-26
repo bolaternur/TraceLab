@@ -88,7 +88,20 @@ export const outbox = {
   async update(item: OutboxItem) {
     await tx("readwrite", (s) => s.put(item));
   },
+  async clear() {
+    await tx("readwrite", (s) => s.clear());
+  },
 };
+
+/** Remove all browser-resident private data before the server session is destroyed. */
+export async function clearPrivateClientData(): Promise<void> {
+  await outbox.clear();
+  if ("caches" in globalThis) {
+    const keys = await caches.keys();
+    await Promise.all(keys.map((key) => caches.delete(key)));
+  }
+  navigator.serviceWorker?.controller?.postMessage("clear-private-data");
+}
 
 export function newClientId() {
   const rnd = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;

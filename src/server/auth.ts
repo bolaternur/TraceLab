@@ -1,7 +1,8 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
-import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
+import { promisify } from "node:util";
 import { db } from "@/db";
 import { sessions, teamMemberships, teams, users, organizationMemberships } from "@/db/schema";
 import { cache } from "react";
@@ -9,30 +10,37 @@ import { cache } from "react";
 const SESSION_COOKIE = "pt_session";
 const TEAM_COOKIE = "pt_team";
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30;
+const scryptAsync = promisify(scrypt);
+export const DUMMY_PASSWORD_HASH = `scrypt$00000000000000000000000000000000$${"00".repeat(64)}`;
 
-export function hashPassword(password: string): string {
+function hashSessionToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16).toString("hex");
-  const hash = scryptSync(password, salt, 64).toString("hex");
+  const hash = (await scryptAsync(password, salt, 64) as Buffer).toString("hex");
   return `scrypt$${salt}$${hash}`;
 }
 
-export function verifyPassword(password: string, stored: string): boolean {
+export async function verifyPassword(password: string, stored: string): Promise<boolean> {
   const [scheme, salt, hash] = stored.split("$");
   if (scheme !== "scrypt" || !salt || !hash) return false;
-  const candidate = scryptSync(password, salt, 64);
+  const candidate = await scryptAsync(password, salt, 64) as Buffer;
   const expected = Buffer.from(hash, "hex");
   return candidate.length === expected.length && timingSafeEqual(candidate, expected);
 }
 
 export async function createSession(userId: string) {
-  const id = randomBytes(32).toString("base64url");
+  const token = randomBytes(32).toString("base64url");
+  const id = hashSessionToken(token);
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
   await db.insert(sessions).values({ id, userId, expiresAt });
   const jar = await cookies();
-  jar.set(SESSION_COOKIE, id, {
+  jar.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production" && process.env.ALLOW_INSECURE_COOKIES !== "true",
+    secure: process.env.NODE_ENV === "production",
     path: "/",
     expires: expiresAt,
   });
@@ -40,8 +48,8 @@ export async function createSession(userId: string) {
 
 export async function destroySession() {
   const jar = await cookies();
-  const id = jar.get(SESSION_COOKIE)?.value;
-  if (id) await db.delete(sessions).where(eq(sessions.id, id));
+  const token = jar.get(SESSION_COOKIE)?.value;
+  if (token) await db.delete(sessions).where(eq(sessions.id, hashSessionToken(token)));
   jar.delete(SESSION_COOKIE);
   jar.delete(TEAM_COOKIE);
 }
@@ -60,13 +68,13 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   }
 
   const jar = await cookies();
-  const id = jar.get(SESSION_COOKIE)?.value;
-  if (!id) return null;
+  const token = jar.get(SESSION_COOKIE)?.value;
+  if (!token) return null;
   const rows = await db
     .select({ user: users, expiresAt: sessions.expiresAt })
     .from(sessions)
     .innerJoin(users, eq(users.id, sessions.userId))
-    .where(eq(sessions.id, id))
+    .where(eq(sessions.id, hashSessionToken(token)))
     .limit(1);
   const row = rows[0];
   if (!row || row.expiresAt.getTime() < Date.now()) return null;
@@ -101,7 +109,7 @@ export const listUserTeams = cache(async (userId: string) => {
 
 export async function setCurrentTeamCookie(teamId: string) {
   const jar = await cookies();
-  jar.set(TEAM_COOKIE, teamId, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production" && process.env.ALLOW_INSECURE_COOKIES !== "true", path: "/", maxAge: 60 * 60 * 24 * 365 });
+  jar.set(TEAM_COOKIE, teamId, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 60 * 60 * 24 * 365 });
 }
 
 /**

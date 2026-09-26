@@ -16,7 +16,7 @@ export default async function CompetitionPage() {
   const versions = await db.select().from(policyVersions).orderBy(desc(policyVersions.createdAt));
   const policy = await loadTeamPolicy(ctx.team);
   const decisions = await Promise.all(POLICY_ACTIONS.map(async (action) => ({ action, result: await gate(ctx, action) })));
-  const canManage = ctx.isCoach || ctx.orgRole === "admin" || ctx.user.platformRole === "platform_admin";
+  const canManage = ctx.user.platformRole === "platform_admin";
   const restricted = decisions.filter(({ result }) => !result.allowed);
 
   return (

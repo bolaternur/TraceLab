@@ -4,6 +4,7 @@ import { LOCALES, LOCALE_LABELS } from "@/lib/i18n";
 import { ExportButton } from "../exports/export-button";
 import { PageHeader, Section } from "@/components/ui";
 import Link from "next/link";
+import { SecureSignOut } from "@/components/secure-sign-out";
 
 export default async function SettingsPage() {
   const ctx = await requireTeam();
@@ -61,6 +62,12 @@ export default async function SettingsPage() {
           <p className="hint">
             Account deletion and organization-level retention are handled by your team lead / organization admin (see <Link href="/app/org" className="text-blueprint">Organization</Link>) and documented in PRIVACY.md.
           </p>
+        </div>
+      </Section>
+      <Section title="Session">
+        <div className="card space-y-2 p-4 text-sm">
+          <p className="text-text-2">Signing out clears queued offline captures and cached browser data on this device.</p>
+          <SecureSignOut />
         </div>
       </Section>
     </div>

@@ -3,6 +3,8 @@ import { and, asc, eq, lte, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { jobs, sourceEvents, teamMemberships, tests, relations, notifications } from "@/db/schema";
 import { log } from "@/server/audit";
+import { storage } from "@/server/storage";
+import { z } from "zod";
 
 export const runtime = "nodejs";
 
@@ -36,8 +38,9 @@ export async function POST(req: Request) {
 
 async function runJob(kind: string, payload: Record<string, unknown>) {
   if (kind === "storage.cleanup") {
-    // Storage keys are namespaced by team; a real adapter would delete the prefix. Local adapter: no-op logged.
-    log("info", "storage_cleanup", { teamId: payload.teamId });
+    const teamId = z.string().uuid().parse(payload.teamId);
+    await storage.deletePrefix(teamId);
+    log("info", "storage_cleanup_completed", { teamId });
     return;
   }
   if (kind === "notify.tests_without_decisions") {

@@ -1,6 +1,6 @@
-/* TraceLab service worker: app-shell caching for offline capture. Never caches private media or API responses. */
-const CACHE = "trace-shell-v1";
-const SHELL = ["/app/capture", "/offline", "/manifest.webmanifest"];
+/* TraceLab service worker: public offline fallback + immutable build assets only. */
+const CACHE = "trace-public-v2";
+const SHELL = ["/offline", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL).catch(() => undefined)).then(() => self.skipWaiting()));
@@ -15,7 +15,8 @@ self.addEventListener("fetch", (event) => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
-  if (url.pathname.startsWith("/api/")) return; // never cache API / private media
+  // Authenticated pages, auth flows and APIs may contain user/team data and are never cached.
+  if (url.pathname.startsWith("/app") || url.pathname.startsWith("/auth") || url.pathname.startsWith("/join") || url.pathname.startsWith("/api/")) return;
   if (url.pathname.startsWith("/_next/static/")) {
     event.respondWith(caches.open(CACHE).then(async (c) => (await c.match(req)) || fetch(req).then((r) => (c.put(req, r.clone()), r))));
     return;
@@ -23,15 +24,16 @@ self.addEventListener("fetch", (event) => {
   if (req.mode === "navigate") {
     event.respondWith(
       fetch(req)
-        .then((r) => {
-          if (url.pathname === "/app/capture") caches.open(CACHE).then((c) => c.put(req, r.clone()));
-          return r;
-        })
-        .catch(async () => (await caches.match(req)) || (await caches.match("/app/capture")) || (await caches.match("/offline")) || Response.error()),
+        .catch(async () => (await caches.match("/offline")) || Response.error()),
     );
   }
 });
 
 self.addEventListener("message", (event) => {
   if (event.data === "sync-outbox") self.clients.matchAll().then((cs) => cs.forEach((c) => c.postMessage("sync-outbox")));
+  if (event.data === "clear-private-data") {
+    event.waitUntil(
+      caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key)))),
+    );
+  }
 });
