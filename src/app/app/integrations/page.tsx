@@ -2,11 +2,10 @@ import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { sourceConnections } from "@/db/schema";
 import { requireTeam } from "@/server/auth";
-import { disconnectSource, simulateSourceEvent } from "@/server/actions";
+import { disconnectSource } from "@/server/actions";
 import { getActiveSeasonAndProject, listSubsystems } from "@/server/evidence";
 import { ConnectForm, CsvImportForm } from "./forms";
 import { Mono, Notice, PageHeader, SourceBadge, fmtDate } from "@/components/ui";
-import { devSimulatorEnabled } from "@/lib/security";
 
 export default async function IntegrationsPage({ searchParams }: { searchParams: Promise<{ error?: string; connected?: string }> }) {
   const sp = await searchParams;
@@ -16,7 +15,6 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
   const subs = await listSubsystems(ctx.team.id, project?.id);
   const appUrl = process.env.APP_URL ?? "https://<your-host>";
   const onshapeConfigured = !!process.env.ONSHAPE_CLIENT_ID;
-  const isDev = devSimulatorEnabled();
   return (
     <div className="fade-in">
       <PageHeader title="Integrations" subtitle="Connect the tools your team already uses. Metadata only — we never ingest repository contents, and connector secrets are encrypted at rest." />
@@ -70,19 +68,6 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
             <CsvImportForm subsystems={subs.map((s) => ({ id: s.id, name: s.name }))} />
           </section>
 
-          {isDev && ctx.canOrganize ? (
-            <section className="card border-warning/50 p-5">
-              <h2 className="font-semibold">Development simulator</h2>
-              <p className="hint">Injects a realistic provider event through the same normalization path as real webhooks. Clearly marked as simulated in metadata. Available only outside production when explicitly enabled.</p>
-              <form action={simulateSourceEvent} className="mt-2 flex gap-2">
-                {["github", "onshape", "telegram"].map((p) => (
-                  <button key={p} name="provider" value={p} className="btn btn-sm">
-                    Simulate {p}
-                  </button>
-                ))}
-              </form>
-            </section>
-          ) : null}
         </div>
         <aside className="space-y-4">
           {ctx.canOrganize ? (
@@ -95,7 +80,6 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
           ) : (
             <p className="card p-4 text-sm text-text-2">Team leads and coaches manage integrations.</p>
           )}
-          <div className="card p-4 text-xs text-text-3">Future adapters (Google Drive, OneDrive, other CAD) plug into the same provider interface: <Mono>src/integrations/normalize.ts</Mono>.</div>
         </aside>
       </div>
     </div>

@@ -784,6 +784,14 @@ textarea {
   align-items: center;
 }
 
+.workbench-language-switcher {
+  position: relative;
+}
+
+.workbench-language-switcher > .workbench-rail-action {
+  cursor: pointer;
+}
+
 .workbench-handle {
   width: 6px !important;
   height: 6px !important;

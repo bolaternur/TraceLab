@@ -59,7 +59,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-dvh bg-canvas">
-      <ToolRail groups={groups} today={today} capture={capture} />
+      <ToolRail groups={groups} today={today} capture={capture} locale={locale} />
       <div className="flex min-w-0 flex-1 flex-col md:flex-row">
         <MobileNav groups={groups} teamName={ctx.team.name} primary={mobilePrimary} capture={capture} canCapture={ctx.canAuthorStudentContent} />
         <SecondaryRouteFrame>{children}</SecondaryRouteFrame>

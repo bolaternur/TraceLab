@@ -11,6 +11,11 @@ export const metadata: Metadata = {
   description: brand.tagline,
   manifest: "/manifest.webmanifest",
   applicationName: brand.productName,
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
   appleWebApp: { capable: true, title: brand.productName, statusBarStyle: "default" },
 };
 

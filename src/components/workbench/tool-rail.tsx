@@ -6,11 +6,14 @@ import type { NavGroup, NavItem } from "@/components/nav";
 import { TraceMark } from "@/components/tracelab/brand-mark";
 import { CommandPalette } from "@/components/tracelab/command-palette";
 import { TraceIcon } from "@/components/tracelab/trace-icon";
+import { LOCALES, LOCALE_LABELS, type Locale } from "@/lib/i18n";
+import { setLocale } from "@/server/actions";
 
 interface ToolRailProps {
   groups: NavGroup[];
   today: NavItem;
   capture: NavItem;
+  locale: Locale;
 }
 
 const RAIL_ROUTES = [
@@ -18,6 +21,7 @@ const RAIL_ROUTES = [
   { href: "/app/capture", glyph: "capture", fallback: "Capture" },
   { href: "/app/timeline", glyph: "timeline", fallback: "Timeline" },
   { href: "/app/graph", glyph: "graph", fallback: "Trace" },
+  { href: "/app/models", glyph: "cad", fallback: "3D Models" },
   { href: "/app/exports", glyph: "export", fallback: "Outputs" },
   { href: "/app/settings", glyph: "settings", fallback: "Settings" },
 ] as const;
@@ -26,7 +30,25 @@ function routeActive(pathname: string, href: string, exact?: boolean) {
   return exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function ToolRail({ groups, today, capture }: ToolRailProps) {
+function LanguageSwitcher({ locale }: { locale: Locale }) {
+  const nextLocale = LOCALES[(LOCALES.indexOf(locale) + 1) % LOCALES.length];
+  return (
+    <form action={setLocale} className="workbench-language-switcher">
+      <button
+        type="submit"
+        name="locale"
+        value={nextLocale}
+        className="workbench-rail-action"
+        aria-label={`Change language to ${LOCALE_LABELS[nextLocale]}`}
+        title={`${LOCALE_LABELS[locale]} → ${LOCALE_LABELS[nextLocale]}`}
+      >
+        <span className="mono text-[10px] font-semibold tracking-[0.08em]">{locale.toUpperCase()}</span>
+      </button>
+    </form>
+  );
+}
+
+export function ToolRail({ groups, today, capture, locale }: ToolRailProps) {
   const pathname = usePathname();
   const labels = new Map<string, string>([
     [today.href, today.label],
@@ -41,7 +63,7 @@ export function ToolRail({ groups, today, capture }: ToolRailProps) {
       </Link>
 
       <nav className="workbench-rail-nav" aria-label="Primary workspace">
-        {RAIL_ROUTES.slice(0, 4).map((item) => {
+        {RAIL_ROUTES.slice(0, 5).map((item) => {
           const active = routeActive(pathname, item.href, "exact" in item ? item.exact : false);
           return (
             <Link
@@ -63,7 +85,8 @@ export function ToolRail({ groups, today, capture }: ToolRailProps) {
       </nav>
 
       <nav className="workbench-rail-nav mt-auto" aria-label="Workspace utilities">
-        {RAIL_ROUTES.slice(4).map((item) => {
+        <LanguageSwitcher locale={locale} />
+        {RAIL_ROUTES.slice(5).map((item) => {
           const active = routeActive(pathname, item.href, "exact" in item ? item.exact : false);
           return (
             <Link

@@ -491,15 +491,15 @@ test("Evidence Trace suggested relations are explicit, dashed, and never perpetu
   assert.ok(!edge.includes("<animate"));
 });
 
-test("Evidence Trace nodes preserve provenance and engineering outcome semantics", async () => {
+test("Evidence Trace nodes stay scannable while the inspector owns technical detail", async () => {
   const node = await readFile(new URL("../src/components/evidence-trace/trace-node.tsx", import.meta.url), "utf8");
   assert.ok(node.includes("Source event"));
   assert.ok(node.includes("Iteration"));
   assert.ok(node.includes("Test"));
   assert.ok(node.includes("Decision"));
-  assert.ok(node.includes("provider"));
-  assert.ok(node.includes("outcome"));
-  assert.ok(node.includes("Why?"));
+  assert.ok(!node.includes("provider"));
+  assert.ok(!node.includes("outcome"));
+  assert.ok(!node.includes("Why?"));
 });
 
 test("Evidence Trace keeps a semantic relation explorer outside the canvas", async () => {
