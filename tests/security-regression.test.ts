@@ -63,6 +63,12 @@ describe("P0 server boundaries", () => {
     expect(auth).not.toContain("scryptSync");
   });
 
+  it("keeps public previews available when the optional development database is offline", () => {
+    const auth = source("src/server/auth.ts");
+    expect(auth).toContain('msg: "dev_auth_bypass_unavailable"');
+    expect(auth).toContain("return null");
+  });
+
   it("implements storage cleanup instead of acknowledging a no-op", () => {
     const jobs = source("src/app/api/jobs/run/route.ts");
     expect(jobs).toContain("storage.deletePrefix(teamId)");

@@ -59,7 +59,15 @@ export type SessionUser = typeof users.$inferSelect;
 export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   if (process.env.NODE_ENV === "development" && process.env.DEV_AUTH_BYPASS === "true") {
     const email = process.env.DEV_AUTH_EMAIL ?? "lead@trace.demo";
-    const rows = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    let rows: Array<typeof users.$inferSelect>;
+    try {
+      rows = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    } catch (error) {
+      // Public pages must remain previewable when the optional local database is offline.
+      // Authenticated workspace routes will redirect to sign-in instead of rendering a 500 overlay.
+      console.warn(JSON.stringify({ level: "warn", msg: "dev_auth_bypass_unavailable", email, error: String(error) }));
+      return null;
+    }
     const user = rows[0];
     if (!user) {
       throw new Error(`DEV_AUTH_BYPASS: ${email} was not found. Run npm run db:seed first.`);
