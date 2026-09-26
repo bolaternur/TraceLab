@@ -31,6 +31,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     "/app/decisions": t("nav.decisions"),
     "/app/graph": t("nav.graph"),
     "/app/timeline": t("nav.timeline"),
+    "/app/models": t("nav.models"),
     "/app/failures": t("nav.failures"),
     "/app/search": t("nav.search"),
     "/app/memory": t("nav.memory"),

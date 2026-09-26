@@ -1,6 +1,6 @@
 /* Realistic demo data: fictional FTC-style team "Orion Robotics" across two seasons. Run: npm run db:seed */
 import "dotenv/config";
-import { eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { createHash, scryptSync, randomBytes } from "node:crypto";
 import { db, pool } from "./index";
 import {
@@ -25,6 +25,7 @@ import {
   users,
 } from "./schema";
 import { SEED_PROFILES } from "../modules/policies/engine";
+import { seedDemoModels } from "./seed-models";
 
 const hash = (s: string) => createHash("sha256").update(s).digest("hex");
 function pw(p: string) {
@@ -57,6 +58,11 @@ async function main() {
   const profileIds = await seedPolicies();
   const existing = await db.select({ id: users.id }).from(users).where(eq(users.email, "lead@trace.demo")).limit(1);
   if (existing[0]) {
+    const [membership] = await db.select({ teamId: teamMemberships.teamId }).from(teamMemberships).where(eq(teamMemberships.userId, existing[0].id)).limit(1);
+    const [project] = membership
+      ? await db.select({ id: projects.id }).from(projects).innerJoin(seasons, eq(seasons.id, projects.seasonId)).where(and(eq(projects.teamId, membership.teamId), eq(seasons.isActive, true))).orderBy(desc(seasons.year)).limit(1)
+      : [];
+    if (membership) await seedDemoModels({ teamId: membership.teamId, userId: existing[0].id, projectId: project?.id });
     console.log("Demo data already present; policies refreshed.");
     await pool.end();
     return;
@@ -215,6 +221,7 @@ async function main() {
     ]).onConflictDoNothing();
   }
   void tLift;
+  await seedDemoModels({ teamId: team.id, userId: lead.id, projectId: proj.id });
   console.log("Seeded demo data. Sign in: lead@trace.demo / demo1234 (also anim@, dana@, coach@, other@trace.demo)");
   await pool.end();
 }

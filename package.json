@@ -11,6 +11,7 @@
     "db:push": "drizzle-kit push --config=drizzle.config.ts",
     "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
     "db:seed": "tsx src/db/seed.ts",
+    "models:seed": "tsx scripts/import-seed-models.mts",
     "db:migrate": "drizzle-kit migrate --config=drizzle.config.ts",
     "frontend:contract": "node --experimental-strip-types --test tests/frontend-contract.node.test.ts",
     "frontend:audit": "node scripts/frontend-static-audit.mjs",

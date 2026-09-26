@@ -909,15 +909,15 @@ test("production hardening keeps encryption and browser security fail-closed", a
   assert.ok(storage.includes("SECRETS_ENCRYPTION_KEY must be configured"));
   assert.ok(config.includes("Content-Security-Policy"));
   assert.ok(config.includes("Permissions-Policy"));
-  assert.ok(auth.includes('process.env.ALLOW_INSECURE_COOKIES !== "true"'));
+  assert.ok(auth.includes('secure: process.env.NODE_ENV === "production"'));
 });
 
 test("offline capture idempotency is scoped by team to prevent cross-tenant clientId collisions", async () => {
   const schema = await readFile(new URL("../src/db/schema.ts", import.meta.url), "utf8");
-  const actions = await readFile(new URL("../src/server/actions.ts", import.meta.url), "utf8");
+  const capture = await readFile(new URL("../src/server/capture.ts", import.meta.url), "utf8");
   const migration = await readFile(new URL("../drizzle/0001_team_scoped_capture_idempotency.sql", import.meta.url), "utf8");
   assert.ok(schema.includes('uniqueIndex("source_events_client_id_idx").on(t.teamId, t.clientId)'));
-  assert.ok(actions.includes("eq(sourceEvents.teamId, teamId), eq(sourceEvents.clientId, input.clientId)"));
+  assert.ok(capture.includes("eq(sourceEvents.teamId, teamId), eq(sourceEvents.clientId, input.clientId)"));
   assert.ok(migration.includes('("team_id","client_id")'));
 });
 

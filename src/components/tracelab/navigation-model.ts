@@ -41,6 +41,7 @@ export function buildNavigationModel({ isCoach, hasOrganization, unread = 0 }: {
       label: "Memory",
       items: [
         memory,
+        { href: "/app/models", label: "3D Models", glyph: "cad" },
         { href: "/app/search", label: "Search", glyph: "search" },
         { href: "/app/graph", label: "Trace graph", glyph: "graph" },
         { href: "/app/failures", label: "Prior failures", glyph: "failure" },

@@ -22,6 +22,13 @@
       "when": 1790408400000,
       "tag": "0002_security_invariants",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790418458957,
+      "tag": "0003_damp_black_crow",
+      "breakpoints": true
     }
   ]
 }

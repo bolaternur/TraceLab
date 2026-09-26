@@ -276,6 +276,40 @@ export const artifacts = pgTable(
   ],
 );
 
+/** Team-private 3D model metadata. Binary geometry lives in private object storage via artifactId. */
+export const robotModels = pgTable(
+  "robot_models",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    teamId: uuid("team_id")
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }),
+    subsystemId: uuid("subsystem_id").references(() => subsystems.id, { onDelete: "set null" }),
+    sourceEventId: uuid("source_event_id")
+      .notNull()
+      .references(() => sourceEvents.id, { onDelete: "cascade" }),
+    artifactId: uuid("artifact_id")
+      .notNull()
+      .references(() => artifacts.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    category: text("category").notNull().default("part"), // robot | assembly | part
+    versionLabel: text("version_label"),
+    description: text("description"),
+    tags: jsonb("tags").notNull().default(sql`'[]'::jsonb`),
+    status: text("status").notNull().default("active"), // active | archived
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("robot_models_team_idx").on(t.teamId, t.updatedAt),
+    index("robot_models_project_idx").on(t.projectId),
+    index("robot_models_subsystem_idx").on(t.subsystemId),
+    uniqueIndex("robot_models_artifact_idx").on(t.artifactId),
+  ],
+);
+
 /** Student-authored reasoning. Versioned via supersedesId; never destructively edited. */
 export const annotations = pgTable(
   "annotations",
