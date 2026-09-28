@@ -78,12 +78,21 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE)?.value;
   if (!token) return null;
-  const rows = await db
-    .select({ user: users, expiresAt: sessions.expiresAt })
-    .from(sessions)
-    .innerJoin(users, eq(users.id, sessions.userId))
-    .where(eq(sessions.id, hashSessionToken(token)))
-    .limit(1);
+  let rows: Array<{ user: typeof users.$inferSelect; expiresAt: Date }>;
+  try {
+    rows = await db
+      .select({ user: users, expiresAt: sessions.expiresAt })
+      .from(sessions)
+      .innerJoin(users, eq(users.id, sessions.userId))
+      .where(eq(sessions.id, hashSessionToken(token)))
+      .limit(1);
+  } catch (error) {
+    if (process.env.NODE_ENV !== "development") throw error;
+    // Keep the public site previewable when a stale local session cookie exists
+    // but the optional development database is not running.
+    console.warn(JSON.stringify({ level: "warn", msg: "local_session_unavailable", error: String(error) }));
+    return null;
+  }
   const row = rows[0];
   if (!row || row.expiresAt.getTime() < Date.now()) return null;
   return row.user;
