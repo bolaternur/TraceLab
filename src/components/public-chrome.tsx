@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { brand } from "@/lib/brand";
-import { LOCALE_LABELS, LOCALES, type Locale } from "@/lib/i18n";
-import { setLocale } from "@/server/actions";
+import { type Locale } from "@/lib/i18n";
+import { LanguageSelect } from "@/components/language-select";
 import { TraceMark } from "@/components/tracelab/brand-mark";
 
 export function PublicNav({ signedIn, locale }: { signedIn: boolean; locale: Locale }) {
@@ -21,14 +21,7 @@ export function PublicNav({ signedIn, locale }: { signedIn: boolean; locale: Loc
           <Link href="/docs" className="hover:text-ink">Docs</Link>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2">
-          <form action={setLocale} className="flex items-center">
-            <label className="sr-only" htmlFor="lang">Language</label>
-            <select id="lang" name="locale" defaultValue={locale} className="select !min-h-11 !w-[62px] rounded-full !px-2 !py-0 text-xs sm:!w-auto sm:!px-3">
-              {LOCALES.map((l) => <option key={l} value={l}>{LOCALE_LABELS[l]}</option>)}
-            </select>
-            <button className="trace-button ml-1 !hidden min-h-11 rounded-full px-3 text-xs sm:!inline-flex" type="submit">Set</button>
-            <button className="trace-button ml-1 grid min-h-11 w-11 place-items-center rounded-full px-0 text-xs sm:!hidden" type="submit" aria-label="Apply language">↵</button>
-          </form>
+          <LanguageSelect locale={locale} />
           {signedIn ? (
             <Link href="/app" className="trace-button trace-button-primary min-h-11 rounded-full px-4">Workspace</Link>
           ) : (

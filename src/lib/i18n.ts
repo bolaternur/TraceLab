@@ -3,6 +3,8 @@ export const LOCALES: Locale[] = ["en", "ru", "kk"];
 export const LOCALE_LABELS: Record<Locale, string> = { en: "English", ru: "Русский", kk: "Қазақша" };
 
 const en = {
+  "common.saving": "Saving…",
+  "common.saveFailed": "Could not save. Try again.",
   "nav.home": "Today",
   "nav.capture": "Capture",
   "nav.inbox": "Evidence",
@@ -55,6 +57,7 @@ const en = {
   "common.language": "Language",
   "common.studentOwned": "Student-Owned Mode",
   "models.title": "3D Models",
+  "models.previewNotice": "Preview library. Models are imported by an administrator; uploading and managing models in the browser is not available yet.",
   "models.subtitle": "Team-private robot assemblies and parts, preserved with their source history.",
   "models.search": "Search models",
   "models.all": "All types",
@@ -75,6 +78,8 @@ const en = {
 export type TranslationKey = keyof typeof en;
 
 const ru: Record<TranslationKey, string> = {
+  "common.saving": "Сохраняем…",
+  "common.saveFailed": "Не удалось сохранить. Повторите попытку.",
   "nav.home": "Сегодня",
   "nav.capture": "Фиксация",
   "nav.inbox": "Доказательства",
@@ -127,6 +132,7 @@ const ru: Record<TranslationKey, string> = {
   "common.language": "Язык",
   "common.studentOwned": "Режим авторства учеников",
   "models.title": "3D-модели",
+  "models.previewNotice": "Библиотека для просмотра. Модели импортирует администратор; загрузка и управление моделями через сайт пока недоступны.",
   "models.subtitle": "Приватные модели роботов и деталей команды с сохранённой историей происхождения.",
   "models.search": "Поиск моделей",
   "models.all": "Все типы",
@@ -145,6 +151,8 @@ const ru: Record<TranslationKey, string> = {
 };
 
 const kk: Record<TranslationKey, string> = {
+  "common.saving": "Сақталуда…",
+  "common.saveFailed": "Сақтау мүмкін болмады. Қайталап көріңіз.",
   "nav.home": "Бүгін",
   "nav.capture": "Тіркеу",
   "nav.inbox": "Дәлелдер",
@@ -196,6 +204,7 @@ const kk: Record<TranslationKey, string> = {
   "common.language": "Тіл",
   "common.studentOwned": "Оқушы иелігі режимі",
   "models.title": "3D модельдер",
+  "models.previewNotice": "Көру кітапханасы. Модельдерді әкімші импорттайды; сайтта модельдерді жүктеу және басқару әзірге қолжетімсіз.",
   "models.subtitle": "Дереккөз тарихы сақталған команданың жабық робот жинақтары мен бөлшектері.",
   "models.search": "Модельдерді іздеу",
   "models.all": "Барлық түрлер",

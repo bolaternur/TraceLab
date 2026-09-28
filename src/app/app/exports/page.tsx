@@ -88,7 +88,7 @@ export default async function ExportsPage() {
                   </div>
                 </div>
               </div>
-              <p className="hint mt-3">Formal PDF/HTML exports use restrained styling; this app preview demonstrates structure, provenance and validation only.</p>
+              <p className="hint mt-3">Current notebook and portfolio downloads are HTML drafts. PDF generation, page counting and file-size compliance are not implemented. The illustration above is a demo, not your exported project.</p>
             </div>
           </section>
         </div>

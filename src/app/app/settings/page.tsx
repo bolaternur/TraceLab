@@ -1,6 +1,8 @@
 import { requireTeam } from "@/server/auth";
-import { setLocale, updateSettings } from "@/server/actions";
-import { LOCALES, LOCALE_LABELS } from "@/lib/i18n";
+import { updateSettings } from "@/server/actions";
+import { isLocale } from "@/lib/i18n";
+import { cookies } from "next/headers";
+import { LanguageSelect } from "@/components/language-select";
 import { ExportButton } from "../exports/export-button";
 import { PageHeader, Section } from "@/components/ui";
 import Link from "next/link";
@@ -8,6 +10,8 @@ import { SecureSignOut } from "@/components/secure-sign-out";
 
 export default async function SettingsPage() {
   const ctx = await requireTeam();
+  const rawLocale = (await cookies()).get("pt_lang")?.value ?? ctx.user.locale;
+  const locale = isLocale(rawLocale) ? rawLocale : "en";
   const s = (ctx.user.settings ?? {}) as Record<string, boolean>;
   return (
     <div className="fade-in mx-auto max-w-2xl">
@@ -43,17 +47,7 @@ export default async function SettingsPage() {
         </form>
       </Section>
       <Section title="Language">
-        <form action={setLocale} className="card flex items-center gap-2 p-4 text-sm">
-          <select name="locale" className="select !w-auto" defaultValue={ctx.user.locale}>
-            {LOCALES.map((l) => (
-              <option key={l} value={l}>
-                {LOCALE_LABELS[l]}
-              </option>
-            ))}
-          </select>
-          <button className="btn">Apply</button>
-          <span className="hint">Official competition wording is never machine-translated without labeling.</span>
-        </form>
+        <div className="card p-4"><LanguageSelect locale={locale} /></div>
       </Section>
       <Section title="Your data">
         <div className="card space-y-3 p-4 text-sm">

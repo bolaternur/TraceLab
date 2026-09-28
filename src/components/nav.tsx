@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { LanguageSelect } from "@/components/language-select";
+import type { Locale } from "@/lib/i18n";
 import { TraceIcon } from "@/components/tracelab/trace-icon";
 
 export interface NavItem {
@@ -58,7 +60,7 @@ export function NavLinks({ groups, onNavigate }: { groups: NavGroup[]; onNavigat
   );
 }
 
-export function MobileNav({ groups, teamName, primary, capture, canCapture }: { groups: NavGroup[]; teamName: string; primary: NavItem[]; capture: NavItem; canCapture: boolean }) {
+export function MobileNav({ groups, teamName, primary, capture, canCapture, locale }: { locale: Locale; groups: NavGroup[]; teamName: string; primary: NavItem[]; capture: NavItem; canCapture: boolean }) {
   const [open, setOpen] = useState(false);
   const path = usePathname();
   const captureOnCanvas = path === "/app";
@@ -69,6 +71,7 @@ export function MobileNav({ groups, teamName, primary, capture, canCapture }: { 
           <div className="trace-meta text-[9px] uppercase text-text-3">Workspace</div>
           <span className="block truncate text-sm font-semibold">{teamName}</span>
         </div>
+        <LanguageSelect locale={locale} compact />
         <button
           className="grid h-11 w-11 place-items-center rounded-full border border-border bg-surface"
           aria-expanded={open}

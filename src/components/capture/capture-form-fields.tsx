@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import Link from "next/link";
 import type { RefObject } from "react";
 import { TraceIcon } from "@/components/tracelab/trace-icon";
@@ -54,7 +56,7 @@ export function CaptureFormFields({
             />
             {preview ? (
               <>
-                <img src={preview} alt="Selected evidence preview" className="absolute inset-0 h-full w-full object-cover" />
+                <Image unoptimized fill src={preview} alt="Selected evidence preview" className="absolute inset-0 h-full w-full object-cover" />
                 <span className="absolute inset-x-3 bottom-3 rounded-xl bg-[#111315]/82 px-3 py-2 text-xs font-semibold text-white">Tap to replace photo</span>
               </>
             ) : (

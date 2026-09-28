@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
@@ -45,7 +46,7 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
           </div>
           <h2 className="mt-2 text-lg font-semibold">{focus.ev.title}</h2>
           {focus.ev.summary ? <p className="mt-1 text-sm text-text-2">{focus.ev.summary}</p> : null}
-          {focus.artifact?.storageKey ? <img src={`/api/media/${focus.artifact.id}`} alt={focus.ev.title} className="mt-3 max-h-80 rounded-md border border-border object-contain" /> : null}
+          {focus.artifact?.storageKey ? <Image unoptimized width={800} height={600} src={`/api/media/${focus.artifact.id}`} alt={focus.ev.title} className="mt-3 max-h-80 rounded-md border border-border object-contain" /> : null}
           {focus.artifact?.externalReference ? (
             <a className="mt-2 inline-block text-sm text-blueprint" href={focus.artifact.externalReference} rel="noreferrer noopener" target="_blank">
               Open source ↗
@@ -195,7 +196,7 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
             {rows.map(({ ev, actor, subsystem, artifact }) => (
               <li key={ev.id} className={`flex items-start gap-3 p-3 ${sp.event === ev.id ? "bg-blueprint-bg/40" : ""}`}>
                 <input type="checkbox" name="eventId" value={ev.id} aria-label={`Select ${ev.title}`} className="mt-1.5 h-4 w-4" />
-                {artifact?.storageKey ? <img src={`/api/media/${artifact.id}`} alt="" className="h-12 w-12 rounded border border-border object-cover" /> : null}
+                {artifact?.storageKey ? <Image unoptimized width={48} height={48} src={`/api/media/${artifact.id}`} alt="" className="h-12 w-12 rounded border border-border object-cover" /> : null}
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <SourceBadge provider={ev.provider} eventType={ev.eventType} />

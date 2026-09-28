@@ -37,6 +37,7 @@ export default async function ModelsPage({ searchParams }: { searchParams: Promi
   return (
     <div className="fade-in">
       <PageHeader title={t("models.title")} subtitle={t("models.subtitle")} actions={<span className="badge badge-success">{t("models.private")}</span>} />
+      <p className="mb-4 text-sm text-text-2">{t("models.previewNotice")}</p>
       <form className="card mb-5 grid gap-3 p-3 sm:grid-cols-[1fr_190px_auto]" action="/app/models">
         <label className="sr-only" htmlFor="model-search">{t("models.search")}</label>
         <input id="model-search" name="q" className="input" defaultValue={query} placeholder={t("models.search")} />

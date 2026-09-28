@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { and, asc, eq, inArray, isNull, or } from "drizzle-orm";
@@ -252,7 +253,7 @@ export default async function IterationPage({ params }: { params: Promise<{ id: 
                     <Link href={`/app/inbox?status=linked&event=${ev.id}`} className="mt-1 block hover:underline">
                       {ev.title}
                     </Link>
-                    {artifact?.storageKey ? <img src={`/api/media/${artifact.id}`} alt={ev.title} className="mt-1 max-h-40 rounded border border-border object-cover" /> : null}
+                    {artifact?.storageKey ? <Image unoptimized width={320} height={160} src={`/api/media/${artifact.id}`} alt={ev.title} className="mt-1 max-h-40 rounded border border-border object-cover" /> : null}
                     <div className="text-[11px] text-text-3">{actor ?? ev.actorExternalId ?? ""}</div>
                   </li>
                 ))}
@@ -289,4 +290,3 @@ export default async function IterationPage({ params }: { params: Promise<{ id: 
     </div>
   );
 }
-
