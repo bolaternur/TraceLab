@@ -112,6 +112,40 @@
   }
 }
 
+/* Ayu palette selected for TraceLab, independent of the OS appearance. */
+:root {
+  color-scheme: dark;
+  --bg-canvas: #10141c;
+  --bg-surface: #181d26;
+  --bg-subtle: #202632;
+  --bg-elevated: #252c39;
+  --bg-inverse: #10141c;
+  --text-primary: #bfbdb6;
+  --text-secondary: #b1b0aa;
+  --text-tertiary: #96968f;
+  --text-inverse: #10141c;
+  --border-subtle: #2b3240;
+  --border-default: #394152;
+  --border-strong: #596277;
+  --trace-blue: #e6b450;
+  --trace-blue-hover: #f3c76d;
+  --trace-blue-soft: #322a1e;
+  --signal-lime: #e6b450;
+  --signal-lime-soft: #322a1e;
+  --test-orange: #e6b450;
+  --test-orange-soft: #322a1e;
+  --decision-violet: #c5a5e8;
+  --decision-violet-soft: #2d263c;
+  --verified-green: #8fc99b;
+  --verified-green-soft: #1b3025;
+  --failure-red: #f28c82;
+  --failure-red-soft: #382323;
+  --pending-yellow: #e6b450;
+  --pending-yellow-soft: #322a1e;
+  --shadow-focus: 0 0 0 3px rgb(230 180 80 / 0.22);
+  --grid: rgb(191 189 182 / 0.045);
+}
+
 @theme inline {
   --color-canvas: var(--bg-canvas);
   --color-surface: var(--bg-surface);
@@ -316,7 +350,7 @@ textarea {
 .btn-primary {
   border-color: var(--trace-blue);
   background: var(--trace-blue);
-  color: #fff;
+  color: #10141c;
 }
 
 .trace-button-primary:hover,
@@ -669,17 +703,17 @@ textarea {
    Spatial Evidence Workbench
    -------------------------------------------------------------------------- */
 :root {
-  --workbench-bg: #202124;
-  --workbench-bg-deep: #191a1c;
+  --workbench-bg: #10141c;
+  --workbench-bg-deep: #10141c;
   --workbench-dot: rgb(255 255 255 / 0.10);
   --workbench-dot-quiet: rgb(255 255 255 / 0.065);
-  --workbench-selection: #6f8bff;
+  --workbench-selection: #e6b450;
   --workboard-bg: #fbfbf8;
   --workboard-bg-raised: #ffffff;
   --workboard-border: rgb(17 19 21 / 0.14);
   --workboard-shadow: 0 1px 2px rgb(0 0 0 / 0.08), 0 14px 36px rgb(0 0 0 / 0.12);
   --workboard-shadow-focused: 0 1px 2px rgb(0 0 0 / 0.10), 0 20px 50px rgb(0 0 0 / 0.18);
-  --workbench-chrome: rgb(25 26 28 / 0.92);
+  --workbench-chrome: rgb(24 29 38 / 0.96);
   --workbench-chrome-border: rgb(255 255 255 / 0.10);
 }
 

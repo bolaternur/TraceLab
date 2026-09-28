@@ -7,6 +7,16 @@ import { sha256, storage } from "../server/storage";
 
 const SEED_MODELS = [
   {
+    slug: "prototype-999",
+    file: "prototype-999.glb",
+    originalFile: "DECODE Simple Bot.obj",
+    name: "Прототип 999",
+    category: "robot",
+    versionLabel: "v1",
+    description: "Тестовая 3D-модель робота 999.",
+    tags: ["robotics", "robot", "999"],
+  },
+  {
     slug: "assembly-3209",
     file: "assembly-3209.glb",
     originalFile: "3209-0001-0007.obj",
@@ -39,7 +49,9 @@ export async function seedDemoModels(input: { teamId: string; userId: string; pr
       .limit(1);
     if (existing[0]) continue;
 
-    const bytes = await readFile(path.join(process.cwd(), "assets", "seed", "models", model.file));
+    const bytes = await readFile(model.slug === "prototype-999"
+      ? path.join(process.cwd(), "public", "models", model.file)
+      : path.join(process.cwd(), "assets", "seed", "models", model.file));
     const digest = sha256(bytes);
     const storageKey = `${input.teamId}/models/seed/${model.file}`;
     await storage.put(storageKey, bytes, "model/gltf-binary");
