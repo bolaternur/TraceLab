@@ -1,5 +1,7 @@
 "use client";
 
+// locale-wired
+import { UiText, UiElement } from "@/components/locale-provider";
 import { useEffect, useRef, useState } from "react";
 
 type ViewerState = "loading" | "ready" | "error";
@@ -42,21 +44,21 @@ export function SecureModelViewer({ src, title, labels }: { src: string; title: 
       controls.dampingFactor = 0.07;
       controls.autoRotate = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       controls.autoRotateSpeed = 0.5;
-      scene.add(new THREE.HemisphereLight(0xe7efff, 0x101318, 2.8));
+      scene.add(new THREE.HemisphereLight(0xfffefa, 0x7a8378, 2.8));
       const key = new THREE.DirectionalLight(0xffffff, 4.5);
       key.position.set(5, 8, 6);
       scene.add(key);
-      const rim = new THREE.DirectionalLight(0x718cff, 3.4);
+      const rim = new THREE.DirectionalLight(0xffffff, 2.2);
       rim.position.set(-6, 3, -5);
       scene.add(rim);
-      const signal = new THREE.PointLight(0xc8f36d, 12, 18);
+      const signal = new THREE.PointLight(0xfffefa, 6, 18);
       signal.position.set(2, -1, 4);
       scene.add(signal);
-      const grid = new THREE.GridHelper(12, 24, 0x5f7cff, 0x29313d);
+      const grid = new THREE.GridHelper(12, 24, 0x7a8378, 0xd4d8ce);
       const gridMaterial = Array.isArray(grid.material) ? grid.material : [grid.material];
       gridMaterial.forEach((material) => {
         material.transparent = true;
-        material.opacity = 0.22;
+        material.opacity = 0.45;
       });
       scene.add(grid);
 
@@ -168,16 +170,16 @@ export function SecureModelViewer({ src, title, labels }: { src: string; title: 
   };
 
   return (
-    <div className="relative min-h-[360px] overflow-hidden rounded-[22px] border border-border bg-[#101317] shadow-[0_28px_80px_rgba(0,0,0,0.24)] md:min-h-[560px]" aria-label={`Interactive 3D model: ${title}`}>
+    <UiElement as="div" className="relative min-h-[360px] overflow-hidden rounded-[22px] border border-border bg-canvas shadow-none model-viewer-light md:min-h-[560px]" aria-label={`Interactive 3D model: ${title}`}>
       <div ref={mountRef} className="absolute inset-0" />
       <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-        <button type="button" className="btn btn-sm border-white/15 bg-black/45 text-white backdrop-blur" onClick={() => resetRef.current()} disabled={state !== "ready"}>{labels.reset}</button>
-        <button type="button" className="btn btn-sm border-white/15 bg-black/45 text-white backdrop-blur" onClick={toggleWireframe} disabled={state !== "ready"}>{wireframe ? labels.solid : labels.wireframe}</button>
-        <button type="button" className="btn btn-sm border-white/15 bg-black/45 text-white backdrop-blur" onClick={() => mountRef.current?.parentElement?.requestFullscreen()}>{labels.fullscreen}</button>
+        <button type="button" className="btn btn-sm border-border-strong bg-surface text-ink backdrop-blur" onClick={() => resetRef.current()} disabled={state !== "ready"}><UiText text={labels.reset} /></button>
+        <button type="button" className="btn btn-sm border-border-strong bg-surface text-ink backdrop-blur" onClick={toggleWireframe} disabled={state !== "ready"}><UiText text={wireframe ? labels.solid : labels.wireframe} /></button>
+        <button type="button" className="btn btn-sm border-border-strong bg-surface text-ink backdrop-blur" onClick={() => mountRef.current?.parentElement?.requestFullscreen()}><UiText text={labels.fullscreen} /></button>
       </div>
-      {state === "loading" ? <div className="absolute inset-0 grid place-items-center text-sm text-white/75"><span className="rounded-full border border-white/15 bg-black/35 px-4 py-2 backdrop-blur">{labels.loading}</span></div> : null}
-      {state === "error" ? <div className="absolute inset-0 grid place-items-center p-6 text-center text-sm text-red-300">{labels.error}</div> : null}
-      <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/10 bg-black/45 px-3 py-1.5 text-[11px] text-white/65 backdrop-blur">{labels.hint}</div>
-    </div>
+      {state === "loading" ? <div className="absolute inset-0 grid place-items-center text-sm text-text-2"><span className="rounded-full border border-border bg-surface px-4 py-2 backdrop-blur"><UiText text={labels.loading} /></span></div> : null}
+      {state === "error" ? <div className="absolute inset-0 grid place-items-center p-6 text-center text-sm text-red-300"><UiText text={labels.error} /></div> : null}
+      <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-border bg-surface px-3 py-1.5 text-[11px] text-text-2 backdrop-blur"><UiText text={labels.hint} /></div>
+    </UiElement>
   );
 }

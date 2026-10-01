@@ -10,6 +10,8 @@ import { MobileNav, type NavGroup, type NavItem } from "@/components/nav";
 import { buildNavigationModel } from "@/components/tracelab/navigation-model";
 import { ToolRail } from "@/components/workbench/tool-rail";
 import { SecondaryRouteFrame } from "@/components/workbench/secondary-route-frame";
+import { LocaleProvider } from "@/components/locale-provider";
+import { UsageTracker } from "@/components/community/usage-tracker";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +34,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     "/app/graph": t("nav.graph"),
     "/app/timeline": t("nav.timeline"),
     "/app/models": t("nav.models"),
+    "/app/community": locale === "ru" ? "Активность и отзывы" : locale === "kk" ? "Белсенділік пен пікірлер" : "Activity & reviews",
     "/app/failures": t("nav.failures"),
     "/app/search": t("nav.search"),
     "/app/memory": t("nav.memory"),
@@ -58,12 +61,12 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const mobilePrimary = model.mobile.map(localize);
 
   return (
-    <div className="flex min-h-dvh bg-canvas">
+    <LocaleProvider locale={locale}><UsageTracker /><div className="flex min-h-dvh bg-canvas">
       <ToolRail groups={groups} today={today} capture={capture} locale={locale} />
       <div className="flex min-w-0 flex-1 flex-col md:flex-row">
         <MobileNav locale={locale} groups={groups} teamName={ctx.team.name} primary={mobilePrimary} capture={capture} canCapture={ctx.canAuthorStudentContent} />
         <SecondaryRouteFrame>{children}</SecondaryRouteFrame>
       </div>
-    </div>
+    </div></LocaleProvider>
   );
 }

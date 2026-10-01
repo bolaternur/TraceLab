@@ -1,3 +1,5 @@
+// locale-wired
+import { UiText } from "@/components/locale-provider";
 import { requireTeam } from "@/server/auth";
 import { coachInsights } from "@/server/evidence";
 import { PageHeader, Section } from "@/components/ui";
@@ -22,15 +24,15 @@ export default async function ResearchProofPage() {
     <div className="grid gap-6 lg:grid-cols-[1.05fr_.95fr]">
       <Section title="Competition experiment">
         <div className="space-y-4 text-sm leading-6 text-text-2">
-          <p><strong className="text-ink">Research question.</strong> Can passive provenance capture plus short student-authored rationale reduce documentation effort while improving retrieval of design rationale and evidence?</p>
-          <p><strong className="text-ink">Independent variable.</strong> The TraceLab evidence layer. Keep GitHub, CAD, chat and normal workshop tools unchanged.</p>
-          <p><strong className="text-ink">Comparison.</strong> Measure the same team before and after adoption during real build → test → decision cycles.</p>
-          <p><strong className="text-ink">Important.</strong> The live cards above describe the current TraceLab dataset. They do not claim causal improvement. Before/after results must be collected separately and reported with sample size and dates.</p>
+          <p><strong className="text-ink"><UiText text="Research question." /></strong><UiText text="Can passive provenance capture plus short student-authored rationale reduce documentation effort while improving retrieval of design rationale and evidence?" /></p>
+          <p><strong className="text-ink"><UiText text="Independent variable." /></strong><UiText text="The TraceLab evidence layer. Keep GitHub, CAD, chat and normal workshop tools unchanged." /></p>
+          <p><strong className="text-ink"><UiText text="Comparison." /></strong><UiText text="Measure the same team before and after adoption during real build → test → decision cycles." /></p>
+          <p><strong className="text-ink"><UiText text="Important." /></strong><UiText text="The live cards above describe the current TraceLab dataset. They do not claim causal improvement. Before/after results must be collected separately and reported with sample size and dates." /></p>
         </div>
       </Section>
       <Section title="Primary outcome measures">
         <ol className="space-y-2 text-sm text-text-2">
-          {["Time to retrieve a 2–3 month old design decision", "Time to locate the test supporting that decision", "Decision evidence-link rate", "Manual documentation time per meaningful engineering change", "Distributed contributor rate", "Portfolio/evidence preparation time"].map((item,index)=><li key={item} className="flex gap-3 rounded-[14px] border border-border bg-canvas p-3"><span className="font-mono text-[9px] text-text-3">M{String(index+1).padStart(2,"0")}</span><span>{item}</span></li>)}
+          {["Time to retrieve a 2–3 month old design decision", "Time to locate the test supporting that decision", "Decision evidence-link rate", "Manual documentation time per meaningful engineering change", "Distributed contributor rate", "Portfolio/evidence preparation time"].map((item,index)=><li key={item} className="flex gap-3 rounded-[14px] border border-border bg-canvas p-3"><span className="font-mono text-[9px] text-text-3">M{String(index+1).padStart(2,"0")}</span><span><UiText text={item} /></span></li>)}
         </ol>
       </Section>
     </div>

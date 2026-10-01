@@ -1,3 +1,5 @@
+// locale-wired
+import { UiText } from "@/components/locale-provider";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { and, desc, eq } from "drizzle-orm";
@@ -24,10 +26,10 @@ export default async function CoachPage() {
       <section className="mb-8">
         <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <div className="trace-meta text-[9px] uppercase text-text-3">Project evidence health</div>
-            <h2 className="mt-1 text-lg font-semibold">Where the engineering record needs attention</h2>
+            <div className="trace-meta text-[9px] uppercase text-text-3"><UiText text="Project evidence health" /></div>
+            <h2 className="mt-1 text-lg font-semibold"><UiText text="Where the engineering record needs attention" /></h2>
           </div>
-          <span className="badge">team-level · not a ranking</span>
+          <span className="badge"><UiText text="team-level · not a ranking" /></span>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <ProcessHealthCard label="Decision evidence" value={i.decisionEvidenceRate == null ? "—" : `${i.decisionEvidenceRate}%`} explanation="Share of decisions connected to supporting evidence. Quality of the link matters more than raw decision count." href="/app/decisions" tone={i.decisionEvidenceRate != null && i.decisionEvidenceRate >= 70 ? "good" : "attention"} icon="decision" />
@@ -43,48 +45,48 @@ export default async function CoachPage() {
             {i.decisionsWithoutEvidence.slice(0, 6).map((decision) => (
               <article key={decision.id} className="evidence-card flex flex-wrap items-center justify-between gap-3 p-4" data-tone="decision">
                 <div>
-                  <div className="trace-meta text-[9px] uppercase text-text-3">Decision evidence gap</div>
+                  <div className="trace-meta text-[9px] uppercase text-text-3"><UiText text="Decision evidence gap" /></div>
                   <div className="mt-1 text-sm font-semibold">{decision.title}</div>
-                  <p className="mt-1 text-xs leading-5 text-text-2">Ask the team which test, source artifact or observation actually supported this choice.</p>
+                  <p className="mt-1 text-xs leading-5 text-text-2"><UiText text="Ask the team which test, source artifact or observation actually supported this choice." /></p>
                 </div>
-                <Link href={`/app/decisions/${decision.id}`} className="btn btn-sm">Review decision</Link>
+                <Link href={`/app/decisions/${decision.id}`} className="btn btn-sm"><UiText text="Review decision" /></Link>
               </article>
             ))}
             {i.testsWithoutDecision.slice(0, 6).map((test) => (
               <article key={test.id} className="evidence-card flex flex-wrap items-center justify-between gap-3 p-4" data-tone="test">
                 <div>
-                  <div className="trace-meta text-[9px] uppercase text-text-3">Test conclusion gap</div>
+                  <div className="trace-meta text-[9px] uppercase text-text-3"><UiText text="Test conclusion gap" /></div>
                   <div className="mt-1 text-sm font-semibold">{test.title}</div>
-                  <p className="mt-1 text-xs leading-5 text-text-2">The evidence exists; prompt students to record what this result changed or ruled out.</p>
+                  <p className="mt-1 text-xs leading-5 text-text-2"><UiText text="The evidence exists; prompt students to record what this result changed or ruled out." /></p>
                 </div>
-                <Link href={`/app/tests/${test.id}`} className="btn btn-sm">Review test</Link>
+                <Link href={`/app/tests/${test.id}`} className="btn btn-sm"><UiText text="Review test" /></Link>
               </article>
             ))}
             {i.decisionsWithoutEvidence.length === 0 && i.testsWithoutDecision.length === 0 ? (
-              <div className="rounded-[18px] border border-dashed border-border bg-canvas p-5 text-sm text-text-2">No deterministic decision/test gaps detected. Continue reviewing context quality rather than chasing more activity.</div>
+              <div className="rounded-[18px] border border-dashed border-border bg-canvas p-5 text-sm text-text-2"><UiText text="No deterministic decision/test gaps detected. Continue reviewing context quality rather than chasing more activity." /></div>
             ) : null}
           </div>
-          <p className="hint mt-3">Coaches can leave coach notes on allowed surfaces but cannot rewrite student-authored rationale; the server enforces that boundary.</p>
+          <p className="hint mt-3"><UiText text="Coaches can leave coach notes on allowed surfaces but cannot rewrite student-authored rationale; the server enforces that boundary." /></p>
         </Section>
 
         <div>
           <Section title="Season, policy & integration health">
             <ul className="card divide-y divide-border text-sm">
-              <li className="flex items-center justify-between gap-3 p-3.5"><span>Season handoff</span><span className={`badge ${season?.handoffCompletedAt ? "badge-success" : "badge-warning"}`}>{season?.handoffCompletedAt ? "complete" : "incomplete"}</span></li>
-              <li className="flex items-center justify-between gap-3 p-3.5"><span>Competition policy</span><span className={`badge ${policy.version?.status === "active" ? "badge-success" : "badge-warning"}`}>{policy.version ? `${policy.version.version} · ${policy.version.status}` : "none selected"}</span></li>
-              <li className="flex items-center justify-between gap-3 p-3.5"><span>Open subsystem decisions</span><span className={`badge ${i.openDecisions === 0 ? "badge-success" : "badge-warning"}`}>{i.openDecisions}</span></li>
-              <li className="flex items-center justify-between gap-3 p-3.5"><span>Iterations open &gt; 3 weeks</span><span className={`badge ${i.staleIterations === 0 ? "badge-success" : "badge-warning"}`}>{i.staleIterations}</span></li>
+              <li className="flex items-center justify-between gap-3 p-3.5"><span><UiText text="Season handoff" /></span><span className={`badge ${season?.handoffCompletedAt ? "badge-success" : "badge-warning"}`}><UiText text={season?.handoffCompletedAt ? "complete" : "incomplete"} /></span></li>
+              <li className="flex items-center justify-between gap-3 p-3.5"><span><UiText text="Competition policy" /></span><span className={`badge ${policy.version?.status === "active" ? "badge-success" : "badge-warning"}`}>{policy.version ? `${policy.version.version} · ${policy.version.status}` : "none selected"}</span></li>
+              <li className="flex items-center justify-between gap-3 p-3.5"><span><UiText text="Open subsystem decisions" /></span><span className={`badge ${i.openDecisions === 0 ? "badge-success" : "badge-warning"}`}><UiText text={i.openDecisions} /></span></li>
+              <li className="flex items-center justify-between gap-3 p-3.5"><span><UiText text="Iterations open > 3 weeks" /></span><span className={`badge ${i.staleIterations === 0 ? "badge-success" : "badge-warning"}`}><UiText text={i.staleIterations} /></span></li>
               {conns.map((connection) => (
-                <li key={connection.id} className="flex items-center justify-between gap-3 p-3.5"><span className="flex items-center gap-2"><SourceBadge provider={connection.provider} /> {connection.label}</span><span className={`badge ${connection.status === "active" ? "badge-success" : connection.status === "pending" ? "badge-warning" : "badge-danger"}`}>{connection.status}</span></li>
+                <li key={connection.id} className="flex items-center justify-between gap-3 p-3.5"><span className="flex items-center gap-2"><SourceBadge provider={connection.provider} /> <UiText text={connection.label} /></span><span className={`badge ${connection.status === "active" ? "badge-success" : connection.status === "pending" ? "badge-warning" : "badge-danger"}`}><UiText text={connection.status} /></span></li>
               ))}
-              {conns.length === 0 ? <li className="p-3.5 text-text-3">No integrations connected.</li> : null}
+              {conns.length === 0 ? <li className="p-3.5 text-text-3"><UiText text="No integrations connected." /></li> : null}
             </ul>
           </Section>
 
           <section className="rounded-[18px] border border-border bg-canvas p-4">
-            <div className="trace-meta text-[9px] uppercase text-text-3">Contribution context</div>
-            <p className="mt-2 text-sm leading-6 text-text-2"><strong className="text-ink">{i.contributorsThisMonth} / {i.activeMembers}</strong> active members connected evidence in the last 30 days. Treat this as a distribution signal, not a ranking or score.</p>
-            <Link href="/app/contribution" className="mt-3 inline-block text-xs font-semibold text-blueprint">View evidence-based contribution summaries →</Link>
+            <div className="trace-meta text-[9px] uppercase text-text-3"><UiText text="Contribution context" /></div>
+            <p className="mt-2 text-sm leading-6 text-text-2"><strong className="text-ink"><UiText text={i.contributorsThisMonth} /> / <UiText text={i.activeMembers} /></strong><UiText text="active members connected evidence in the last 30 days. Treat this as a distribution signal, not a ranking or score." /></p>
+            <Link href="/app/contribution" className="mt-3 inline-block text-xs font-semibold text-blueprint"><UiText text="View evidence-based contribution summaries →" /></Link>
           </section>
         </div>
       </div>

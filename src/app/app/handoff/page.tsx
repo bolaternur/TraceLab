@@ -1,3 +1,5 @@
+// locale-wired
+import { UiText, UiElement } from "@/components/locale-provider";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
@@ -29,32 +31,28 @@ export default async function HandoffPage({ searchParams }: { searchParams: Prom
             <div className="flex gap-1 text-sm">
               {all.map((s) => (
                 <Link key={s.id} href={`/app/handoff?season=${s.id}`} className={`rounded-md border px-3 py-1 ${s.id === season.id ? "border-blueprint bg-blueprint-bg text-blueprint" : "border-border"}`}>
-                  {s.year}
+                  <UiText text={s.year} />
                 </Link>
               ))}
             </div>
-            <Link href="/app/exports" className="btn btn-sm">
-              Export handoff
-            </Link>
+            <Link href="/app/exports" className="btn btn-sm"><UiText text="Export handoff " /></Link>
           </>
         }
       />
       <div className="card mb-6 flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
-        <div>
-          Status:{" "}
+        <div><UiText text="Status:" />{" "}
           {season.handoffCompletedAt ? (
-            <span className="badge badge-success">completed {fmtDate(season.handoffCompletedAt)}</span>
+            <span className="badge badge-success"><UiText text="completed " />{fmtDate(season.handoffCompletedAt)}</span>
           ) : (
-            <span className="badge badge-warning">in progress</span>
+            <span className="badge badge-warning"><UiText text="in progress" /></span>
           )}
           <span className="ml-3 text-text-3">
-            {sections.filter((s) => noteFor(s.subsystem.id)).length} / {sections.length} subsystems have a student “start here” note
-          </span>
+            {sections.filter((s) => noteFor(s.subsystem.id)).length} / <UiText text={sections.length} /><UiText text="subsystems have a student “start here” note " /></span>
         </div>
         {ctx.canOrganize && !season.handoffCompletedAt ? (
           <form action={completeHandoff}>
             <input type="hidden" name="seasonId" value={season.id} />
-            <button className="btn btn-sm btn-primary">Mark handoff complete</button>
+            <button className="btn btn-sm btn-primary"><UiText text="Mark handoff complete" /></button>
           </form>
         ) : null}
       </div>
@@ -66,17 +64,15 @@ export default async function HandoffPage({ searchParams }: { searchParams: Prom
           return (
             <section key={s.subsystem.id} className="card p-5">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">{s.subsystem.name}</h2>
-                <Link href={`/app/timeline?subsystem=${s.subsystem.id}`} className="text-sm text-blueprint">
-                  Open in timeline →
-                </Link>
+                <h2 className="text-lg font-semibold"><UiText text={s.subsystem.name} /></h2>
+                <Link href={`/app/timeline?subsystem=${s.subsystem.id}`} className="text-sm text-blueprint"><UiText text="Open in timeline → " /></Link>
               </div>
               <div className="mt-3 grid gap-4 md:grid-cols-2">
                 <Block title="Key decisions">
                   {s.keyDecisions.map((d) => (
                     <li key={d.id} className="flex items-center justify-between gap-2">
                       <Link href={`/app/decisions/${d.id}`} className="hover:underline">
-                        {d.title}
+                        <UiText text={d.title} />
                       </Link>
                       <DecisionState disposition={d.disposition} />
                     </li>
@@ -86,7 +82,7 @@ export default async function HandoffPage({ searchParams }: { searchParams: Prom
                   {s.failed.map((i) => (
                     <li key={i.id} className="flex items-center justify-between gap-2">
                       <Link href={`/app/iterations/${i.id}`} className="hover:underline">
-                        {i.title}
+                        <UiText text={i.title} />
                       </Link>
                       <OutcomeBadge outcome={i.outcome} />
                     </li>
@@ -96,7 +92,7 @@ export default async function HandoffPage({ searchParams }: { searchParams: Prom
                   {s.importantTests.map((t) => (
                     <li key={t.id} className="flex items-center justify-between gap-2">
                       <Link href={`/app/tests/${t.id}`} className="hover:underline">
-                        {t.title}
+                        <UiText text={t.title} />
                       </Link>
                       <Mono>{testResultLabel(t)}</Mono>
                     </li>
@@ -106,15 +102,15 @@ export default async function HandoffPage({ searchParams }: { searchParams: Prom
                   {s.open.map((i) => (
                     <li key={i.id}>
                       <Link href={`/app/iterations/${i.id}`} className="hover:underline">
-                        {i.title}
+                        <UiText text={i.title} />
                       </Link>{" "}
-                      <span className="badge">{i.state}</span>
+                      <span className="badge"><UiText text={i.state} /></span>
                     </li>
                   ))}
                 </Block>
               </div>
               <div className="mt-4 border-t border-border pt-3">
-                <h3 className="text-xs font-semibold uppercase tracking-[0.08em] text-text-3">Start here next season · student-curated</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-[0.08em] text-text-3"><UiText text="Start here next season · student-curated" /></h3>
                 {note ? (
                   <blockquote className="mt-2 border-l-2 border-teal pl-3 text-sm">
                     {note.body}
@@ -124,14 +120,14 @@ export default async function HandoffPage({ searchParams }: { searchParams: Prom
                     </div>
                   </blockquote>
                 ) : (
-                  <p className="mt-1 text-sm text-text-3">Not written yet.</p>
+                  <p className="mt-1 text-sm text-text-3"><UiText text="Not written yet." /></p>
                 )}
                 {ctx.canAuthorStudentContent ? (
                   <form action={curateHandoff} className="mt-2 flex flex-col gap-2 sm:flex-row">
                     <input type="hidden" name="seasonId" value={season.id} />
                     <input type="hidden" name="subsystemId" value={s.subsystem.id} />
-                    <textarea name="body" className="textarea flex-1 !min-h-16" placeholder="What should next year's team know first about this subsystem?" required aria-label={`Handoff note for ${s.subsystem.name}`} />
-                    <button className="btn self-start">Save</button>
+                    <UiElement as="textarea" name="body" className="textarea flex-1 !min-h-16" placeholder="What should next year's team know first about this subsystem?" required aria-label={`Handoff note for ${s.subsystem.name}`} />
+                    <button className="btn self-start"><UiText text="Save" /></button>
                   </form>
                 ) : null}
               </div>
@@ -142,13 +138,13 @@ export default async function HandoffPage({ searchParams }: { searchParams: Prom
 
       {ctx.canOrganize ? (
         <details className="card mt-8 p-4 text-sm">
-          <summary className="cursor-pointer font-medium">Start a new season</summary>
-          <p className="hint mt-1">Archives the current season, creates a new project and carries subsystem names forward. Past evidence stays linked and searchable.</p>
+          <summary className="cursor-pointer font-medium"><UiText text="Start a new season" /></summary>
+          <p className="hint mt-1"><UiText text="Archives the current season, creates a new project and carries subsystem names forward. Past evidence stays linked and searchable." /></p>
           <form action={startNewSeason} className="mt-3 flex flex-wrap gap-2">
-            <input name="name" className="input !w-40" placeholder="2027 Season" required />
+            <UiElement as="input" name="name" className="input !w-40" placeholder="2027 Season" required />
             <input name="year" type="number" className="input mono !w-28" defaultValue={season.year + 1} required />
-            <input name="projectName" className="input !w-48" placeholder="Project / robot name" required />
-            <button className="btn btn-primary">Create season</button>
+            <UiElement as="input" name="projectName" className="input !w-48" placeholder="Project / robot name" required />
+            <button className="btn btn-primary"><UiText text="Create season" /></button>
           </form>
         </details>
       ) : null}
@@ -159,8 +155,8 @@ export default async function HandoffPage({ searchParams }: { searchParams: Prom
 function Block({ title, children }: { title: string; children: ReactNode[] }) {
   return (
     <div>
-      <h3 className="text-xs font-semibold uppercase tracking-[0.08em] text-text-3">{title}</h3>
-      <ul className="mt-1 space-y-1 text-sm">{children.length ? children : <li className="text-text-3">None documented</li>}</ul>
+      <h3 className="text-xs font-semibold uppercase tracking-[0.08em] text-text-3"><UiText text={title} /></h3>
+      <ul className="mt-1 space-y-1 text-sm">{children.length ? children : <li className="text-text-3"><UiText text="None documented" /></li>}</ul>
     </div>
   );
 }

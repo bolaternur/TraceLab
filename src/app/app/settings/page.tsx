@@ -1,3 +1,5 @@
+// locale-wired
+import { UiText } from "@/components/locale-provider";
 import { requireTeam } from "@/server/auth";
 import { updateSettings } from "@/server/actions";
 import { isLocale } from "@/lib/i18n";
@@ -19,31 +21,31 @@ export default async function SettingsPage() {
       <Section title="Profile">
         <form action={updateSettings} className="card space-y-3 p-4 text-sm">
           <label className="block">
-            <span className="label">Display name</span>
+            <span className="label"><UiText text="Display name" /></span>
             <input name="displayName" className="input" defaultValue={ctx.user.displayName} required maxLength={80} />
           </label>
           <label className="block">
-            <span className="label">Age category (optional — never an exact birth date)</span>
+            <span className="label"><UiText text="Age category (optional — never an exact birth date)" /></span>
             <select name="ageCategory" className="select" defaultValue={ctx.user.ageCategory}>
-              <option value="unspecified">Prefer not to say</option>
-              <option value="under_13">Under 13</option>
+              <option value="unspecified"><UiText text="Prefer not to say" /></option>
+              <option value="under_13"><UiText text="Under 13" /></option>
               <option value="13_17">13–17</option>
               <option value="adult">18+</option>
             </select>
           </label>
           <fieldset>
-            <legend className="label">Notifications</legend>
+            <legend className="label"><UiText text="Notifications" /></legend>
             {[
               ["notifyExports", "Export ready"],
               ["notifyPolicy", "Competition policy updates"],
               ["notifyGaps", "Tests missing a decision (weekly at most)"],
             ].map(([k, l]) => (
               <label key={k} className="flex items-center gap-2">
-                <input type="checkbox" name={k} defaultChecked={s[k] !== false} /> {l}
+                <input type="checkbox" name={k} defaultChecked={s[k] !== false} /> <UiText text={l} />
               </label>
             ))}
           </fieldset>
-          <button className="btn btn-primary">Save</button>
+          <button className="btn btn-primary"><UiText text="Save" /></button>
         </form>
       </Section>
       <Section title="Language">
@@ -51,16 +53,14 @@ export default async function SettingsPage() {
       </Section>
       <Section title="Your data">
         <div className="card space-y-3 p-4 text-sm">
-          <p className="text-text-2">You can export your own contribution evidence at any time, regardless of the organization&apos;s plan. Team evidence belongs to the team; your authorship on it is preserved even after you leave.</p>
+          <p className="text-text-2"><UiText text="You can export your own contribution evidence at any time, regardless of the organization's plan. Team evidence belongs to the team; your authorship on it is preserved even after you leave." /></p>
           <ExportButton type="personal_contribution" label="Export my contribution package (JSON)" />
-          <p className="hint">
-            Account deletion and organization-level retention are handled by your team lead / organization admin (see <Link href="/app/org" className="text-blueprint">Organization</Link>) and documented in PRIVACY.md.
-          </p>
+          <p className="hint"><UiText text="Account deletion and organization-level retention are handled by your team lead / organization admin (see " /><Link href="/app/org" className="text-blueprint"><UiText text="Organization" /></Link><UiText text=") and documented in PRIVACY.md. " /></p>
         </div>
       </Section>
       <Section title="Session">
         <div className="card space-y-2 p-4 text-sm">
-          <p className="text-text-2">Signing out clears queued offline captures and cached browser data on this device.</p>
+          <p className="text-text-2"><UiText text="Signing out clears queued offline captures and cached browser data on this device." /></p>
           <SecureSignOut />
         </div>
       </Section>

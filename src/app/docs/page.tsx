@@ -1,3 +1,5 @@
+// locale-wired
+import { UiText } from "@/components/locale-provider";
 import { PublicFooter, PublicNav } from "@/components/public-chrome";
 import { getCurrentUser } from "@/server/auth";
 import { brand } from "@/lib/brand";
@@ -18,15 +20,15 @@ export default async function DocsPage() {
     <div className="min-h-dvh">
       <PublicNav signedIn={!!user} locale="en" />
       <main id="main" className="mx-auto max-w-3xl px-5 py-14">
-        <p className="mono text-xs uppercase tracking-[0.12em] text-text-3">Help</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">{brand.productName} documentation</h1>
-        <p className="mt-2 text-text-2">Product help for teams. Engineering docs (architecture, data model, security, policy engine, integrations) live in the repository under <code className="mono">docs/</code>.</p>
+        <p className="mono text-xs uppercase tracking-[0.12em] text-text-3"><UiText text="Help" /></p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight"><UiText text={brand.productName} />{" "}<UiText text="documentation" /></h1>
+        <p className="mt-2 text-text-2"><UiText text="Product help for teams. Engineering docs (architecture, data model, security, policy engine, integrations) live in the repository under " /><code className="mono"><UiText text="docs/" /></code>.</p>
         {SECTIONS.map(([t, items]) => (
           <section key={t} className="mt-10 border-t border-border pt-5">
-            <h2 className="text-lg font-semibold">{t}</h2>
+            <h2 className="text-lg font-semibold"><UiText text={t} /></h2>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-text-2">
               {items.map((i) => (
-                <li key={i}>{i}</li>
+                <li key={i}><UiText text={i} /></li>
               ))}
             </ul>
           </section>

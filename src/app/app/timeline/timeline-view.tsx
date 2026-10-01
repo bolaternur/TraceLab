@@ -1,5 +1,6 @@
 "use client";
 
+import { UiText } from "@/components/locale-provider";
 import { useState } from "react";
 import { TimelineInspector } from "@/components/engineering-timeline/timeline-inspector";
 import { TimelineList } from "@/components/engineering-timeline/timeline-list";
@@ -18,8 +19,8 @@ export function TimelineView({
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
   return (
-    <div className="space-y-4">
-      <div className="hidden min-h-[560px] overflow-hidden rounded-[20px] border border-black/8 bg-[#202124] shadow-[0_14px_44px_rgba(17,19,21,.12)] md:grid md:grid-cols-[minmax(0,1fr)_340px]">
+    <div className="canvas-view">
+      <div className="canvas-timeline-stage">
         <div className="min-w-0">
           <TimelineSurface
             snapshot={snapshot}
@@ -29,10 +30,10 @@ export function TimelineView({
             onSelect={setSelectedId}
           />
         </div>
-        <TimelineInspector snapshot={snapshot} selectedId={selectedId} onClose={() => setSelectedId(null)} />
+        {selectedId && <div className="canvas-inspector"><TimelineInspector snapshot={snapshot} selectedId={selectedId} onClose={() => setSelectedId(null)} /></div>}
       </div>
       <TimelineMobile snapshot={snapshot} initialSelectedId={initialSelectedId} />
-      <TimelineList snapshot={snapshot} />
+      <details className="canvas-record-list canvas-timeline-list"><summary className="btn"><UiText text="List view" /></summary><div><TimelineList snapshot={snapshot} /></div></details>
     </div>
   );
 }

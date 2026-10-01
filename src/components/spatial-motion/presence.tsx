@@ -1,5 +1,7 @@
 "use client";
 
+// locale-wired
+import { useUiText } from "@/components/locale-provider";
 import type { ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { panelTransition, surfaceTransition } from "./policy";
@@ -35,6 +37,7 @@ export function SpatialBottomSheet({
   children: ReactNode;
   panelClassName?: string;
 }) {
+  const t = useUiText();
   const reduceMotion = useReducedMotion();
   return (
     <AnimatePresence initial={false}>
@@ -43,7 +46,7 @@ export function SpatialBottomSheet({
           className="fixed inset-0 z-[70] flex items-end bg-black/25 p-2 md:hidden"
           role="dialog"
           aria-modal="true"
-          aria-label={label}
+          aria-label={t(label)}
           initial={reduceMotion ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

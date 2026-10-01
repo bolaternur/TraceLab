@@ -1,3 +1,5 @@
+// locale-wired
+import { UiText } from "@/components/locale-provider";
 import Link from "next/link";
 import { TraceIcon } from "./trace-icon";
 import { getTimelineVisual, type TimelineKind, type TimelineSourceTone } from "./timeline-model";
@@ -42,7 +44,7 @@ export function TimelineEvent({ item, isLast = false, timeZone = "UTC" }: Timeli
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className={`badge ${visual.tone === "decision" ? "badge-decision" : visual.tone === "test" ? "badge-test" : visual.tone === "verified" ? "badge-success" : visual.tone === "failure" ? "badge-danger" : visual.tone === "revision" ? "badge-signal" : "badge-blueprint"}`}>{visual.label}</span>
+              <span className={`badge ${visual.tone === "decision" ? "badge-decision" : visual.tone === "test" ? "badge-test" : visual.tone === "verified" ? "badge-success" : visual.tone === "failure" ? "badge-danger" : visual.tone === "revision" ? "badge-signal" : "badge-blueprint"}`}><UiText text={visual.label} /></span>
               <span className="trace-meta text-[9px] uppercase text-text-3">{formatTechnicalDate(item.at, timeZone)}</span>
             </div>
             <h3 className="mt-2 text-sm font-semibold leading-5 sm:text-[15px]">{item.title}</h3>

@@ -1,5 +1,7 @@
 "use client";
 
+// locale-wired
+import { UiText, UiElement } from "@/components/locale-provider";
 import { useEffect, useMemo, useState } from "react";
 import { TraceIcon } from "@/components/tracelab/trace-icon";
 import type { Locale } from "@/lib/i18n";
@@ -63,14 +65,14 @@ export function ShowcaseReplay({ locale }: { locale: Locale }) {
   const demoLabel = locale === "ru" ? "Демо-данные · не результаты пилота" : locale === "kk" ? "Демо-деректер · пилот нәтижесі емес" : "Demo dataset · not pilot results";
 
   return (
-    <section className="showcase-replay" aria-label="TraceLab engineering evidence replay">
+    <UiElement as="section" className="showcase-replay" aria-label="TraceLab engineering evidence replay">
       <div className="showcase-replay-head">
         <div>
-          <div className="trace-meta text-[9px] uppercase text-white/40">Trace Replay · 60 second demo</div>
-          <div className="mt-1 text-xs text-white/55">{demoLabel}</div>
+          <div className="trace-meta text-[9px] uppercase text-white/40"><UiText text="Trace Replay · 60 second demo" /></div>
+          <div className="mt-1 text-xs text-white/55"><UiText text={demoLabel} /></div>
         </div>
         <button type="button" className="showcase-replay-play" data-active={playing ? "true" : "false"} onClick={() => { if (!playing && active === steps.length - 1) setActive(0); setPlaying((value) => !value); }}>
-          <span aria-hidden>{playing ? "Ⅱ" : "▶"}</span>{playLabel}
+          <span aria-hidden><UiText text={playing ? "Ⅱ" : "▶"} /></span><UiText text={playLabel} />
         </button>
       </div>
 
@@ -81,21 +83,21 @@ export function ShowcaseReplay({ locale }: { locale: Locale }) {
         <article className="showcase-replay-card" data-tone={step.tone}>
           <div className="showcase-replay-glyph"><TraceIcon name={step.icon} size={24} /></div>
           <div className="min-w-0 flex-1">
-            <div className="trace-meta text-[9px] uppercase text-black/36">{step.kind} · {step.label}</div>
-            <h2 className="mt-2 text-balance text-[28px] font-semibold leading-[1.08] tracking-[-0.035em] text-[#111315] sm:text-[34px]">{step.title}</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-black/52 sm:text-[15px]">{step.detail}</p>
-            <div className="mt-5 inline-flex min-h-8 items-center rounded-full border border-black/8 bg-black/[0.025] px-3 font-mono text-[9px] uppercase tracking-[0.05em] text-black/42">{step.evidence}</div>
+            <div className="trace-meta text-[9px] uppercase text-black/36"><UiText text={step.kind} /> · <UiText text={step.label} /></div>
+            <h2 className="mt-2 text-balance text-[28px] font-semibold leading-[1.08] tracking-[-0.035em] text-[#111315] sm:text-[34px]"><UiText text={step.title} /></h2>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-black/52 sm:text-[15px]"><UiText text={step.detail} /></p>
+            <div className="mt-5 inline-flex min-h-8 items-center rounded-full border border-black/8 bg-black/[0.025] px-3 font-mono text-[9px] uppercase tracking-[0.05em] text-black/42"><UiText text={step.evidence} /></div>
           </div>
         </article>
       </div>
 
-      <div className="showcase-replay-nav" aria-label="Replay steps">
+      <UiElement as="div" className="showcase-replay-nav" aria-label="Replay steps">
         {steps.map((candidate, index) => (
-          <button key={candidate.kind} type="button" data-active={index === active ? "true" : "false"} onClick={() => { setPlaying(false); setActive(index); }} aria-label={`${candidate.kind} ${candidate.label}`}>
-            <span>{candidate.kind}</span><strong>{candidate.label}</strong>
-          </button>
+          <UiElement as="button" key={candidate.kind} type="button" data-active={index === active ? "true" : "false"} onClick={() => { setPlaying(false); setActive(index); }} aria-label={`${candidate.kind} ${candidate.label}`}>
+            <span><UiText text={candidate.kind} /></span><strong><UiText text={candidate.label} /></strong>
+          </UiElement>
         ))}
-      </div>
-    </section>
+      </UiElement>
+    </UiElement>
   );
 }

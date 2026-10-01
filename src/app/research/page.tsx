@@ -1,3 +1,5 @@
+// locale-wired
+import { UiText } from "@/components/locale-provider";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { PublicFooter, PublicNav } from "@/components/public-chrome";
@@ -47,13 +49,13 @@ export default async function ResearchPage() {
   const user = await getCurrentUser();
   const c = COPY[locale];
   return <div className="min-h-dvh bg-canvas text-ink"><PublicNav signedIn={Boolean(user)} locale={locale}/><main id="main">
-    <section className="border-b border-border-subtle"><div className="mx-auto max-w-[1180px] px-5 py-16 sm:px-7 sm:py-20"><div className="trace-meta text-[10px] uppercase text-text-3">{c.eyebrow}</div><h1 className="mt-3 max-w-[980px] text-balance text-[42px] font-semibold leading-[1] tracking-[-0.045em] sm:text-[60px]">{c.title}</h1><p className="mt-6 max-w-[820px] text-base leading-7 text-text-2 sm:text-lg">{c.body}</p></div></section>
+    <section className="border-b border-border-subtle"><div className="mx-auto max-w-[1180px] px-5 py-16 sm:px-7 sm:py-20"><div className="trace-meta text-[10px] uppercase text-text-3"><UiText text={c.eyebrow} /></div><h1 className="mt-3 max-w-[980px] text-balance text-[42px] font-semibold leading-[1] tracking-[-0.045em] sm:text-[60px]"><UiText text={c.title} /></h1><p className="mt-6 max-w-[820px] text-base leading-7 text-text-2 sm:text-lg"><UiText text={c.body} /></p></div></section>
     <section className="mx-auto grid max-w-[1180px] gap-4 px-5 py-10 sm:px-7 lg:grid-cols-2">
-      <article className="evidence-card p-6" data-tone="source"><div className="trace-meta text-[9px] uppercase text-text-3">Research question</div><p className="mt-3 text-xl font-semibold leading-8">{c.question}</p></article>
-      <article className="evidence-card p-6" data-tone="verified"><div className="trace-meta text-[9px] uppercase text-text-3">Hypothesis</div><p className="mt-3 text-base leading-7 text-text-2">{c.hypothesis}</p></article>
-      <article className="evidence-card p-6 lg:col-span-2" data-tone="test"><div className="trace-meta text-[9px] uppercase text-text-3">Experimental design</div><p className="mt-3 max-w-[900px] text-base leading-7 text-text-2">{c.protocol}</p><div className="mt-6 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{c.metrics.map((metric,index)=><div key={metric} className="rounded-[14px] border border-border bg-canvas p-3"><span className="font-mono text-[9px] text-text-3">M{String(index+1).padStart(2,"0")}</span><div className="mt-1 text-sm font-semibold">{metric}</div></div>)}</div></article>
-      <article className="rounded-[20px] border border-verified-green/20 bg-verified-green/5 p-6 lg:col-span-2"><div className="trace-meta text-[9px] uppercase text-verified-green">Research integrity</div><p className="mt-3 max-w-[900px] text-sm leading-6 text-text-2">{c.integrity}</p></article>
-      <div className="lg:col-span-2"><Link href="/showcase" className="trace-button trace-button-primary min-h-12 rounded-full px-5">{c.cta} →</Link></div>
+      <article className="evidence-card p-6" data-tone="source"><div className="trace-meta text-[9px] uppercase text-text-3"><UiText text="Research question" /></div><p className="mt-3 text-xl font-semibold leading-8"><UiText text={c.question} /></p></article>
+      <article className="evidence-card p-6" data-tone="verified"><div className="trace-meta text-[9px] uppercase text-text-3"><UiText text="Hypothesis" /></div><p className="mt-3 text-base leading-7 text-text-2"><UiText text={c.hypothesis} /></p></article>
+      <article className="evidence-card p-6 lg:col-span-2" data-tone="test"><div className="trace-meta text-[9px] uppercase text-text-3"><UiText text="Experimental design" /></div><p className="mt-3 max-w-[900px] text-base leading-7 text-text-2"><UiText text={c.protocol} /></p><div className="mt-6 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{c.metrics.map((metric,index)=><div key={metric} className="rounded-[14px] border border-border bg-canvas p-3"><span className="font-mono text-[9px] text-text-3">M{String(index+1).padStart(2,"0")}</span><div className="mt-1 text-sm font-semibold"><UiText text={metric} /></div></div>)}</div></article>
+      <article className="rounded-[20px] border border-verified-green/20 bg-verified-green/5 p-6 lg:col-span-2"><div className="trace-meta text-[9px] uppercase text-verified-green"><UiText text="Research integrity" /></div><p className="mt-3 max-w-[900px] text-sm leading-6 text-text-2"><UiText text={c.integrity} /></p></article>
+      <div className="lg:col-span-2"><Link href="/showcase" className="trace-button trace-button-primary min-h-12 rounded-full px-5"><UiText text={c.cta} /> →</Link></div>
     </section>
   </main><PublicFooter/></div>;
 }

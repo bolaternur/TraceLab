@@ -1,5 +1,7 @@
 "use client";
 
+// locale-wired
+import { UiElement } from "@/components/locale-provider";
 import { CaptureTypeCard } from "@/components/tracelab/capture-type-card";
 import { CAPTURE_KINDS, type CaptureKind } from "./model";
 
@@ -11,7 +13,7 @@ interface CaptureKindPickerProps {
 
 export function CaptureKindPicker({ value, onChange, compact = false }: CaptureKindPickerProps) {
   return (
-    <div
+    <UiElement as="div"
       role="tablist"
       aria-label="Capture type"
       className={compact
@@ -29,6 +31,6 @@ export function CaptureKindPicker({ value, onChange, compact = false }: CaptureK
           onSelect={() => onChange(item.kind)}
         />
       ))}
-    </div>
+    </UiElement>
   );
 }

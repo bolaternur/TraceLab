@@ -1,3 +1,5 @@
+// locale-wired
+import { UiText, UiElement } from "@/components/locale-provider";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -39,17 +41,13 @@ export default async function IterationPage({ params }: { params: Promise<{ id: 
         subtitle={`${it.subsystem ?? "No subsystem"} · opened ${fmtDate(it.it.openedAt)} by ${it.creator ?? "—"}${it.it.closedAt ? ` · closed ${fmtDate(it.it.closedAt)}` : ""}${contributors.length ? ` · contributors: ${contributors.join(", ")}` : ""}`}
         actions={
           <>
-            <span className="badge self-center">{it.it.state}</span>
+            <span className="badge self-center"><UiText text={it.it.state} /></span>
             {it.it.outcome ? <OutcomeBadge outcome={it.it.outcome} /> : null}
             <WhyLink type="iteration" id={id} />
             {ctx.canAuthorStudentContent ? (
               <>
-                <Link href={`/app/capture?kind=test&iteration=${id}&subsystem=${it.it.subsystemId ?? ""}`} className="btn btn-sm">
-                  + Test
-                </Link>
-                <Link href={`/app/capture?kind=decision&iteration=${id}&subsystem=${it.it.subsystemId ?? ""}`} className="btn btn-sm btn-primary">
-                  + Decision
-                </Link>
+                <Link href={`/app/capture?kind=test&iteration=${id}&subsystem=${it.it.subsystemId ?? ""}`} className="btn btn-sm"><UiText text="+ Test " /></Link>
+                <Link href={`/app/capture?kind=decision&iteration=${id}&subsystem=${it.it.subsystemId ?? ""}`} className="btn btn-sm btn-primary"><UiText text="+ Decision " /></Link>
               </>
             ) : null}
           </>
@@ -60,7 +58,7 @@ export default async function IterationPage({ params }: { params: Promise<{ id: 
         <div className="card mb-6 border-warning/50 p-4">
           <div className="flex items-center gap-2">
             <ProvenanceLabel kind="suggestion" />
-            <span className="font-medium">We may already have tried this</span>
+            <span className="font-medium"><UiText text="We may already have tried this" /></span>
           </div>
           <ul className="mt-2 space-y-2 text-sm">
             {related.map((r) => {
@@ -68,7 +66,7 @@ export default async function IterationPage({ params }: { params: Promise<{ id: 
               return (
                 <li key={r.id} className="flex flex-wrap items-center justify-between gap-2">
                   <Link href={`/app/iterations/${r.id}`} className="text-blueprint">
-                    {r.title}
+                    <UiText text={r.title} />
                   </Link>
                   <span className="flex items-center gap-1">
                     <OutcomeBadge outcome={r.outcome} />
@@ -76,19 +74,15 @@ export default async function IterationPage({ params }: { params: Promise<{ id: 
                     <form action={resolveSuggestion} className="flex gap-1">
                       <input type="hidden" name="id" value={rel.id} />
                       <input type="hidden" name="returnTo" value={returnTo} />
-                      <button name="status" value="accepted" className="btn btn-sm">
-                        Related
-                      </button>
-                      <button name="status" value="rejected" className="btn btn-sm">
-                        Not related
-                      </button>
+                      <button name="status" value="accepted" className="btn btn-sm"><UiText text="Related " /></button>
+                      <button name="status" value="rejected" className="btn btn-sm"><UiText text="Not related " /></button>
                     </form>
                   </span>
                 </li>
               );
             })}
           </ul>
-          <p className="hint mt-2">Engineering context changes — a past conclusion is a starting point, not a verdict.</p>
+          <p className="hint mt-2"><UiText text="Engineering context changes — a past conclusion is a starting point, not a verdict." /></p>
         </div>
       ) : null}
 
@@ -100,7 +94,7 @@ export default async function IterationPage({ params }: { params: Promise<{ id: 
             return (
               <section key={field} className="card p-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-text-3">{label}</h2>
+                  <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-text-3"><UiText text={label} /></h2>
                   {n ? (
                     <span className="flex items-center gap-2">
                       <ProvenanceLabel kind={n.a.provenance} />
@@ -111,7 +105,7 @@ export default async function IterationPage({ params }: { params: Promise<{ id: 
                     </span>
                   ) : null}
                 </div>
-                {n ? <p className="mt-2 whitespace-pre-wrap text-sm">{n.a.body}</p> : <p className="mt-2 text-sm text-text-3">Not documented yet.</p>}
+                {n ? <p className="mt-2 whitespace-pre-wrap text-sm">{n.a.body}</p> : <p className="mt-2 text-sm text-text-3"><UiText text="Not documented yet." /></p>}
                 {ctx.canAuthorStudentContent ? (
                   <details className="mt-2">
                     <summary className="cursor-pointer text-xs text-blueprint">{n ? "Revise (keeps history)" : "Write"}</summary>
@@ -120,8 +114,8 @@ export default async function IterationPage({ params }: { params: Promise<{ id: 
                       <input type="hidden" name="entityId" value={id} />
                       <input type="hidden" name="field" value={field} />
                       <input type="hidden" name="returnTo" value={returnTo} />
-                      <textarea name="body" className="textarea" required aria-label={label} />
-                      <button className="btn btn-sm btn-primary">Save</button>
+                      <UiElement as="textarea" name="body" className="textarea" required aria-label={label} />
+                      <button className="btn btn-sm btn-primary"><UiText text="Save" /></button>
                     </form>
                   </details>
                 ) : null}
@@ -130,17 +124,17 @@ export default async function IterationPage({ params }: { params: Promise<{ id: 
           })}
 
           <section className="card p-4">
-            <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-text-3">Test results</h2>
-            {ts.length === 0 ? <p className="mt-2 text-sm text-text-3">No test linked yet.</p> : null}
+            <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-text-3"><UiText text="Test results" /></h2>
+            {ts.length === 0 ? <p className="mt-2 text-sm text-text-3"><UiText text="No test linked yet." /></p> : null}
             <ul className="mt-2 divide-y divide-border">
               {ts.map((t) => (
                 <li key={t.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
                   <div>
                     <Link href={`/app/tests/${t.id}`} className="font-medium hover:underline">
-                      {t.title}
+                      <UiText text={t.title} />
                     </Link>
                     <div className="mono text-[11px] text-text-3">
-                      {t.targetLabel ?? t.targetType} · {fmtDate(t.performedAt)}
+                      <UiText text={t.targetLabel ?? t.targetType} /> · {fmtDate(t.performedAt)}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -152,8 +146,8 @@ export default async function IterationPage({ params }: { params: Promise<{ id: 
             </ul>
             {improvement != null ? (
               <p className="mono mt-2 text-sm">
-                {improvement > 0 ? "+" : ""}
-                {improvement}% relative change ({testResultLabel(quant[0])} → {testResultLabel(quant[quant.length - 1])}) <span className="text-text-3">· system-computed</span>
+                <UiText text={improvement > 0 ? "+" : ""} />
+                <UiText text={improvement} /><UiText text="% relative change (" />{testResultLabel(quant[0])} → {testResultLabel(quant[quant.length - 1])}) <span className="text-text-3"><UiText text="· system-computed" /></span>
               </p>
             ) : null}
             {ctx.canAuthorStudentContent && unlinkedTests.length ? (
@@ -163,28 +157,28 @@ export default async function IterationPage({ params }: { params: Promise<{ id: 
                 <input type="hidden" name="toId" value={id} />
                 <input type="hidden" name="relationType" value="TESTS" />
                 <input type="hidden" name="returnTo" value={returnTo} />
-                <select name="fromId" className="select !min-h-8 !w-auto text-sm" aria-label="Test to link">
+                <UiElement as="select" name="fromId" className="select !min-h-8 !w-auto text-sm" aria-label="Test to link">
                   {unlinkedTests.map((t) => (
                     <option key={t.id} value={t.id}>
-                      {t.title}
+                      <UiText text={t.title} />
                     </option>
                   ))}
-                </select>
-                <button className="btn btn-sm">Link existing test</button>
+                </UiElement>
+                <button className="btn btn-sm"><UiText text="Link existing test" /></button>
               </form>
             ) : null}
           </section>
 
           <section className="card p-4">
-            <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-text-3">Decisions</h2>
-            {ds.length === 0 ? <p className="mt-2 text-sm text-text-3">No decision recorded. Evidence link missing.</p> : null}
+            <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-text-3"><UiText text="Decisions" /></h2>
+            {ds.length === 0 ? <p className="mt-2 text-sm text-text-3"><UiText text="No decision recorded. Evidence link missing." /></p> : null}
             <ul className="mt-2 space-y-3">
               {ds.map((d, i) => {
                 const r = decisionRationales[i]?.find((x) => x.a.field === "rationale");
                 return (
                   <li key={d.id} className="rounded-md border border-border p-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="font-medium">{d.title}</span>
+                      <span className="font-medium"><UiText text={d.title} /></span>
                       <span className="flex items-center gap-2">
                         <DecisionState disposition={d.disposition} />
                         <Mono>{fmtDate(d.decidedAt)}</Mono>
@@ -199,7 +193,7 @@ export default async function IterationPage({ params }: { params: Promise<{ id: 
                         </div>
                       </blockquote>
                     ) : null}
-                    {(d.alternatives as string[]).length ? <p className="mt-2 text-xs text-text-2">Alternatives: {(d.alternatives as string[]).join(" · ")}</p> : null}
+                    {(d.alternatives as string[]).length ? <p className="mt-2 text-xs text-text-2"><UiText text="Alternatives: " />{(d.alternatives as string[]).join(" · ")}</p> : null}
                   </li>
                 );
               })}
@@ -210,36 +204,33 @@ export default async function IterationPage({ params }: { params: Promise<{ id: 
             <form action={updateIteration} className="card flex flex-wrap items-end gap-2 p-4">
               <input type="hidden" name="id" value={id} />
               <label className="block">
-                <span className="label">State</span>
+                <span className="label"><UiText text="State" /></span>
                 <select name="state" className="select !w-auto" defaultValue={it.it.state}>
                   {["open", "testing", "deciding", "closed"].map((s) => (
-                    <option key={s}>{s}</option>
+                    <option key={s}><UiText text={s} /></option>
                   ))}
                 </select>
               </label>
               <label className="block">
-                <span className="label">Outcome (if closing)</span>
+                <span className="label"><UiText text="Outcome (if closing)" /></span>
                 <select name="outcome" className="select !w-auto" defaultValue="">
                   <option value="">—</option>
                   {["kept", "reverted", "rejected", "deferred"].map((s) => (
-                    <option key={s}>{s}</option>
+                    <option key={s}><UiText text={s} /></option>
                   ))}
                 </select>
               </label>
-              <button className="btn">Update</button>
+              <button className="btn"><UiText text="Update" /></button>
             </form>
           ) : null}
         </div>
 
         <aside className="space-y-4">
           <section className="card p-4">
-            <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-text-3">Evidence rail</h2>
+            <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-text-3"><UiText text="Evidence rail" /></h2>
             {evs.length === 0 ? (
-              <p className="mt-2 text-sm text-text-3">
-                No source evidence linked.{" "}
-                <Link href="/app/inbox" className="text-blueprint">
-                  Link from Inbox
-                </Link>
+              <p className="mt-2 text-sm text-text-3"><UiText text="No source evidence linked." />{" "}
+                <Link href="/app/inbox" className="text-blueprint"><UiText text="Link from Inbox " /></Link>
               </p>
             ) : (
               <ol className="timeline-rail mt-3 space-y-3 pl-6">
@@ -262,11 +253,11 @@ export default async function IterationPage({ params }: { params: Promise<{ id: 
           </section>
           {notes.length > 0 ? (
             <section className="card p-4">
-              <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-text-3">History</h2>
+              <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-text-3"><UiText text="History" /></h2>
               <ul className="mt-2 space-y-1 text-xs text-text-2">
                 {notes.map(({ a, author }) => (
                   <li key={a.id}>
-                    <Mono>{fmtDate(a.createdAt, true)}</Mono> {author ?? "—"} wrote <em>{a.field}</em>
+                    <Mono>{fmtDate(a.createdAt, true)}</Mono> {author ?? "—"}<UiText text="wrote " /><em>{a.field}</em>
                     {a.supersedesId ? " (revision)" : ""}
                   </li>
                 ))}
@@ -275,14 +266,14 @@ export default async function IterationPage({ params }: { params: Promise<{ id: 
           ) : null}
           {ctx.isCoach && !ctx.canAuthorStudentContent ? (
             <form action={addAnnotation} className="card p-4">
-              <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-text-3">Coach note</h2>
-              <p className="hint mt-1">Stored separately; never edits student content.</p>
+              <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-text-3"><UiText text="Coach note" /></h2>
+              <p className="hint mt-1"><UiText text="Stored separately; never edits student content." /></p>
               <input type="hidden" name="entityType" value="iteration" />
               <input type="hidden" name="entityId" value={id} />
               <input type="hidden" name="field" value="coach_note" />
               <input type="hidden" name="returnTo" value={returnTo} />
-              <textarea name="body" className="textarea mt-2" required aria-label="Coach note" />
-              <button className="btn btn-sm mt-2">Add note</button>
+              <UiElement as="textarea" name="body" className="textarea mt-2" required aria-label="Coach note" />
+              <button className="btn btn-sm mt-2"><UiText text="Add note" /></button>
             </form>
           ) : null}
         </aside>

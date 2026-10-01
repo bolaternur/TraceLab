@@ -1,3 +1,5 @@
+// locale-wired
+import { UiText } from "@/components/locale-provider";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { sourceConnections } from "@/db/schema";
@@ -18,14 +20,14 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
   return (
     <div className="fade-in">
       <PageHeader title="Integrations" subtitle="Connect the tools your team already uses. Metadata only — we never ingest repository contents, and connector secrets are encrypted at rest." />
-      {sp.error ? <div className="mb-4"><Notice tone="danger">{sp.error === "onshape_not_configured" ? "Onshape OAuth is not configured on this deployment (ONSHAPE_CLIENT_ID / SECRET). Your data is unaffected." : sp.error === "oauth_state" ? "OAuth state validation failed — the flow was restarted for safety." : "Connection failed. Nothing was changed."}</Notice></div> : null}
-      {sp.connected ? <div className="mb-4"><Notice tone="success">{sp.connected} connected.</Notice></div> : null}
+      {sp.error ? <div className="mb-4"><Notice tone="danger"><UiText text={sp.error === "onshape_not_configured" ? "Onshape OAuth is not configured on this deployment (ONSHAPE_CLIENT_ID / SECRET). Your data is unaffected." : sp.error === "oauth_state" ? "OAuth state validation failed — the flow was restarted for safety." : "Connection failed. Nothing was changed."} /></Notice></div> : null}
+      {sp.connected ? <div className="mb-4"><Notice tone="success"><UiText text={sp.connected} /><UiText text="connected." /></Notice></div> : null}
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <div className="space-y-6">
           <section>
-            <h2 className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-text-3">Connected sources</h2>
+            <h2 className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-text-3"><UiText text="Connected sources" /></h2>
             {conns.length === 0 ? (
-              <p className="card p-4 text-sm text-text-2">No sources yet. Start with a photo, or connect GitHub on the right.</p>
+              <p className="card p-4 text-sm text-text-2"><UiText text="No sources yet. Start with a photo, or connect GitHub on the right." /></p>
             ) : (
               <ul className="card divide-y divide-border">
                 {conns.map((c) => (
@@ -33,26 +35,26 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="flex items-center gap-2">
                         <SourceBadge provider={c.provider} />
-                        <span className="font-medium">{c.label}</span>
-                        <span className={`badge ${c.status === "active" ? "badge-success" : c.status === "pending" ? "badge-warning" : c.status === "error" ? "badge-danger" : ""}`}>{c.status}</span>
+                        <span className="font-medium"><UiText text={c.label} /></span>
+                        <span className={`badge ${c.status === "active" ? "badge-success" : c.status === "pending" ? "badge-warning" : c.status === "error" ? "badge-danger" : ""}`}><UiText text={c.status} /></span>
                       </span>
                       <Mono>{c.lastEventAt ? `last event ${fmtDate(c.lastEventAt, true)}` : "no events yet"}</Mono>
                     </div>
                     {c.status !== "disconnected" && (c.provider === "github" || c.provider === "telegram" || c.provider === "discord" || c.provider === "onshape") ? (
                       <div className="mt-2 rounded-md bg-surface-muted p-2">
-                        <div className="text-xs text-text-3">Webhook URL {c.provider === "github" ? "(GitHub App / repository webhook, content-type JSON, push events, secret shown at creation)" : c.provider === "telegram" ? "(setWebhook with secret_token)" : "(send with X-Trace-Webhook-Secret header)"}</div>
+                        <div className="text-xs text-text-3"><UiText text="Webhook URL " /><UiText text={c.provider === "github" ? "(GitHub App / repository webhook, content-type JSON, push events, secret shown at creation)" : c.provider === "telegram" ? "(setWebhook with secret_token)" : "(send with X-Trace-Webhook-Secret header)"} /></div>
                         <Mono className="block break-all !text-ink">
-                          {appUrl}/api/webhooks/{c.provider}/{c.id}
+                          <UiText text={appUrl} /><UiText text="/api/webhooks/" /><UiText text={c.provider} />/<UiText text={c.id} />
                         </Mono>
                       </div>
                     ) : null}
-                    {c.lastError ? <p className="mt-1 text-xs text-danger">{c.lastError}</p> : null}
-                    {c.status === "pending" && c.provider === "onshape" ? <p className="mt-1 text-xs text-warning">Awaiting Onshape OAuth credentials on the server. The adapter, webhook route and data model are ready.</p> : null}
+                    {c.lastError ? <p className="mt-1 text-xs text-danger"><UiText text={c.lastError} /></p> : null}
+                    {c.status === "pending" && c.provider === "onshape" ? <p className="mt-1 text-xs text-warning"><UiText text="Awaiting Onshape OAuth credentials on the server. The adapter, webhook route and data model are ready." /></p> : null}
                     <div className="mt-2 flex gap-2">
                       {ctx.canOrganize && c.status !== "disconnected" ? (
                         <form action={disconnectSource}>
                           <input type="hidden" name="id" value={c.id} />
-                          <button className="btn btn-sm btn-danger">Disconnect &amp; revoke</button>
+                          <button className="btn btn-sm btn-danger"><UiText text="Disconnect & revoke" /></button>
                         </form>
                       ) : null}
                     </div>
@@ -63,8 +65,8 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
           </section>
 
           <section id="csv" className="card p-5">
-            <h2 className="font-semibold">CSV test-data import</h2>
-            <p className="hint">Preview first; malformed numbers are reported, never coerced. Each row becomes a test with a provenance-linked source event.</p>
+            <h2 className="font-semibold"><UiText text="CSV test-data import" /></h2>
+            <p className="hint"><UiText text="Preview first; malformed numbers are reported, never coerced. Each row becomes a test with a provenance-linked source event." /></p>
             <CsvImportForm subsystems={subs.map((s) => ({ id: s.id, name: s.name }))} />
           </section>
 
@@ -78,7 +80,7 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
               <ConnectForm provider="discord" title="Discord" description="Route channel messages to the webhook URL via a bot relay that sets the X-Trace-Webhook-Secret header (secret shown once after connecting)." fields={[{ name: "externalId", label: "Channel id", placeholder: "…" }]} />
             </>
           ) : (
-            <p className="card p-4 text-sm text-text-2">Team leads and coaches manage integrations.</p>
+            <p className="card p-4 text-sm text-text-2"><UiText text="Team leads and coaches manage integrations." /></p>
           )}
         </aside>
       </div>

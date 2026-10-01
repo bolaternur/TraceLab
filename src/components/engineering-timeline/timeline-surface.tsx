@@ -1,5 +1,7 @@
 "use client";
 
+// locale-wired
+import { UiText, UiElement } from "@/components/locale-provider";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import { isEditableSpatialTarget } from "@/components/spatial-motion/input";
@@ -121,26 +123,26 @@ export function TimelineSurface({
   }, [fitHistory, focusEntry, layout.entries, onSelect, reduceMotion, selectedId, toggleReplay]);
 
   return (
-    <section className="relative hidden min-h-[560px] overflow-hidden bg-[#202124] md:block" aria-label="Spatial Engineering Timeline">
-      <div ref={scrollerRef} className="timeline-spatial-surface h-[min(68vh,760px)] min-h-[560px] overflow-x-auto overflow-y-auto" tabIndex={0}>
+    <UiElement as="section" className="timeline-stage-surface relative hidden h-full overflow-hidden bg-canvas md:block" aria-label="Spatial Engineering Timeline">
+      <div ref={scrollerRef} className="timeline-spatial-surface h-full overflow-x-auto overflow-y-auto" tabIndex={0}>
         <div className="relative" style={{ width: layout.width, height: layout.height }}>
           <div className="timeline-axis" aria-hidden>
             {layout.ticks.map((tick) => (
               <div key={tick.id} className="timeline-tick" style={{ left: tick.x }}>
-                <span>{tick.label}</span>
+                <span><UiText text={tick.label} /></span>
               </div>
             ))}
           </div>
 
           {layout.lanes.map((lane) => (
             <div key={lane.lane} className="timeline-lane" data-lane={lane.lane} style={{ top: lane.y, height: lane.height }} aria-hidden>
-              <span className="timeline-lane-label">{lane.label}</span>
+              <span className="timeline-lane-label"><UiText text={lane.label} /></span>
             </div>
           ))}
 
           {layout.iterationBands.map((band) => (
             <div key={band.id} className="timeline-iteration-band" style={{ left: band.x, top: band.y, width: band.width, height: band.height }} aria-hidden>
-              <span>{band.title}</span>
+              <span><UiText text={band.title} /></span>
             </div>
           ))}
 
@@ -154,27 +156,26 @@ export function TimelineSurface({
 
       {replayCursor !== null ? (
         <div className="timeline-replay-status" role="status" aria-live="polite">
-          <span className="timeline-replay-dot" aria-hidden />
-          Trace Replay · {replayCursor + 1}/{layout.entries.length}
+          <span className="timeline-replay-dot" aria-hidden /><UiText text="Trace Replay · " /><UiText text={replayCursor + 1} />/<UiText text={layout.entries.length} />
         </div>
       ) : null}
 
       {helpOpen ? (
-        <div className="timeline-shortcut-help" role="dialog" aria-label="Timeline shortcuts">
+        <UiElement as="div" className="timeline-shortcut-help" role="dialog" aria-label="Timeline shortcuts">
           <div className="flex items-center justify-between gap-4">
-            <strong className="text-sm text-white">Timeline shortcuts</strong>
-            <button type="button" onClick={() => setHelpOpen(false)} aria-label="Close Timeline shortcuts">×</button>
+            <strong className="text-sm text-white"><UiText text="Timeline shortcuts" /></strong>
+            <UiElement as="button" type="button" onClick={() => setHelpOpen(false)} aria-label="Close Timeline shortcuts">×</UiElement>
           </div>
           <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-xs text-white/60">
-            <dt className="mono text-white">← / →</dt><dd>Move through time</dd>
-            <dt className="mono text-white">↑ / ↓</dt><dd>Select previous / next evidence</dd>
-            <dt className="mono text-white">Enter</dt><dd>Focus selected evidence</dd>
-            <dt className="mono text-white">R</dt><dd>Play / pause Trace Replay</dd>
-            <dt className="mono text-white">F / 0</dt><dd>Fit full history</dd>
-            <dt className="mono text-white">Esc</dt><dd>Clear focus</dd>
+            <dt className="mono text-white">← / →</dt><dd><UiText text="Move through time" /></dd>
+            <dt className="mono text-white">↑ / ↓</dt><dd><UiText text="Select previous / next evidence" /></dd>
+            <dt className="mono text-white"><UiText text="Enter" /></dt><dd><UiText text="Focus selected evidence" /></dd>
+            <dt className="mono text-white">R</dt><dd><UiText text="Play / pause Trace Replay" /></dd>
+            <dt className="mono text-white">F / 0</dt><dd><UiText text="Fit full history" /></dd>
+            <dt className="mono text-white"><UiText text="Esc" /></dt><dd><UiText text="Clear focus" /></dd>
           </dl>
-        </div>
+        </UiElement>
       ) : null}
-    </section>
+    </UiElement>
   );
 }

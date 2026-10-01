@@ -1,3 +1,5 @@
+// locale-wired
+import { UiText } from "@/components/locale-provider";
 import Link from "next/link";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
@@ -41,12 +43,12 @@ export default async function DecisionsPage({ searchParams }: { searchParams: Pr
       <PageHeader
         title="Decisions"
         subtitle="Problem → alternatives → tests → evidence → decision → next iteration. Missing links are shown neutrally as “evidence link missing”."
-        actions={ctx.canAuthorStudentContent ? <Link href="/app/capture?kind=decision" className="btn btn-primary">New decision</Link> : undefined}
+        actions={ctx.canAuthorStudentContent ? <Link href="/app/capture?kind=decision" className="btn btn-primary"><UiText text="New decision" /></Link> : undefined}
       />
       <div className="mb-4 flex flex-wrap gap-1 text-sm">
         {FILTERS.map(([k, label]) => (
           <Link key={k} href={`/app/decisions?filter=${k}`} className={`rounded-md border px-3 py-1 ${filter === k ? "border-blueprint bg-blueprint-bg text-blueprint" : "border-border text-text-2"}`} aria-current={filter === k ? "page" : undefined}>
-            {label}
+            <UiText text={label} />
           </Link>
         ))}
       </div>
@@ -61,9 +63,9 @@ export default async function DecisionsPage({ searchParams }: { searchParams: Pr
               <li key={d.id} id={d.id} className={`card p-4 ${sp.focus === d.id ? "border-blueprint" : ""}`}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Link href={`/app/decisions/${d.id}`} className="font-medium hover:text-blueprint hover:underline">{d.title}</Link>
+                    <Link href={`/app/decisions/${d.id}`} className="font-medium hover:text-blueprint hover:underline"><UiText text={d.title} /></Link>
                     <DecisionState disposition={d.disposition} />
-                    {d.status !== "closed" ? <span className="badge badge-warning">{d.status}</span> : null}
+                    {d.status !== "closed" ? <span className="badge badge-warning"><UiText text={d.status} /></span> : null}
                   </div>
                   <span className="flex items-center gap-2">
                     <Mono>
@@ -74,18 +76,18 @@ export default async function DecisionsPage({ searchParams }: { searchParams: Pr
                 </div>
                 {r ? (
                   <blockquote className="mt-2 border-l-2 border-teal pl-3 text-sm">
-                    {r.body}
+                    <UiText text={r.body} />
                     <div className="mt-1 flex items-center gap-2">
                       <ProvenanceLabel kind="student" />
-                      {r.supersedesId ? <Mono>revised</Mono> : null}
+                      {r.supersedesId ? <Mono><UiText text="revised" /></Mono> : null}
                     </div>
                   </blockquote>
                 ) : (
-                  <p className="mt-2 text-sm text-text-3">Rationale not documented.</p>
+                  <p className="mt-2 text-sm text-text-3"><UiText text="Rationale not documented." /></p>
                 )}
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
                   {ev.length === 0 ? (
-                    <span className="badge badge-warning">Evidence link missing</span>
+                    <span className="badge badge-warning"><UiText text="Evidence link missing" /></span>
                   ) : (
                     ev.map((x) => (
                       <Link key={x.id} href={x.toType === "test" ? `/app/tests/${x.toId}` : x.toType === "iteration" ? `/app/iterations/${x.toId}` : `/app/inbox?status=linked&event=${x.toId}`} className="badge badge-blueprint">
@@ -94,11 +96,9 @@ export default async function DecisionsPage({ searchParams }: { searchParams: Pr
                     ))
                   )}
                   {d.iterationId ? (
-                    <Link href={`/app/iterations/${d.iterationId}`} className="text-blueprint">
-                      iteration ↗
-                    </Link>
+                    <Link href={`/app/iterations/${d.iterationId}`} className="text-blueprint"><UiText text="iteration ↗ " /></Link>
                   ) : null}
-                  {(d.alternatives as string[]).length ? <span className="text-text-3">alternatives: {(d.alternatives as string[]).join(" · ")}</span> : null}
+                  {(d.alternatives as string[]).length ? <span className="text-text-3"><UiText text="alternatives: " />{(d.alternatives as string[]).join(" · ")}</span> : null}
                 </div>
               </li>
             );

@@ -1,5 +1,7 @@
 "use client";
 
+// locale-wired
+import { UiElement } from "@/components/locale-provider";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { NavGroup, NavItem } from "@/components/nav";
@@ -22,6 +24,7 @@ const RAIL_ROUTES = [
   { href: "/app/timeline", glyph: "timeline", fallback: "Timeline" },
   { href: "/app/graph", glyph: "graph", fallback: "Trace" },
   { href: "/app/models", glyph: "cad", fallback: "3D Models" },
+  { href: "/app/community", glyph: "reflection", fallback: "Activity & reviews" },
   { href: "/app/exports", glyph: "export", fallback: "Outputs" },
   { href: "/app/settings", glyph: "settings", fallback: "Settings" },
 ] as const;
@@ -39,13 +42,13 @@ export function ToolRail({ groups, today, capture, locale }: ToolRailProps) {
   ]);
 
   return (
-    <aside className="workbench-tool-rail hidden md:flex" aria-label="Spatial workspace tools">
+    <UiElement as="aside" className="workbench-tool-rail hidden md:flex" aria-label="Spatial workspace tools">
       <Link href="/app" className="workbench-rail-mark" aria-label="TraceLab workbench" title="Workbench">
         <TraceMark className="h-7 w-7" />
       </Link>
 
-      <nav className="workbench-rail-nav" aria-label="Primary workspace">
-        {RAIL_ROUTES.slice(0, 5).map((item) => {
+      <UiElement as="nav" className="workbench-rail-nav" aria-label="Primary workspace">
+        {RAIL_ROUTES.slice(0, 6).map((item) => {
           const active = routeActive(pathname, item.href, "exact" in item ? item.exact : false);
           return (
             <Link
@@ -64,11 +67,11 @@ export function ToolRail({ groups, today, capture, locale }: ToolRailProps) {
         })}
 
         <CommandPalette groups={groups} today={today} capture={capture} compact />
-      </nav>
+      </UiElement>
 
-      <nav className="workbench-rail-nav mt-auto" aria-label="Workspace utilities">
+      <UiElement as="nav" className="workbench-rail-nav mt-auto" aria-label="Workspace utilities">
         <LanguageSelect locale={locale} compact />
-        {RAIL_ROUTES.slice(5).map((item) => {
+        {RAIL_ROUTES.slice(6).map((item) => {
           const active = routeActive(pathname, item.href, "exact" in item ? item.exact : false);
           return (
             <Link
@@ -85,7 +88,7 @@ export function ToolRail({ groups, today, capture, locale }: ToolRailProps) {
             </Link>
           );
         })}
-      </nav>
-    </aside>
+      </UiElement>
+    </UiElement>
   );
 }

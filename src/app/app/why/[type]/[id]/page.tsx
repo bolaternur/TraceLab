@@ -1,3 +1,5 @@
+// locale-wired
+import { UiText } from "@/components/locale-provider";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireTeam } from "@/server/auth";
@@ -20,35 +22,35 @@ export default async function WhyPage({ params }: { params: Promise<{ type: stri
       <article className="card p-6">
         {keep ? (
           <p className="text-lg">
-            <strong>{keep.title}</strong> was {keep.disposition === "keep" ? "selected" : keep.disposition === "reject" ? "rejected" : `marked “${keep.disposition}”`}
-            {why.tests.length ? ` after ${why.tests.length === 1 ? `Test “${why.tests[0].title}”` : `${why.tests.length} tests`}` : ""} on {fmtDate(keep.decidedAt)}.
+            <strong><UiText text={keep.title} /></strong><UiText text="was " />{keep.disposition === "keep" ? "selected" : keep.disposition === "reject" ? "rejected" : `marked “${keep.disposition}”`}
+            <UiText text={why.tests.length ? ` after ${why.tests.length === 1 ? `Test “${why.tests[0].title}”` : `${why.tests.length} tests`}` : ""} /><UiText text="on " />{fmtDate(keep.decidedAt)}.
           </p>
         ) : (
-          <p className="text-lg text-text-2">No decision is linked to this yet — the “why” is not documented.</p>
+          <p className="text-lg text-text-2"><UiText text="No decision is linked to this yet — the “why” is not documented." /></p>
         )}
 
         {why.comparison ? (
           <div className="mt-5 grid grid-cols-2 gap-3">
             {[why.comparison.before, why.comparison.after].map((t, i) => (
               <div key={t.id} className="rounded-md border border-border p-3">
-                <div className="mono text-xs text-text-3">{i === 0 ? "before" : "after"} · {t.targetLabel ?? t.title}</div>
+                <div className="mono text-xs text-text-3"><UiText text={i === 0 ? "before" : "after"} /> · <UiText text={t.targetLabel ?? t.title} /></div>
                 <div className="mono mt-1 text-2xl font-semibold">{testResultLabel(t)}</div>
                 <OutcomeBadge outcome={t.outcome} />
               </div>
             ))}
             {why.comparison.improvement != null ? (
               <p className="mono col-span-2 text-sm">
-                {why.comparison.improvement > 0 ? "+" : ""}
-                {why.comparison.improvement}% relative change <span className="text-text-3">· system-computed from recorded trials</span>
+                <UiText text={why.comparison.improvement > 0 ? "+" : ""} />
+                <UiText text={why.comparison.improvement} /><UiText text="% relative change " /><span className="text-text-3"><UiText text="· system-computed from recorded trials" /></span>
               </p>
             ) : null}
           </div>
         ) : null}
 
         <section className="mt-6">
-          <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-text-3">Student rationale</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-text-3"><UiText text="Student rationale" /></h2>
           {rationale.length === 0 ? (
-            <p className="mt-2 text-sm text-text-3">Not documented.</p>
+            <p className="mt-2 text-sm text-text-3"><UiText text="Not documented." /></p>
           ) : (
             rationale.map((r) => (
               <blockquote key={r.a.id} className="mt-2 border-l-2 border-teal pl-3 text-sm">
@@ -56,7 +58,7 @@ export default async function WhyPage({ params }: { params: Promise<{ type: stri
                 <div className="mt-1 flex items-center gap-2">
                   <ProvenanceLabel kind="student" />
                   <Mono>
-                    {r.author ?? "—"} · {fmtDate(r.a.createdAt)} · on {r.a.entityType.replace("_", " ")}
+                    {r.author ?? "—"} · {fmtDate(r.a.createdAt)}<UiText text="· on " />{r.a.entityType.replace("_", " ")}
                   </Mono>
                 </div>
               </blockquote>
@@ -65,11 +67,10 @@ export default async function WhyPage({ params }: { params: Promise<{ type: stri
         </section>
 
         <section className="mt-6 text-sm">
-          <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-text-3">Related</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-text-3"><UiText text="Related" /></h2>
           <ul className="mt-2 space-y-1">
             {why.iteration ? (
-              <li>
-                Iteration:{" "}
+              <li><UiText text="Iteration:" />{" "}
                 <Link href={`/app/iterations/${why.iteration.id}`} className="text-blueprint">
                   {why.iteration.title}
                 </Link>{" "}
@@ -77,19 +78,17 @@ export default async function WhyPage({ params }: { params: Promise<{ type: stri
               </li>
             ) : null}
             {why.decisions.map((d) => (
-              <li key={d.id}>
-                Decision:{" "}
+              <li key={d.id}><UiText text="Decision:" />{" "}
                 <Link href={`/app/decisions/${d.id}`} className="text-blueprint">
-                  {d.title}
+                  <UiText text={d.title} />
                 </Link>{" "}
                 <DecisionState disposition={d.disposition} />
               </li>
             ))}
             {why.tests.map((t) => (
-              <li key={t.id}>
-                Test:{" "}
+              <li key={t.id}><UiText text="Test:" />{" "}
                 <Link href={`/app/tests/${t.id}`} className="text-blueprint">
-                  {t.title}
+                  <UiText text={t.title} />
                 </Link>{" "}
                 <Mono>{testResultLabel(t)}</Mono>
               </li>
@@ -98,18 +97,15 @@ export default async function WhyPage({ params }: { params: Promise<{ type: stri
               <li key={e.id} className="flex items-center gap-2">
                 <SourceBadge provider={e.provider} eventType={e.eventType} />
                 <Link href={`/app/inbox?status=${e.status}&event=${e.id}`} className="text-blueprint">
-                  {e.title}
+                  <UiText text={e.title} />
                 </Link>
                 <Mono>{fmtDate(e.occurredAt)}</Mono>
               </li>
             ))}
           </ul>
         </section>
-        <p className="hint mt-6">
-          Every statement above traces to a stored object. Missing pieces are reported as “not documented”, never inferred.{" "}
-          <Link href="/app/memory" className="text-blueprint">
-            Ask project history
-          </Link>
+        <p className="hint mt-6"><UiText text="Every statement above traces to a stored object. Missing pieces are reported as “not documented”, never inferred." />{" "}
+          <Link href="/app/memory" className="text-blueprint"><UiText text="Ask project history " /></Link>
         </p>
       </article>
     </div>

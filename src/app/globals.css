@@ -115,34 +115,34 @@
 /* Ayu palette selected for TraceLab, independent of the OS appearance. */
 :root {
   color-scheme: dark;
-  --bg-canvas: #10141c;
-  --bg-surface: #181d26;
-  --bg-subtle: #202632;
-  --bg-elevated: #252c39;
-  --bg-inverse: #10141c;
-  --text-primary: #bfbdb6;
-  --text-secondary: #b1b0aa;
-  --text-tertiary: #96968f;
-  --text-inverse: #10141c;
-  --border-subtle: #2b3240;
-  --border-default: #394152;
-  --border-strong: #596277;
-  --trace-blue: #e6b450;
-  --trace-blue-hover: #f3c76d;
-  --trace-blue-soft: #322a1e;
-  --signal-lime: #e6b450;
-  --signal-lime-soft: #322a1e;
-  --test-orange: #e6b450;
-  --test-orange-soft: #322a1e;
-  --decision-violet: #c5a5e8;
-  --decision-violet-soft: #2d263c;
-  --verified-green: #8fc99b;
-  --verified-green-soft: #1b3025;
-  --failure-red: #f28c82;
-  --failure-red-soft: #382323;
-  --pending-yellow: #e6b450;
-  --pending-yellow-soft: #322a1e;
-  --shadow-focus: 0 0 0 3px rgb(230 180 80 / 0.22);
+  --bg-canvas: #091f36;
+  --bg-surface: #132b45;
+  --bg-subtle: #193651;
+  --bg-elevated: #1c3c58;
+  --bg-inverse: #091f36;
+  --text-primary: #fceed1;
+  --text-secondary: #c9d3dd;
+  --text-tertiary: #acbdd0;
+  --text-inverse: #091f36;
+  --border-subtle: #263f59;
+  --border-default: #4f5f76;
+  --border-strong: #718ca7;
+  --trace-blue: #7d3cff;
+  --trace-blue-hover: #985fff;
+  --trace-blue-soft: #221c4d;
+  --signal-lime: #39a0ca;
+  --signal-lime-soft: #221c4d;
+  --test-orange: #f2d53c;
+  --test-orange-soft: #221c4d;
+  --decision-violet: #f95d9b;
+  --decision-violet-soft: #3e2448;
+  --verified-green: #70b88b;
+  --verified-green-soft: #193b32;
+  --failure-red: #ff9a9e;
+  --failure-red-soft: #492933;
+  --pending-yellow: #f2d53c;
+  --pending-yellow-soft: #221c4d;
+  --shadow-focus: 0 0 0 3px rgb(125 60 255 / 0.28);
   --grid: rgb(191 189 182 / 0.045);
 }
 
@@ -350,7 +350,7 @@ textarea {
 .btn-primary {
   border-color: var(--trace-blue);
   background: var(--trace-blue);
-  color: #10141c;
+  color: #fceed1;
 }
 
 .trace-button-primary:hover,
@@ -703,17 +703,17 @@ textarea {
    Spatial Evidence Workbench
    -------------------------------------------------------------------------- */
 :root {
-  --workbench-bg: #10141c;
-  --workbench-bg-deep: #10141c;
+  --workbench-bg: #091f36;
+  --workbench-bg-deep: #091f36;
   --workbench-dot: rgb(255 255 255 / 0.10);
   --workbench-dot-quiet: rgb(255 255 255 / 0.065);
-  --workbench-selection: #e6b450;
+  --workbench-selection: #7d3cff;
   --workboard-bg: #fbfbf8;
   --workboard-bg-raised: #ffffff;
   --workboard-border: rgb(17 19 21 / 0.14);
   --workboard-shadow: 0 1px 2px rgb(0 0 0 / 0.08), 0 14px 36px rgb(0 0 0 / 0.12);
   --workboard-shadow-focused: 0 1px 2px rgb(0 0 0 / 0.10), 0 20px 50px rgb(0 0 0 / 0.18);
-  --workbench-chrome: rgb(24 29 38 / 0.96);
+  --workbench-chrome: rgb(9 31 54 / 0.96);
   --workbench-chrome-border: rgb(255 255 255 / 0.10);
 }
 
@@ -1173,3 +1173,41 @@ textarea {
 .showcase-replay-nav strong { display:block; margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10px; }
 @media (max-width: 760px) { .showcase-replay-stage { padding:14px; } .showcase-replay-card { min-height:390px; flex-direction:column; gap:14px; } .showcase-replay-nav { grid-template-columns:repeat(3,minmax(0,1fr)); } .showcase-replay-nav button { border-bottom:1px solid rgba(255,255,255,.07); } }
 @media (prefers-reduced-motion: reduce) { .showcase-replay * { scroll-behavior:auto !important; } }
+
+/* Robotics studio: deep-blue panels and functional accent colors. */
+:root { --robot-green: #478559; --robot-purple: #161748; --robot-pink: #f95d9b; --robot-blue: #39a0ca; --robot-tan: #fceed1; --robot-yellow: #f2d53c; --robot-red: #c80e13; --robot-redline: #9e363a; --robot-popsicle: #0f2862; --workboard-bg: #132b45; --workboard-bg-raised: #193651; --workboard-border: #314963; }
+body { background: radial-gradient(ellipse at 90% 0%, #161748 0%, transparent 48%), #091f36; }
+.card { border-color: #314963; box-shadow: 0 12px 34px rgb(0 0 0 / .12); }
+.workbench-board, .trace-evidence-node, .timeline-event-card { background: #132b45; color: #fceed1; border-color: #314963; }
+.workbench-board [class*="text-black/"], .trace-evidence-node [class*="text-black/"], .timeline-event-card [class*="text-black/"] { color: #acbdd0; }
+.workbench-board [class*="text-[#111315]"], .trace-evidence-node [class*="text-[#111315]"], .timeline-event-card [class*="text-[#111315]"] { color: #fceed1; }
+.workbench-board [class*="text-[#3157eb]"], .trace-evidence-node [class*="text-[#3157eb]"] { color: #71c5e7; }
+.workbench-board [class*="bg-[#111315]"] { background: #7d3cff; color: #fceed1; }
+.workbench-artboard-header, .workbench-artboard-glyph, .workbench-artboard-count { border-color: #314963; }
+.workbench-empty-artboard { color: #c9d3dd; }
+.workbench-rail-mark { background: #161748; color: #fceed1; border: 1px solid #7d3cff; }
+.workbench-rail-action[data-active="true"] { color: #fceed1; background: #292451; box-shadow: inset 3px 0 #f95d9b; }
+.btn-primary, .trace-button-primary { color: #fceed1; }
+.metadata-details { margin-top: .75rem; color: var(--text-secondary); font-size: .875rem; }
+.metadata-details summary { cursor: pointer; width: fit-content; padding: .35rem 0; color: #7bc6e3; }
+.metadata-details[open] { border-top: 1px solid var(--border-default); padding-top: .5rem; }
+.metadata-details dl { margin-top: .75rem; display: grid; gap: .65rem; }
+.metadata-details dt { color: var(--text-tertiary); }
+.metadata-details dd { overflow-wrap: anywhere; }
+.robot-overview { background: radial-gradient(ellipse at 100% 0%, #161748 0%, transparent 55%), #091f36; }
+.robot-overview .workbench-board { box-shadow: 0 16px 40px rgb(0 0 0 / .12); border-radius: 20px; }
+.robot-overview .workbench-empty-artboard { min-height: 100px; font-size: 15px; border-color: #314963; }
+.workbench-health-cell span { font-size: 12px; color: #acbdd0; }
+.workbench-health-cell strong { font-size: 15px; color: #fceed1; }
+.workbench-health-cell, .workbench-context-focus, .workbench-evidence-tile, .workbench-test-tile, .workbench-decision-tile { border-color: #314963; background: #10263e; }
+.capture-overlay-panel { background: #132b45; color: #fceed1; }
+.workbench-top-action { background: #7d3cff; color: #fceed1; }
+.robot-overview .workbench-evidence-tiles { grid-template-columns: 1fr; }
+.robot-overview .workbench-evidence-tile { padding: 12px; }
+.robot-overview .workbench-evidence-glyph { color: #39a0ca; background: #0f2862; }
+.trace-canvas-controls, .trace-minimap-toggle, .trace-shortcut-help, .timeline-controls, .timeline-shortcut-help { background: #132b45; border-color: #4f5f76; }
+.timeline-inspector { background: #132b45; }
+.timeline-event-icon { color: #39a0ca; background: #0f2862; }
+.timeline-event-card::before { background: #39a0ca; }
+.timeline-event-card[data-kind="test"]::before { background: #f2d53c; }
+.timeline-event-card[data-kind="decision"]::before { background: #f95d9b; }

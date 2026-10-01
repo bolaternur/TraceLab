@@ -1,3 +1,5 @@
+// locale-wired
+import { UiText } from "@/components/locale-provider";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
@@ -20,16 +22,14 @@ export default async function JoinPage({ params }: { params: Promise<{ code: str
       <div className="card w-full max-w-sm p-6">
         {valid ? (
           <>
-            <h1 className="text-xl font-semibold">Join {row.team}</h1>
-            <p className="mt-1 text-sm text-text-2">
-              You were invited as <span className="badge">{row.inv.role.replace("_", " ")}</span>. Team evidence is private to members.
-            </p>
+            <h1 className="text-xl font-semibold"><UiText text="Join " />{row.team}</h1>
+            <p className="mt-1 text-sm text-text-2"><UiText text="You were invited as " /><span className="badge">{row.inv.role.replace("_", " ")}</span><UiText text=". Team evidence is private to members. " /></p>
             <JoinForm code={code} />
           </>
         ) : (
           <>
-            <h1 className="text-xl font-semibold">Invite not available</h1>
-            <p className="mt-2 text-sm text-text-2">This invite is invalid, expired, revoked or already used. Ask your team lead for a new one.</p>
+            <h1 className="text-xl font-semibold"><UiText text="Invite not available" /></h1>
+            <p className="mt-2 text-sm text-text-2"><UiText text="This invite is invalid, expired, revoked or already used. Ask your team lead for a new one." /></p>
           </>
         )}
       </div>

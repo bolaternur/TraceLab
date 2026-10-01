@@ -1,5 +1,7 @@
 "use client";
 
+// locale-wired
+import { UiText, useUiText } from "@/components/locale-provider";
 import Image from "next/image";
 
 import Link from "next/link";
@@ -57,13 +59,13 @@ export function CaptureFormFields({
             {preview ? (
               <>
                 <Image unoptimized fill src={preview} alt="Selected evidence preview" className="absolute inset-0 h-full w-full object-cover" />
-                <span className="absolute inset-x-3 bottom-3 rounded-xl bg-[#111315]/82 px-3 py-2 text-xs font-semibold text-white">Tap to replace photo</span>
+                <span className="absolute inset-x-3 bottom-3 rounded-xl bg-[#111315]/82 px-3 py-2 text-xs font-semibold text-white"><UiText text="Tap to replace photo" /></span>
               </>
             ) : (
               <div>
                 <span className="mx-auto grid h-12 w-12 place-items-center rounded-[18px] bg-blueprint-bg text-blueprint"><TraceIcon name="photo" size={22} /></span>
-                <div className="mt-3 text-sm font-semibold">Take or choose a photo</div>
-                <div className="mt-1 text-xs text-text-3">JPEG, PNG or WebP · EXIF/GPS stripped before upload</div>
+                <div className="mt-3 text-sm font-semibold"><UiText text="Take or choose a photo" /></div>
+                <div className="mt-1 text-xs text-text-3"><UiText text="JPEG, PNG or WebP · EXIF/GPS stripped before upload" /></div>
               </div>
             )}
           </label>
@@ -75,11 +77,11 @@ export function CaptureFormFields({
         <>
           <CaptureField name="body" label="What did you observe?" textarea required placeholder="Belt starts slipping after about 10 minutes of driving." />
           <label className="block max-w-sm">
-            <span className="label">Severity</span>
+            <span className="label"><UiText text="Severity" /></span>
             <select name="severity" className="select" defaultValue="medium">
-              <option value="low">Low — can continue</option>
-              <option value="medium">Medium — affects performance</option>
-              <option value="high">High — blocks testing</option>
+              <option value="low"><UiText text="Low — can continue" /></option>
+              <option value="medium"><UiText text="Medium — affects performance" /></option>
+              <option value="high"><UiText text="High — blocks testing" /></option>
             </select>
           </label>
         </>
@@ -91,14 +93,14 @@ export function CaptureFormFields({
           <CaptureField name="target" label="Target / revision (optional)" placeholder="Prototype B · CAD rev 23 · commit a1b2c3d" />
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-[18px] bg-canvas p-3">
-              <div className="trace-meta mb-2 text-[9px] uppercase text-text-3">Ratio result</div>
+              <div className="trace-meta mb-2 text-[9px] uppercase text-text-3"><UiText text="Ratio result" /></div>
               <div className="grid grid-cols-2 gap-2">
                 <CaptureField name="successes" label="Successes" type="number" min={0} />
                 <CaptureField name="trials" label="Trials" type="number" min={0} />
               </div>
             </div>
             <div className="rounded-[18px] bg-canvas p-3">
-              <div className="trace-meta mb-2 text-[9px] uppercase text-text-3">Measured result</div>
+              <div className="trace-meta mb-2 text-[9px] uppercase text-text-3"><UiText text="Measured result" /></div>
               <div className="grid grid-cols-2 gap-2">
                 <CaptureField name="value" label="Value" placeholder="1.8" />
                 <CaptureField name="units" label="Units" placeholder="s, cm, %" />
@@ -106,19 +108,18 @@ export function CaptureFormFields({
             </div>
           </div>
           <label className="block max-w-sm">
-            <span className="label">Outcome</span>
+            <span className="label"><UiText text="Outcome" /></span>
             <select name="outcome" className="select" defaultValue="inconclusive">
-              <option value="pass">Pass</option>
-              <option value="fail">Fail</option>
-              <option value="inconclusive">Inconclusive</option>
-              <option value="qualitative">Qualitative</option>
+              <option value="pass"><UiText text="Pass" /></option>
+              <option value="fail"><UiText text="Fail" /></option>
+              <option value="inconclusive"><UiText text="Inconclusive" /></option>
+              <option value="qualitative"><UiText text="Qualitative" /></option>
             </select>
           </label>
           {variant === "route" ? (
             <>
               <button type="button" className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-blueprint" onClick={() => setExpanded((value) => !value)} aria-expanded={expanded}>
-                <span aria-hidden>{expanded ? "−" : "+"}</span>{expanded ? "Hide" : "Add"} experimental detail
-              </button>
+                <span aria-hidden><UiText text={expanded ? "−" : "+"} /></span><UiText text={expanded ? "Hide" : "Add"} /><UiText text="experimental detail " /></button>
               {expanded ? (
                 <div className="grid gap-3 rounded-[18px] border border-border bg-canvas p-4 sm:grid-cols-2">
                   <CaptureField name="question" label="Question" textarea />
@@ -147,20 +148,20 @@ export function CaptureFormFields({
           <div className="rounded-[20px] border border-decision/25 bg-[var(--decision-violet-soft)] p-4 sm:p-5">
             <div className="flex items-center gap-2 text-decision">
               <TraceIcon name="decision" size={18} />
-              <span className="trace-meta text-[9px] uppercase">Student-authored rationale</span>
+              <span className="trace-meta text-[9px] uppercase"><UiText text="Student-authored rationale" /></span>
             </div>
             <CaptureField name="rationale" label="Why did you choose this?" textarea required placeholder="36 mm scored 17/20 vs 11/20, and wedging disappeared across repeated runs." />
-            <p className="hint mt-2">AI does not write or silently modify this field.</p>
+            <p className="hint mt-2"><UiText text="AI does not write or silently modify this field." /></p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block">
-              <span className="label">Decision state</span>
+              <span className="label"><UiText text="Decision state" /></span>
               <select name="disposition" className="select" defaultValue="keep">
-                {["keep", "revert", "iterate", "defer", "reject", "unknown"].map((disposition) => <option key={disposition}>{disposition}</option>)}
+                {["keep", "revert", "iterate", "defer", "reject", "unknown"].map((disposition) => <option key={disposition}><UiText text={disposition} /></option>)}
               </select>
             </label>
             <label className="block">
-              <span className="label">Supporting test (optional)</span>
+              <span className="label"><UiText text="Supporting test (optional)" /></span>
               <select name="testId" className="select" defaultValue="">
                 <option value="">—</option>
                 {tests.map((test) => <option key={test.id} value={test.id}>{test.title}</option>)}
@@ -185,29 +186,29 @@ export function CaptureFormFields({
               <CaptureField name="change" label="What will you change next?" textarea />
             </div>
           ) : <CaptureField name="change" label="What will you change next? (optional)" textarea />}
-          <div className="rounded-xl bg-canvas px-3 py-2 text-xs text-text-3">Student-authored · AI did not generate or rewrite this reflection.</div>
+          <div className="rounded-xl bg-canvas px-3 py-2 text-xs text-text-3"><UiText text="Student-authored · AI did not generate or rewrite this reflection." /></div>
         </>
       ) : null}
 
       <details className="rounded-[18px] border border-border bg-canvas p-3" open={Boolean(initialSubsystem || initialIteration)}>
         <summary className="cursor-pointer list-none text-sm font-semibold">
-          <span className="inline-flex min-h-8 items-center gap-2"><span aria-hidden>＋</span> Link project context <span className="font-normal text-text-3">(optional now)</span></span>
+          <span className="inline-flex min-h-8 items-center gap-2"><span aria-hidden>＋</span><UiText text="Link project context " /><span className="font-normal text-text-3"><UiText text="(optional now)" /></span></span>
         </summary>
         <div className="mt-3 grid gap-3 border-t border-border pt-3 sm:grid-cols-2">
           <label className="block">
-            <span className="label">Subsystem</span>
+            <span className="label"><UiText text="Subsystem" /></span>
             <select name="subsystemId" className="select" defaultValue={initialSubsystem ?? ""}>
               <option value="">—</option>
               {subsystems.map((subsystem) => <option key={subsystem.id} value={subsystem.id}>{subsystem.name}</option>)}
             </select>
           </label>
-          <label className="block">
-            <span className="label">Iteration</span>
+          {iterations.length > 0 && <label className="block">
+            <span className="label"><UiText text="Iteration" /></span>
             <select name="iterationId" className="select" defaultValue={initialIteration ?? ""}>
               <option value="">—</option>
               {iterations.map((iteration) => <option key={iteration.id} value={iteration.id}>{iteration.title}</option>)}
             </select>
-          </label>
+          </label>}
         </div>
       </details>
     </>
@@ -216,19 +217,20 @@ export function CaptureFormFields({
 
 function FullCaptureLink({ href, label }: { href: string; label: string }) {
   return (
-    <Link href={href} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-border px-3 text-xs font-semibold text-blueprint">
-      Open full capture <span className="font-normal text-text-3">· {label}</span><span aria-hidden>↗</span>
+    <Link href={href} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-border px-3 text-xs font-semibold text-blueprint"><UiText text="Open full capture " /><span className="font-normal text-text-3">· <UiText text={label} /></span><span aria-hidden>↗</span>
     </Link>
   );
 }
 
 function CaptureField({ name, label, textarea, type = "text", ...rest }: { name: string; label: string; textarea?: boolean; type?: string } & React.InputHTMLAttributes<HTMLInputElement> & React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  const t = useUiText();
+  const localized = { ...rest, placeholder: rest.placeholder ? t(rest.placeholder) : undefined };
   return (
     <label className="block">
-      <span className="label">{label}</span>
+      <span className="label"><UiText text={label} /></span>
       {textarea
-        ? <textarea name={name} className="textarea" {...(rest as React.TextareaHTMLAttributes<HTMLTextAreaElement>)} />
-        : <input name={name} type={type} className={`input ${type === "number" ? "mono" : ""}`} {...(rest as React.InputHTMLAttributes<HTMLInputElement>)} />}
+        ? <textarea name={name} className="textarea" {...(localized as React.TextareaHTMLAttributes<HTMLTextAreaElement>)} />
+        : <input name={name} type={type} className={`input ${type === "number" ? "mono" : ""}`} {...(localized as React.InputHTMLAttributes<HTMLInputElement>)} />}
     </label>
   );
 }

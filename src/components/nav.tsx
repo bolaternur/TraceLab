@@ -1,5 +1,7 @@
 "use client";
 
+// locale-wired
+import { UiText, UiElement } from "@/components/locale-provider";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -46,7 +48,7 @@ export function NavLinks({ groups, onNavigate }: { groups: NavGroup[]; onNavigat
     <div className="space-y-5">
       {groups.map((group) => (
         <section key={group.title}>
-          <div className="trace-meta mb-1.5 px-2 text-[10px] font-semibold uppercase text-text-3">{group.title}</div>
+          <div className="trace-meta mb-1.5 px-2 text-[10px] font-semibold uppercase text-text-3"><UiText text={group.title} /></div>
           <ul className="space-y-0.5">
             {group.items.map((item) => (
               <li key={item.href}>
@@ -68,11 +70,11 @@ export function MobileNav({ groups, teamName, primary, capture, canCapture, loca
     <>
       <header className="sticky top-0 z-40 flex min-h-14 items-center justify-between border-b border-border bg-canvas/92 px-4 backdrop-blur-xl md:hidden">
         <div className="min-w-0">
-          <div className="trace-meta text-[9px] uppercase text-text-3">Workspace</div>
-          <span className="block truncate text-sm font-semibold">{teamName}</span>
+          <div className="trace-meta text-[9px] uppercase text-text-3"><UiText text="Workspace" /></div>
+          <span className="block truncate text-sm font-semibold"><UiText text={teamName} /></span>
         </div>
         <LanguageSelect locale={locale} compact />
-        <button
+        <UiElement as="button"
           className="grid h-11 w-11 place-items-center rounded-full border border-border bg-surface"
           aria-expanded={open}
           aria-controls="mobile-menu"
@@ -80,16 +82,16 @@ export function MobileNav({ groups, teamName, primary, capture, canCapture, loca
           onClick={() => setOpen((value) => !value)}
         >
           <TraceIcon name={open ? "close" : "menu"} size={20} />
-        </button>
+        </UiElement>
       </header>
 
       {open ? (
-        <div id="mobile-menu" className="fade-in fixed inset-x-0 bottom-0 top-14 z-30 overflow-y-auto bg-canvas px-4 pb-28 pt-4 md:hidden" role="dialog" aria-label="Navigation">
+        <UiElement as="div" id="mobile-menu" className="fade-in fixed inset-x-0 bottom-0 top-14 z-30 overflow-y-auto bg-canvas px-4 pb-28 pt-4 md:hidden" role="dialog" aria-label="Navigation">
           <NavLinks groups={groups} onNavigate={() => setOpen(false)} />
-        </div>
+        </UiElement>
       ) : null}
 
-      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-surface/96 px-3 pt-1.5 backdrop-blur-xl md:hidden" aria-label="Primary navigation" style={{ paddingBottom: "max(env(safe-area-inset-bottom), 6px)" }}>
+      <UiElement as="nav" className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-surface/96 px-3 pt-1.5 backdrop-blur-xl md:hidden" aria-label="Primary navigation" style={{ paddingBottom: "max(env(safe-area-inset-bottom), 6px)" }}>
         <div className="relative mx-auto grid max-w-md grid-cols-4 items-end">
           {primary.slice(0, 2).map((item) => {
             const active = isActive(path, item);
@@ -102,14 +104,14 @@ export function MobileNav({ groups, teamName, primary, capture, canCapture, loca
           })}
 
           {!canCapture ? (
-            <button type="button" disabled className="group relative flex min-h-14 flex-col items-center justify-end pb-0.5 text-[10px] font-semibold text-text-3 opacity-55" aria-label="Capture unavailable for read-only role" title="Student-authored capture is unavailable for this role">
+            <UiElement as="button" type="button" disabled className="group relative flex min-h-14 flex-col items-center justify-end pb-0.5 text-[10px] font-semibold text-text-3 opacity-55" aria-label="Capture unavailable for read-only role" title="Student-authored capture is unavailable for this role">
               <span className="absolute -top-5 grid h-14 w-14 place-items-center rounded-[22px] border-4 border-surface bg-border-strong text-text-3">
                 <TraceIcon name="capture" size={24} />
               </span>
-              <span>{capture.label}</span>
-            </button>
+              <span><UiText text={capture.label} /></span>
+            </UiElement>
           ) : captureOnCanvas ? (
-            <button
+            <UiElement as="button"
               type="button"
               className="group relative flex min-h-14 flex-col items-center justify-end pb-0.5 text-[10px] font-semibold text-blueprint"
               aria-label={capture.label}
@@ -118,14 +120,14 @@ export function MobileNav({ groups, teamName, primary, capture, canCapture, loca
               <span className="absolute -top-5 grid h-14 w-14 place-items-center rounded-[22px] border-4 border-surface bg-blueprint text-white shadow-[0_10px_24px_rgb(65_105_255_/_0.28)] transition-transform duration-150 group-active:scale-95">
                 <TraceIcon name="capture" size={24} />
               </span>
-              <span>{capture.label}</span>
-            </button>
+              <span><UiText text={capture.label} /></span>
+            </UiElement>
           ) : (
             <Link href={capture.href} className="group relative flex min-h-14 flex-col items-center justify-end pb-0.5 text-[10px] font-semibold text-blueprint" aria-label={capture.label}>
               <span className="absolute -top-5 grid h-14 w-14 place-items-center rounded-[22px] border-4 border-surface bg-blueprint text-white shadow-[0_10px_24px_rgb(65_105_255_/_0.28)] transition-transform duration-150 group-active:scale-95">
                 <TraceIcon name="capture" size={24} />
               </span>
-              <span>{capture.label}</span>
+              <span><UiText text={capture.label} /></span>
             </Link>
           )}
 
@@ -139,7 +141,7 @@ export function MobileNav({ groups, teamName, primary, capture, canCapture, loca
             );
           })}
         </div>
-      </nav>
+      </UiElement>
     </>
   );
 }

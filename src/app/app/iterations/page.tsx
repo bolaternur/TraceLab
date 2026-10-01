@@ -1,3 +1,5 @@
+// locale-wired
+import { UiText } from "@/components/locale-provider";
 import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
@@ -24,27 +26,27 @@ export default async function IterationsPage() {
             (["active", "closed"] as const).map((g) => (
               <section key={g} className="mb-8">
                 <h2 className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-text-3">
-                  {g} · {groups[g].length}
+                  <UiText text={g} /> · <UiText text={groups[g].length} />
                 </h2>
                 <ul className="card divide-y divide-border">
                   {groups[g].map(({ it, subsystem }) => (
                     <li key={it.id}>
                       <Link href={`/app/iterations/${it.id}`} className="flex items-center justify-between gap-3 p-4 hover:bg-surface-muted/60">
                         <div className="min-w-0">
-                          <div className="truncate font-medium">{it.title}</div>
+                          <div className="truncate font-medium"><UiText text={it.title} /></div>
                           <div className="text-xs text-text-3">
                             {subsystem ?? "No subsystem"} · {fmtDate(it.openedAt)}
-                            {it.closedAt ? ` → ${fmtDate(it.closedAt)}` : ""}
+                            <UiText text={it.closedAt ? ` → ${fmtDate(it.closedAt)}` : ""} />
                           </div>
                         </div>
                         <div className="flex gap-1">
-                          <span className="badge">{it.state}</span>
+                          <span className="badge"><UiText text={it.state} /></span>
                           {it.outcome ? <OutcomeBadge outcome={it.outcome} /> : null}
                         </div>
                       </Link>
                     </li>
                   ))}
-                  {groups[g].length === 0 ? <li className="p-4 text-sm text-text-3">None</li> : null}
+                  {groups[g].length === 0 ? <li className="p-4 text-sm text-text-3"><UiText text="None" /></li> : null}
                 </ul>
               </section>
             ))
@@ -53,11 +55,11 @@ export default async function IterationsPage() {
         <aside>
           {ctx.canAuthorStudentContent ? (
             <div className="card p-4">
-              <h2 className="font-semibold">Open an iteration</h2>
+              <h2 className="font-semibold"><UiText text="Open an iteration" /></h2>
               <NewIterationForm subsystems={subs.map((s) => ({ id: s.id, name: s.name }))} />
             </div>
           ) : (
-            <div className="card p-4 text-sm text-text-2">Coaches view iterations; students open them.</div>
+            <div className="card p-4 text-sm text-text-2"><UiText text="Coaches view iterations; students open them." /></div>
           )}
         </aside>
       </div>

@@ -1,5 +1,7 @@
 "use client";
 
+// locale-wired
+import { UiText, UiElement, useUiText } from "@/components/locale-provider";
 import Link from "next/link";
 import { useEffect } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -18,6 +20,7 @@ interface CaptureLauncherProps {
 }
 
 export function CaptureLauncher({ state, dispatch, options, onSaved }: CaptureLauncherProps) {
+  const t = useUiText();
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
@@ -38,7 +41,7 @@ export function CaptureLauncher({ state, dispatch, options, onSaved }: CaptureLa
   return (
     <>
       {options.canAuthorStudentContent ? (
-        <button
+        <UiElement as="button"
           type="button"
           className="capture-launcher-trigger workbench-chrome fixed bottom-5 left-1/2 z-40 hidden h-11 w-11 -translate-x-1/2 place-items-center rounded-full text-white shadow-[0_14px_34px_rgb(0_0_0_/_0.28)] md:grid"
           aria-label="Capture evidence"
@@ -47,22 +50,22 @@ export function CaptureLauncher({ state, dispatch, options, onSaved }: CaptureLa
           onClick={() => dispatch(state.open ? { type: "close" } : { type: "open" })}
         >
           <TraceIcon name="capture" size={20} />
-        </button>
+        </UiElement>
       ) : null}
 
       <AnimatePresence initial={false}>
         {options.canAuthorStudentContent && state.open && state.stage === "choose" ? (
           <motion.section
             className="capture-launcher-menu workbench-chrome fixed inset-x-3 bottom-[4.75rem] z-[70] rounded-[18px] p-2 text-white shadow-[0_22px_60px_rgb(0_0_0_/_0.35)] md:inset-x-auto md:bottom-[4.6rem] md:left-1/2 md:w-[340px] md:-translate-x-1/2"
-            aria-label="Choose capture type"
+            aria-label={t("Choose capture type")}
             initial={reduceMotion ? false : { opacity: 0, y: 8, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 5, scale: 0.99 }}
             transition={surfaceTransition(Boolean(reduceMotion))}
           >
             <div className="px-2 pb-2 pt-1">
-              <div className="trace-meta text-[9px] uppercase text-white/42">Capture evidence</div>
-              <div className="mt-0.5 text-sm font-semibold">What happened?</div>
+              <div className="trace-meta text-[9px] uppercase text-white/42"><UiText text="Capture evidence" /></div>
+              <div className="mt-0.5 text-sm font-semibold"><UiText text="What happened?" /></div>
             </div>
             <div className="grid grid-cols-2 gap-1.5">
               {CAPTURE_KINDS.map((item) => (
@@ -73,11 +76,11 @@ export function CaptureLauncher({ state, dispatch, options, onSaved }: CaptureLa
                   onClick={() => dispatch({ type: "select-kind", kind: item.kind })}
                 >
                   <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/[0.07] text-white/75"><TraceIcon name={item.icon} size={17} /></span>
-                  <span className="min-w-0"><strong className="block text-xs">{item.label}</strong><span className="block truncate text-[10px] text-white/42">{item.hint || "student-authored"}</span></span>
+                  <span className="min-w-0"><strong className="block text-sm"><UiText text={item.label} /></strong></span>
                 </button>
               ))}
             </div>
-            <Link href="/app/capture" className="mt-2 flex min-h-10 items-center justify-center rounded-xl text-xs font-semibold text-white/62 hover:bg-white/[0.05] hover:text-white">Open full capture ↗</Link>
+            <Link href="/app/capture" className="mt-2 flex min-h-10 items-center justify-center rounded-xl text-xs font-semibold text-white/62 hover:bg-white/[0.05] hover:text-white"><UiText text="Open full capture ↗" /></Link>
           </motion.section>
         ) : null}
       </AnimatePresence>

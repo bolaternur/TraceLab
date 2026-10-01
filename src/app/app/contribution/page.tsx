@@ -1,3 +1,5 @@
+// locale-wired
+import { UiText } from "@/components/locale-provider";
 import Link from "next/link";
 import { requireTeam } from "@/server/auth";
 import { contributionMap } from "@/server/evidence";
@@ -25,9 +27,9 @@ export default async function ContributionPage() {
           ["Iteration", `${c.decisions} decisions`, `${c.decisionsWithEvidence} evidence-linked`],
         ].map(([t, a, b]) => (
           <div key={t} className="card p-4">
-            <div className="text-xs font-semibold uppercase tracking-[0.08em] text-text-3">{t}</div>
-            <div className="mono mt-1 text-xl font-semibold">{a}</div>
-            <div className="text-sm text-text-2">{b}</div>
+            <div className="text-xs font-semibold uppercase tracking-[0.08em] text-text-3"><UiText text={t} /></div>
+            <div className="mono mt-1 text-xl font-semibold"><UiText text={a} /></div>
+            <div className="text-sm text-text-2"><UiText text={b} /></div>
           </div>
         ))}
       </div>
@@ -36,20 +38,20 @@ export default async function ContributionPage() {
           {skills.map((s) => (
             <li key={s.name} className="flex flex-wrap items-center justify-between gap-3 p-4">
               <div>
-                <div className="font-medium">{s.name}</div>
-                <div className="text-sm text-text-2">{s.strength > 0 ? `Supported by ${s.claim}.` : "No evidence recorded yet."}</div>
+                <div className="font-medium"><UiText text={s.name} /></div>
+                <div className="text-sm text-text-2"><UiText text={s.strength > 0 ? `Supported by ${s.claim}.` : "No evidence recorded yet."} /></div>
               </div>
               <div className="flex gap-2">
                 {s.links.map((l) => (
                   <Link key={l.href} href={l.href} className="btn btn-sm">
-                    {l.label}
+                    <UiText text={l.label} />
                   </Link>
                 ))}
               </div>
             </li>
           ))}
         </ul>
-        <p className="hint mt-2">Every claim links to underlying evidence. There is no aggregate “engineering score” by design.</p>
+        <p className="hint mt-2"><UiText text="Every claim links to underlying evidence. There is no aggregate “engineering score” by design." /></p>
       </Section>
     </div>
   );

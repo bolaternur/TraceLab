@@ -1,5 +1,7 @@
 "use client";
 
+// locale-wired
+import { UiText } from "@/components/locale-provider";
 import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath, type Edge, type EdgeProps } from "@xyflow/react";
 import { relationHumanLabel, relationStatusLabel } from "./presentation";
 import type { EvidenceTraceRelation } from "./types";
@@ -37,7 +39,7 @@ export function TraceRelationEdge({
     borderRadius: 18,
     offset: 24,
   });
-  const stroke = suggested ? "#d99023" : active ? "#7f98ff" : "rgba(231,234,228,.42)";
+  const stroke = suggested ? "#805b1a" : active ? "#b74722" : "#7a8378";
 
   return (
     <>
@@ -58,7 +60,7 @@ export function TraceRelationEdge({
             className="nodrag nopan pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/12 bg-[#242527]/95 px-2 py-1 text-[9px] font-semibold text-white/72 shadow-sm"
             style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
           >
-            {suggested ? "Suggested · " : ""}{relationHumanLabel(relation)}
+            <UiText text={suggested ? "Suggested · " : ""} />{relationHumanLabel(relation)}
             <span className="sr-only"> · {relationStatusLabel(relation)}</span>
           </div>
         </EdgeLabelRenderer>

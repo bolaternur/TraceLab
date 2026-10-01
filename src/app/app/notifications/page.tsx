@@ -1,3 +1,5 @@
+// locale-wired
+import { UiText } from "@/components/locale-provider";
 import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
@@ -17,7 +19,7 @@ export default async function NotificationsPage() {
         actions={
           rows.some((r) => !r.readAt) ? (
             <form action={markNotificationsRead}>
-              <button className="btn btn-sm">Mark all read</button>
+              <button className="btn btn-sm"><UiText text="Mark all read" /></button>
             </form>
           ) : undefined
         }
@@ -29,14 +31,12 @@ export default async function NotificationsPage() {
           {rows.map((n) => (
             <li key={n.id} className={`p-3 ${n.readAt ? "opacity-70" : ""}`}>
               <div className="flex items-center justify-between">
-                <span className="font-medium">{n.title}</span>
+                <span className="font-medium"><UiText text={n.title} /></span>
                 <Mono>{fmtDate(n.createdAt, true)}</Mono>
               </div>
-              {n.body ? <p className="mt-1 text-text-2">{n.body}</p> : null}
+              {n.body ? <p className="mt-1 text-text-2"><UiText text={n.body} /></p> : null}
               {n.href ? (
-                <Link href={n.href} className="mt-1 inline-block text-blueprint">
-                  Open
-                </Link>
+                <Link href={n.href} className="mt-1 inline-block text-blueprint"><UiText text="Open " /></Link>
               ) : null}
             </li>
           ))}

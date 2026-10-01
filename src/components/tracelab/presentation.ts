@@ -62,12 +62,12 @@ export function formatTechnicalDate(date: Date | string, timeZone = "UTC"): stri
   const value = typeof date === "string" ? new Date(date) : date;
   const parts = new Intl.DateTimeFormat("en-GB", {
     day: "2-digit",
-    month: "short",
+    month: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
     hourCycle: "h23",
     timeZone,
   }).formatToParts(value);
   const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "";
-  return `${get("day")} ${get("month").slice(0, 3).toUpperCase()} · ${get("hour")}:${get("minute")}`;
+  return `${get("day")}.${get("month")} · ${get("hour")}:${get("minute")}`;
 }

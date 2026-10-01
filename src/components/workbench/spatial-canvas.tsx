@@ -1,5 +1,7 @@
 "use client";
 
+// locale-wired
+import { UiText, UiElement } from "@/components/locale-provider";
 import "@xyflow/react/dist/style.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useReducedMotion } from "motion/react";
@@ -189,20 +191,20 @@ function SpatialCanvasInner({ snapshot }: { snapshot: WorkbenchSnapshot }) {
       </ReactFlow>
 
       {helpOpen ? (
-        <div className="workbench-shortcut-help workbench-chrome" role="dialog" aria-modal="false" aria-label="Canvas keyboard shortcuts">
+        <UiElement as="div" className="workbench-shortcut-help workbench-chrome" role="dialog" aria-modal="false" aria-label="Canvas keyboard shortcuts">
           <div className="flex items-center justify-between gap-4">
-            <strong className="text-sm">Canvas shortcuts</strong>
-            <button type="button" onClick={() => setHelpOpen(false)} aria-label="Close keyboard shortcuts">×</button>
+            <strong className="text-sm"><UiText text="Canvas shortcuts" /></strong>
+            <UiElement as="button" type="button" onClick={() => setHelpOpen(false)} aria-label="Close keyboard shortcuts">×</UiElement>
           </div>
           <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-xs text-white/68">
-            <dt className="mono text-white">Space</dt><dd>Pan</dd>
-            <dt className="mono text-white">F / 0</dt><dd>Fit project</dd>
-            <dt className="mono text-white">1</dt><dd>100% zoom</dd>
-            <dt className="mono text-white">Enter</dt><dd>Focus selected board</dd>
-            <dt className="mono text-white">Esc</dt><dd>Back one spatial layer</dd>
-            <dt className="mono text-white">⌘/Ctrl K</dt><dd>Command palette</dd>
+            <dt className="mono text-white"><UiText text="Space" /></dt><dd><UiText text="Pan" /></dd>
+            <dt className="mono text-white">F / 0</dt><dd><UiText text="Fit project" /></dd>
+            <dt className="mono text-white">1</dt><dd><UiText text="100% zoom" /></dd>
+            <dt className="mono text-white"><UiText text="Enter" /></dt><dd><UiText text="Focus selected board" /></dd>
+            <dt className="mono text-white"><UiText text="Esc" /></dt><dd><UiText text="Back one spatial layer" /></dd>
+            <dt className="mono text-white"><UiText text="⌘/Ctrl K" /></dt><dd><UiText text="Command palette" /></dd>
           </dl>
-        </div>
+        </UiElement>
       ) : null}
     </div>
   );

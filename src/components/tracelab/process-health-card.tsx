@@ -1,3 +1,5 @@
+// locale-wired
+import { UiText } from "@/components/locale-provider";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { TraceIcon } from "@/components/tracelab/trace-icon";
@@ -18,14 +20,14 @@ export function ProcessHealthCard({ label, value, explanation, href, tone = "neu
       <span className="absolute inset-y-0 left-0 w-[3px]" style={{ background: accent }} aria-hidden />
       <div className="flex items-start justify-between gap-3 pl-1">
         <div className="min-w-0">
-          <div className="trace-meta text-[9px] uppercase text-text-3">{label}</div>
-          <div className="mt-1 text-2xl font-semibold tracking-[-0.025em] text-ink">{value}</div>
+          <div className="trace-meta text-[9px] uppercase text-text-3"><UiText text={label} /></div>
+          <div className="mt-1 text-2xl font-semibold tracking-[-0.025em] text-ink"><UiText text={value} /></div>
         </div>
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border bg-canvas text-text-2"><TraceIcon name={icon} size={17} /></span>
       </div>
-      <p className="mt-3 pl-1 text-xs leading-5 text-text-2">{explanation}</p>
-      {href ? <span className="mt-3 block pl-1 text-xs font-semibold text-blueprint">Review evidence →</span> : null}
+      <p className="mt-3 pl-1 text-xs leading-5 text-text-2"><UiText text={explanation} /></p>
+      {href ? <span className="mt-3 block pl-1 text-xs font-semibold text-blueprint"><UiText text="Review evidence →" /></span> : null}
     </article>
   );
-  return href ? <Link href={href} className="block h-full focus-visible:rounded-[18px]">{body}</Link> : body;
+  return href ? <Link href={href} className="block h-full focus-visible:rounded-[18px]"><UiText text={body} /></Link> : body;
 }

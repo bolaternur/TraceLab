@@ -1,5 +1,7 @@
 "use client";
 
+// locale-wired
+import { UiText } from "@/components/locale-provider";
 import { useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { LOCALES, LOCALE_LABELS, translate, type Locale } from "@/lib/i18n";
@@ -38,7 +40,7 @@ export function LanguageSelect({ locale, compact = false }: { locale: Locale; co
         {LOCALES.map((item) => <option key={item} value={item} lang={item}>{compact ? item.toUpperCase() : LOCALE_LABELS[item]}</option>)}
       </select>
       <span role="status" className={failed ? "block text-xs text-danger" : "sr-only"}>
-        {failed ? translate(locale, "common.saveFailed") : pending ? translate(locale, "common.saving") : ""}
+        <UiText text={failed ? translate(locale, "common.saveFailed") : pending ? translate(locale, "common.saving") : ""} />
       </span>
     </div>
   );

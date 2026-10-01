@@ -1,5 +1,7 @@
 "use client";
 
+// locale-wired
+import { UiText, UiElement } from "@/components/locale-provider";
 import Link from "next/link";
 import { TraceIcon } from "@/components/tracelab/trace-icon";
 import { formatTechnicalDate } from "@/components/tracelab/presentation";
@@ -27,7 +29,7 @@ export function TimelineEventCard({
 }) {
   const meta = KIND_META[entry.kind];
   return (
-    <article
+    <UiElement as="article"
       className="timeline-event-card"
       data-kind={entry.kind}
       data-tone={entry.tone}
@@ -35,7 +37,7 @@ export function TimelineEventCard({
       style={{ left: entry.x, top: entry.y, width: entry.width, height: entry.height }}
       aria-label={`${meta.label}: ${entry.title}`}
     >
-      <button
+      <UiElement as="button"
         type="button"
         className="timeline-event-select"
         aria-label="Select timeline event"
@@ -44,19 +46,18 @@ export function TimelineEventCard({
       >
         <span className="timeline-event-icon" aria-hidden><TraceIcon name={meta.icon} size={14} /></span>
         <span className="min-w-0 flex-1 text-left">
-          <span className="trace-meta block text-[8px] uppercase text-black/38">{meta.label}</span>
-          <strong className="mt-0.5 block truncate text-[12px] font-semibold text-[#111315]">{entry.title}</strong>
+          <strong className="mt-0.5 block truncate text-[12px] font-semibold text-[#111315]"><UiText text={entry.title} /></strong>
         </span>
-      </button>
+      </UiElement>
       <div className="px-3 pb-2.5">
-        <p className="line-clamp-2 min-h-[30px] text-[10px] leading-[15px] text-black/48">{entry.detail || "Recorded engineering evidence"}</p>
+        {entry.kind !== "event" && entry.kind !== "source_burst" && entry.detail && <p className="line-clamp-1 text-[10px] leading-[15px] text-black/48"><UiText text={entry.detail} /></p>}
         <div className="mt-1.5 flex items-center justify-between gap-2 border-t border-black/[0.06] pt-1.5">
           <span className="mono truncate text-[8px] uppercase text-black/36">{formatTechnicalDate(entry.occurredAt, timeZone)}</span>
           <Link href={entry.href} onClick={(event) => event.stopPropagation()} className="min-h-7 shrink-0 rounded-md px-1.5 py-1 text-[9px] font-semibold text-[#4169ff] hover:bg-[#4169ff]/[0.07]">
-            {entry.memberIds.length > 1 ? `${entry.memberIds.length} records` : "Open"}
+            <UiText text={entry.memberIds.length > 1 ? `${entry.memberIds.length} records` : "Open"} />
           </Link>
         </div>
       </div>
-    </article>
+    </UiElement>
   );
 }

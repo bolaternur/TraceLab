@@ -1,3 +1,5 @@
+// locale-wired
+import { UiText, UiElement } from "@/components/locale-provider";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { and, desc, eq, inArray } from "drizzle-orm";
@@ -63,8 +65,8 @@ export default async function DecisionDetailPage({ params }: { params: Promise<{
         actions={
           <>
             <DecisionState disposition={row.d.disposition} />
-            <Link href={`/app/why/decision/${id}`} className="btn btn-sm">Why?</Link>
-            {row.d.iterationId ? <Link href={`/app/iterations/${row.d.iterationId}`} className="btn btn-sm">Open iteration</Link> : null}
+            <Link href={`/app/why/decision/${id}`} className="btn btn-sm"><UiText text="Why?" /></Link>
+            {row.d.iterationId ? <Link href={`/app/iterations/${row.d.iterationId}`} className="btn btn-sm"><UiText text="Open iteration" /></Link> : null}
           </>
         }
       />
@@ -74,8 +76,8 @@ export default async function DecisionDetailPage({ params }: { params: Promise<{
           <section className="evidence-card p-5" data-tone="decision">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <div className="trace-meta text-[10px] uppercase text-text-3">Decision · {row.d.id.slice(0, 8)}</div>
-                <h2 className="mt-1 text-lg font-semibold">Student-authored rationale</h2>
+                <div className="trace-meta text-[10px] uppercase text-text-3"><UiText text="Decision · " />{row.d.id.slice(0, 8)}</div>
+                <h2 className="mt-1 text-lg font-semibold"><UiText text="Student-authored rationale" /></h2>
               </div>
               <ProvenanceLabel kind="student" />
             </div>
@@ -84,13 +86,11 @@ export default async function DecisionDetailPage({ params }: { params: Promise<{
                 {latestRationale.a.body}
                 <footer className="mt-3 flex flex-wrap items-center gap-2">
                   <Mono>{latestRationale.author ?? row.author ?? "—"} · {fmtDate(latestRationale.a.createdAt, true)}</Mono>
-                  {latestRationale.a.supersedesId ? <span className="badge">revised</span> : null}
+                  {latestRationale.a.supersedesId ? <span className="badge"><UiText text="revised" /></span> : null}
                 </footer>
               </blockquote>
             ) : (
-              <div className="mt-4 rounded-[16px] border border-dashed border-border px-4 py-4 text-sm text-text-3">
-                The decision exists, but its human rationale is missing. Add the why before treating this as complete engineering memory.
-              </div>
+              <div className="mt-4 rounded-[16px] border border-dashed border-border px-4 py-4 text-sm text-text-3"><UiText text="The decision exists, but its human rationale is missing. Add the why before treating this as complete engineering memory. " /></div>
             )}
 
             {ctx.canAuthorStudentContent ? (
@@ -99,11 +99,11 @@ export default async function DecisionDetailPage({ params }: { params: Promise<{
                 <input type="hidden" name="entityId" value={id} />
                 <input type="hidden" name="field" value="rationale" />
                 <input type="hidden" name="returnTo" value={returnTo} />
-                <label className="label" htmlFor="decision-rationale">{latestRationale ? "Revise rationale" : "Add rationale"} (student-authored, versioned)</label>
+                <label className="label" htmlFor="decision-rationale"><UiText text={latestRationale ? "Revise rationale" : "Add rationale"} /><UiText text="(student-authored, versioned)" /></label>
                 <textarea id="decision-rationale" name="body" className="textarea" required defaultValue={latestRationale?.a.body ?? ""} />
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                  <span className="hint">Saving creates a new annotation version; the original remains in history.</span>
-                  <button className="btn btn-sm btn-primary">Save rationale</button>
+                  <span className="hint"><UiText text="Saving creates a new annotation version; the original remains in history." /></span>
+                  <button className="btn btn-sm btn-primary"><UiText text="Save rationale" /></button>
                 </div>
               </form>
             ) : null}
@@ -112,7 +112,7 @@ export default async function DecisionDetailPage({ params }: { params: Promise<{
           <section className="card p-5">
             <div className="flex items-center gap-2">
               <TraceIcon name="test" size={18} className="text-test" />
-              <h2 className="font-semibold">Supported by</h2>
+              <h2 className="font-semibold"><UiText text="Supported by" /></h2>
             </div>
             {rels.length ? (
               <ul className="mt-3 space-y-2">
@@ -124,19 +124,19 @@ export default async function DecisionDetailPage({ params }: { params: Promise<{
                     <li key={relation.id} className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-border bg-canvas px-3.5 py-3 text-sm">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="badge badge-decision">{relationLabel[relation.relationType] ?? relation.relationType.toLowerCase()}</span>
+                          <span className="badge badge-decision"><UiText text={relationLabel[relation.relationType] ?? relation.relationType.toLowerCase()} /></span>
                           {linkedSource ? <SourceBadge provider={linkedSource.provider} eventType={linkedSource.eventType} /> : null}
                         </div>
-                        <div className="mt-1 font-semibold">{linkedTest?.title ?? linkedSource?.title ?? relation.toType.replace("_", " ")}</div>
-                        {linkedTest ? <Mono>{linkedTest.outcome} · {fmtDate(linkedTest.performedAt)}</Mono> : linkedSource ? <Mono>{fmtDate(linkedSource.occurredAt, true)}</Mono> : null}
+                        <div className="mt-1 font-semibold"><UiText text={linkedTest?.title ?? linkedSource?.title ?? relation.toType.replace("_", " ")} /></div>
+                        {linkedTest ? <Mono><UiText text={linkedTest.outcome} /> · {fmtDate(linkedTest.performedAt)}</Mono> : linkedSource ? <Mono>{fmtDate(linkedSource.occurredAt, true)}</Mono> : null}
                       </div>
-                      <Link href={href} className="text-sm font-semibold text-blueprint">Open evidence →</Link>
+                      <Link href={href} className="text-sm font-semibold text-blueprint"><UiText text="Open evidence →" /></Link>
                     </li>
                   );
                 })}
               </ul>
             ) : (
-              <p className="mt-3 text-sm text-text-3">No supporting evidence is linked yet. This is an evidence gap, not a judgment about the decision.</p>
+              <p className="mt-3 text-sm text-text-3"><UiText text="No supporting evidence is linked yet. This is an evidence gap, not a judgment about the decision." /></p>
             )}
 
             {ctx.canAuthorStudentContent && allTests.length ? (
@@ -146,30 +146,30 @@ export default async function DecisionDetailPage({ params }: { params: Promise<{
                 <input type="hidden" name="toType" value="test" />
                 <input type="hidden" name="relationType" value="SUPPORTS" />
                 <input type="hidden" name="returnTo" value={returnTo} />
-                <select name="toId" className="select flex-1" aria-label="Supporting test">
+                <UiElement as="select" name="toId" className="select flex-1" aria-label="Supporting test">
                   {allTests.map((test) => <option key={test.id} value={test.id}>{test.title} · {test.outcome}</option>)}
-                </select>
-                <button className="btn">Link test</button>
+                </UiElement>
+                <button className="btn"><UiText text="Link test" /></button>
               </form>
             ) : null}
           </section>
 
           <section className="card p-5">
-            <h2 className="font-semibold">Result / what changed next</h2>
+            <h2 className="font-semibold"><UiText text="Result / what changed next" /></h2>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <div className="rounded-[14px] border border-border bg-canvas p-3">
-                <div className="trace-meta text-[9px] uppercase text-text-3">Disposition</div>
+                <div className="trace-meta text-[9px] uppercase text-text-3"><UiText text="Disposition" /></div>
                 <div className="mt-2"><DecisionState disposition={row.d.disposition} /></div>
               </div>
               <div className="rounded-[14px] border border-border bg-canvas p-3">
-                <div className="trace-meta text-[9px] uppercase text-text-3">Iteration</div>
+                <div className="trace-meta text-[9px] uppercase text-text-3"><UiText text="Iteration" /></div>
                 <div className="mt-1 text-sm font-semibold">{row.iteration ?? "No iteration linked"}</div>
               </div>
             </div>
             {(row.d.alternatives as string[]).length ? (
               <div className="mt-4">
-                <div className="trace-meta text-[9px] uppercase text-text-3">Alternatives considered</div>
-                <ul className="mt-2 flex flex-wrap gap-2">{(row.d.alternatives as string[]).map((alternative) => <li key={alternative} className="badge">{alternative}</li>)}</ul>
+                <div className="trace-meta text-[9px] uppercase text-text-3"><UiText text="Alternatives considered" /></div>
+                <ul className="mt-2 flex flex-wrap gap-2">{(row.d.alternatives as string[]).map((alternative) => <li key={alternative} className="badge"><UiText text={alternative} /></li>)}</ul>
               </div>
             ) : null}
           </section>
@@ -177,27 +177,27 @@ export default async function DecisionDetailPage({ params }: { params: Promise<{
 
         <aside className="space-y-4">
           <section className="card p-4">
-            <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-text-3">Authored by</h2>
+            <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-text-3"><UiText text="Authored by" /></h2>
             <div className="mt-2 text-sm font-semibold">{row.author ?? "Unknown student"}</div>
             <Mono>{fmtDate(row.d.decidedAt, true)}</Mono>
           </section>
 
           <section className="card p-4">
-            <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-text-3">Source history</h2>
-            <p className="mt-2 text-sm leading-6 text-text-2">Rationale versions and linked source artifacts remain separate from the immutable decision record.</p>
+            <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-text-3"><UiText text="Source history" /></h2>
+            <p className="mt-2 text-sm leading-6 text-text-2"><UiText text="Rationale versions and linked source artifacts remain separate from the immutable decision record." /></p>
             <div className="mt-3 flex flex-wrap gap-2">
-              <Link href={`/app/why/decision/${id}`} className="btn btn-sm">View Why? history</Link>
-              <Link href={`/app/graph?focus=${id}`} className="btn btn-sm">Open trace</Link>
+              <Link href={`/app/why/decision/${id}`} className="btn btn-sm"><UiText text="View Why? history" /></Link>
+              <Link href={`/app/graph?focus=${id}`} className="btn btn-sm"><UiText text="Open trace" /></Link>
             </div>
-            {rationaleRows.length > 1 ? <p className="hint mt-2">{rationaleRows.length} rationale versions preserved.</p> : null}
+            {rationaleRows.length > 1 ? <p className="hint mt-2"><UiText text={rationaleRows.length} /><UiText text="rationale versions preserved." /></p> : null}
           </section>
 
           <section className="rounded-[18px] border border-border bg-canvas p-4">
-            <div className="trace-meta text-[9px] uppercase text-text-3">Trust</div>
+            <div className="trace-meta text-[9px] uppercase text-text-3"><UiText text="Trust" /></div>
             <ul className="mt-2 space-y-2 text-sm text-text-2">
-              <li className="flex gap-2"><span className="text-success" aria-hidden>✓</span> Student-authored text remains versioned.</li>
-              <li className="flex gap-2"><span className="text-success" aria-hidden>✓</span> Evidence links are explicit relations.</li>
-              <li className="flex gap-2"><span className="text-success" aria-hidden>✓</span> AI does not silently alter this rationale.</li>
+              <li className="flex gap-2"><span className="text-success" aria-hidden>✓</span><UiText text="Student-authored text remains versioned." /></li>
+              <li className="flex gap-2"><span className="text-success" aria-hidden>✓</span><UiText text="Evidence links are explicit relations." /></li>
+              <li className="flex gap-2"><span className="text-success" aria-hidden>✓</span><UiText text="AI does not silently alter this rationale." /></li>
             </ul>
           </section>
         </aside>

@@ -1,3 +1,5 @@
+// locale-wired
+import { UiText } from "@/components/locale-provider";
 import { TraceIcon, type TraceIconName } from "./trace-icon";
 
 export interface CaptureTypeCardProps {
@@ -9,7 +11,7 @@ export interface CaptureTypeCardProps {
   onSelect: () => void;
 }
 
-export function CaptureTypeCard({ label, hint, description, icon, selected, onSelect }: CaptureTypeCardProps) {
+export function CaptureTypeCard({ label, description, icon, selected, onSelect }: CaptureTypeCardProps) {
   return (
     <button
       type="button"
@@ -26,10 +28,9 @@ export function CaptureTypeCard({ label, hint, description, icon, selected, onSe
         <span className={`grid h-9 w-9 place-items-center rounded-xl ${selected ? "bg-white/14 text-white" : "bg-canvas text-text-2"}`}>
           <TraceIcon name={icon} size={18} />
         </span>
-        {hint ? <span className={`trace-meta text-[9px] uppercase ${selected ? "text-white/65" : "text-text-3"}`}>{hint}</span> : null}
       </div>
-      <div className="mt-3 text-sm font-semibold">{label}</div>
-      <div className={`mt-1 line-clamp-2 text-[11px] leading-4 ${selected ? "text-white/72" : "text-text-3"}`}>{description}</div>
+      <div className="mt-3 text-sm font-semibold"><UiText text={label} /></div>
+      <div className={`mt-1 line-clamp-2 text-[11px] leading-4 ${selected ? "text-white/72" : "text-text-3"}`}><UiText text={description} /></div>
     </button>
   );
 }

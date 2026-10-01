@@ -18,7 +18,7 @@ export function SecondaryRouteFrame({ children }: { children: ReactNode }) {
           isSpatialHome
             ? "h-[calc(100dvh-3.5rem)] min-w-0 overflow-hidden md:h-dvh"
             : isSpatialPowerView
-              ? "h-[calc(100dvh-3.5rem)] min-w-0 overflow-y-auto px-3 py-4 pb-28 sm:px-4 md:h-dvh md:px-5 md:py-5 md:pb-8 xl:px-6"
+              ? "h-[calc(100dvh-3.5rem)] min-w-0 overflow-hidden pb-20 md:h-dvh md:pb-0"
               : "mx-auto min-h-[calc(100dvh-3.5rem)] w-full max-w-[1320px] px-4 py-5 pb-28 sm:px-6 md:min-h-dvh md:px-8 md:py-7 md:pb-10 xl:px-10"
         }
       >

@@ -1,3 +1,5 @@
+// locale-wired
+import { UiText, UiElement } from "@/components/locale-provider";
 import { notFound } from "next/navigation";
 import { and, count, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
@@ -51,9 +53,9 @@ export default async function OrgPage() {
               <TraceIcon name="org" size={20} />
             </span>
             <div>
-              <p className="trace-meta text-[11px] uppercase text-text-3">Organization archive</p>
-              <h2 className="mt-1 text-xl font-semibold tracking-tight">Multi-team continuity</h2>
-              <p className="mt-1 max-w-2xl text-sm text-text-2">Preserve seasons and operating context across teams without combining their private engineering records into a surveillance feed.</p>
+              <p className="trace-meta text-[11px] uppercase text-text-3"><UiText text="Organization archive" /></p>
+              <h2 className="mt-1 text-xl font-semibold tracking-tight"><UiText text="Multi-team continuity" /></h2>
+              <p className="mt-1 max-w-2xl text-sm text-text-2"><UiText text="Preserve seasons and operating context across teams without combining their private engineering records into a surveillance feed." /></p>
             </div>
           </div>
 
@@ -65,20 +67,20 @@ export default async function OrgPage() {
               ["Plan", PLANS[plan].name, sub ? `${sub.status} · ${sub.provider}` : "no subscription record"],
             ].map(([label, value, hint]) => (
               <div key={label} className="bg-bg-surface p-4">
-                <dt className="trace-meta text-[10px] uppercase text-text-3">{label}</dt>
-                <dd className="mt-1 text-lg font-semibold">{value}</dd>
-                <p className="mt-0.5 text-xs text-text-3">{hint}</p>
+                <dt className="trace-meta text-[10px] uppercase text-text-3"><UiText text={label} /></dt>
+                <dd className="mt-1 text-lg font-semibold"><UiText text={value} /></dd>
+                <p className="mt-0.5 text-xs text-text-3"><UiText text={hint} /></p>
               </div>
             ))}
           </dl>
         </div>
 
         <aside className="trace-surface-subtle p-5">
-          <p className="trace-meta text-[11px] uppercase text-text-3">Continuity guardrails</p>
+          <p className="trace-meta text-[11px] uppercase text-text-3"><UiText text="Continuity guardrails" /></p>
           <div className="mt-4 space-y-4 text-sm">
-            <Guardrail icon="evidence" title="Team evidence stays scoped">Organization access does not turn private project evidence into one shared activity stream.</Guardrail>
-            <Guardrail icon="handoff" title="Seasons remain recoverable">Archive value comes from retaining engineering memory, not maximizing note volume.</Guardrail>
-            <Guardrail icon="policy" title="Retention is explicit">Only eligible unlinked inbox events follow retention settings; linked evidence and student reasoning are preserved.</Guardrail>
+            <Guardrail icon="evidence" title="Team evidence stays scoped"><UiText text="Organization access does not turn private project evidence into one shared activity stream." /></Guardrail>
+            <Guardrail icon="handoff" title="Seasons remain recoverable"><UiText text="Archive value comes from retaining engineering memory, not maximizing note volume." /></Guardrail>
+            <Guardrail icon="policy" title="Retention is explicit"><UiText text="Only eligible unlinked inbox events follow retention settings; linked evidence and student reasoning are preserved." /></Guardrail>
           </div>
         </aside>
       </section>
@@ -90,19 +92,19 @@ export default async function OrgPage() {
               <article key={team.id} className="evidence-card flex items-center justify-between gap-4 p-4 text-sm">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-semibold">{team.name}</span>
-                    {team.number ? <Mono>#{team.number}</Mono> : null}
+                    <span className="font-semibold"><UiText text={team.name} /></span>
+                    {team.number ? <Mono>#<UiText text={team.number} /></Mono> : null}
                   </div>
-                  <p className="mt-1 text-xs text-text-3">{team.program} · private team workspace</p>
+                  <p className="mt-1 text-xs text-text-3"><UiText text={team.program} /><UiText text="· private team workspace" /></p>
                 </div>
                 <div className="text-right">
-                  <p className="font-medium">{members} active</p>
-                  <p className="mt-0.5 text-xs text-text-3">members</p>
+                  <p className="font-medium"><UiText text={members} /><UiText text="active" /></p>
+                  <p className="mt-0.5 text-xs text-text-3"><UiText text="members" /></p>
                 </div>
               </article>
             ))}
           </div>
-          <p className="hint mt-3">{canCreateTeam(plan, orgTeams.length) ? "Another team can be created from Onboarding." : "The current plan team limit has been reached."}</p>
+          <p className="hint mt-3"><UiText text={canCreateTeam(plan, orgTeams.length) ? "Another team can be created from Onboarding." : "The current plan team limit has been reached."} /></p>
         </Section>
 
         <Section title="Organization access">
@@ -111,13 +113,13 @@ export default async function OrgPage() {
               <div key={`${member.name}-${index}`} className="flex items-center justify-between gap-3 border-b border-border-subtle p-4 text-sm last:border-b-0">
                 <div className="flex items-center gap-3">
                   <span className="grid h-8 w-8 place-items-center rounded-full bg-bg-subtle text-text-2"><TraceIcon name="members" size={16} /></span>
-                  <span className="font-medium">{member.name}</span>
+                  <span className="font-medium"><UiText text={member.name} /></span>
                 </div>
-                <span className="badge">{member.role}</span>
+                <span className="badge"><UiText text={member.role} /></span>
               </div>
             ))}
           </div>
-          <p className="hint mt-3">Organization roles manage continuity and administration; they do not grant silent authorship over student rationale.</p>
+          <p className="hint mt-3"><UiText text="Organization roles manage continuity and administration; they do not grant silent authorship over student rationale." /></p>
         </Section>
       </div>
 
@@ -126,18 +128,18 @@ export default async function OrgPage() {
           <Section title="Archive & retention">
             <form action={updateOrganization} className="trace-surface space-y-4 p-5 text-sm">
               <label className="block">
-                <span className="label">Unlinked inbox retention (days)</span>
-                <input name="retentionDays" type="number" min={30} className="input mono" defaultValue={org.retentionDays ?? ""} placeholder="Keep indefinitely" />
-                <span className="hint mt-1 block">Blank means keep indefinitely. Linked evidence, tests, decisions and student reasoning are never auto-deleted by this setting.</span>
+                <span className="label"><UiText text="Unlinked inbox retention (days)" /></span>
+                <UiElement as="input" name="retentionDays" type="number" min={30} className="input mono" defaultValue={org.retentionDays ?? ""} placeholder="Keep indefinitely" />
+                <span className="hint mt-1 block"><UiText text="Blank means keep indefinitely. Linked evidence, tests, decisions and student reasoning are never auto-deleted by this setting." /></span>
               </label>
               <label className="block">
-                <span className="label">Plan {liveBilling ? "(managed by billing provider)" : "(development billing adapter)"}</span>
+                <span className="label"><UiText text="Plan " /><UiText text={liveBilling ? "(managed by billing provider)" : "(development billing adapter)"} /></span>
                 <select name="plan" className="select" defaultValue={plan} disabled={liveBilling}>
-                  {(Object.keys(PLANS) as Array<keyof typeof PLANS>).map((key) => <option key={key} value={key}>{PLANS[key].name}</option>)}
+                  {(Object.keys(PLANS) as Array<keyof typeof PLANS>).map((key) => <option key={key} value={key}><UiText text={PLANS[key].name} /></option>)}
                 </select>
               </label>
-              <button className="btn btn-primary">Save archive policy</button>
-              <p className="hint">{liveBilling ? "Plan changes go through the billing portal; webhooks synchronize entitlements." : "STRIPE_SECRET_KEY is not set: plan changes are recorded locally for development."}</p>
+              <button className="btn btn-primary"><UiText text="Save archive policy" /></button>
+              <p className="hint"><UiText text={liveBilling ? "Plan changes go through the billing portal; webhooks synchronize entitlements." : "STRIPE_SECRET_KEY is not set: plan changes are recorded locally for development."} /></p>
             </form>
           </Section>
 
@@ -152,7 +154,7 @@ export default async function OrgPage() {
                   {event.metadata ? <p className="mt-1 break-words text-text-3">{JSON.stringify(event.metadata)}</p> : null}
                 </div>
               ))}
-              {audit.length === 0 ? <p className="p-4 text-sm text-text-3">No organization-level audit events yet.</p> : null}
+              {audit.length === 0 ? <p className="p-4 text-sm text-text-3"><UiText text="No organization-level audit events yet." /></p> : null}
             </div>
           </Section>
         </div>
@@ -160,11 +162,11 @@ export default async function OrgPage() {
 
       {(isAdmin || ctx.role === "student_lead") ? (
         <details className="mt-8 rounded-[18px] border border-danger/40 bg-danger-bg/30 p-4 text-sm">
-          <summary className="cursor-pointer font-semibold text-danger">Delete team “{ctx.team.name}”</summary>
-          <p className="hint mt-2">Irreversible. Type the exact team name to confirm. An audit event is recorded and storage cleanup is queued.</p>
+          <summary className="cursor-pointer font-semibold text-danger"><UiText text="Delete team “" /><UiText text={ctx.team.name} />”</summary>
+          <p className="hint mt-2"><UiText text="Irreversible. Type the exact team name to confirm. An audit event is recorded and storage cleanup is queued." /></p>
           <form action={deleteTeam} className="mt-3 flex flex-col gap-2 sm:flex-row">
-            <input name="confirm" className="input sm:!w-64" placeholder={ctx.team.name} required />
-            <button className="btn btn-danger">Delete team</button>
+            <UiElement as="input" name="confirm" className="input sm:!w-64" placeholder={ctx.team.name} required />
+            <button className="btn btn-danger"><UiText text="Delete team" /></button>
           </form>
         </details>
       ) : null}
@@ -172,12 +174,12 @@ export default async function OrgPage() {
   );
 }
 
-function Guardrail({ icon, title, children }: { icon: string; title: string; children: string }) {
+function Guardrail({ icon, title, children }: { icon: string; title: string; children: import("react").ReactNode }) {
   return (
     <div className="flex gap-3">
       <TraceIcon name={icon} className="mt-0.5 h-4 w-4 shrink-0 text-text-2" />
       <div>
-        <p className="font-semibold">{title}</p>
+        <p className="font-semibold"><UiText text={title} /></p>
         <p className="mt-0.5 text-text-2">{children}</p>
       </div>
     </div>

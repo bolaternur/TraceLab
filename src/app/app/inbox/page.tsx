@@ -1,3 +1,5 @@
+// locale-wired
+import { UiText, UiElement } from "@/components/locale-provider";
 import Image from "next/image";
 import Link from "next/link";
 import { and, desc, eq, inArray } from "drizzle-orm";
@@ -29,7 +31,7 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
           <div className="flex gap-1 rounded-md border border-border p-0.5 text-sm">
             {(["inbox", "linked", "ignored"] as const).map((s) => (
               <Link key={s} href={`/app/inbox?status=${s}`} className={`rounded px-3 py-1 ${status === s ? "bg-blueprint text-white" : "text-text-2"}`} aria-current={status === s ? "page" : undefined}>
-                {s}
+                <UiText text={s} />
               </Link>
             ))}
           </div>
@@ -37,36 +39,39 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
       />
 
       {focus ? (
-        <aside className="card mb-6 p-4" aria-label="Source inspector">
+        <UiElement as="aside" className="card mb-6 p-4" aria-label="Source inspector">
           <div className="flex flex-wrap items-center gap-2">
             <SourceBadge provider={focus.ev.provider} eventType={focus.ev.eventType} />
             <ProvenanceLabel kind="source" />
             <Mono>{fmtDate(focus.ev.occurredAt, true)}</Mono>
-            {focus.ev.visibility === "sensitive" ? <span className="badge badge-danger">sensitive</span> : null}
+            {focus.ev.visibility === "sensitive" ? <span className="badge badge-danger"><UiText text="sensitive" /></span> : null}
           </div>
           <h2 className="mt-2 text-lg font-semibold">{focus.ev.title}</h2>
           {focus.ev.summary ? <p className="mt-1 text-sm text-text-2">{focus.ev.summary}</p> : null}
-          {focus.artifact?.storageKey ? <Image unoptimized width={800} height={600} src={`/api/media/${focus.artifact.id}`} alt={focus.ev.title} className="mt-3 max-h-80 rounded-md border border-border object-contain" /> : null}
+          {focus.artifact?.storageKey && focus.artifact.mimeType?.startsWith("image/") ? <Image unoptimized width={800} height={600} src={`/api/media/${focus.artifact.id}`} alt={focus.ev.title} className="mt-3 max-h-80 rounded-md border border-border object-contain" /> : null}
           {focus.artifact?.externalReference ? (
-            <a className="mt-2 inline-block text-sm text-blueprint" href={focus.artifact.externalReference} rel="noreferrer noopener" target="_blank">
-              Open source ↗
-            </a>
+            <a className="mt-2 inline-block text-sm text-blueprint" href={focus.artifact.externalReference} rel="noreferrer noopener" target="_blank"><UiText text="Open source ↗ " /></a>
           ) : null}
-          <dl className="mono mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-text-2 md:grid-cols-4">
+          <details className="metadata-details mt-3">
+          <summary><UiText text="Details" /></summary>
+          <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-text-2">
+            <div><dt><UiText text="Source" /></dt><dd>{focus.ev.provider}</dd></div>
+            <div><dt><UiText text="Subsystem" /></dt><dd>{focus.subsystem ?? "—"}</dd></div>
             {Object.entries(focus.ev.rawMetadata as Record<string, unknown>)
               .filter(([k]) => !["added", "modified", "removed", "rawText"].includes(k))
               .slice(0, 8)
               .map(([k, v]) => (
                 <div key={k} className="truncate">
-                  <dt className="inline text-text-3">{k}: </dt>
-                  <dd className="inline">{typeof v === "object" ? JSON.stringify(v) : String(v)}</dd>
+                  <dt className="inline text-text-3"><UiText text={k} />: </dt>
+                  <dd className="inline"><UiText text={typeof v === "object" ? JSON.stringify(v) : String(v)} /></dd>
                 </div>
               ))}
             <div>
-              <dt className="inline text-text-3">hash: </dt>
+              <dt className="inline text-text-3"><UiText text="hash: " /></dt>
               <dd className="inline">{focus.ev.contentHash.slice(0, 12)}</dd>
             </div>
           </dl>
+          </details>
           {focusNotes.length ? (
             <div className="mt-3 space-y-2">
               {focusNotes.map(({ a, author }) => (
@@ -84,26 +89,20 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
             </div>
           ) : null}
           <div className="mt-3 flex flex-wrap gap-2">
-            <Link href={`/app/why/source_event/${focus.ev.id}`} className="btn btn-sm">
-              Why?
-            </Link>
+            <Link href={`/app/why/source_event/${focus.ev.id}`} className="btn btn-sm"><UiText text="Why? " /></Link>
             {ctx.canAuthorStudentContent ? (
-              <Link href={`/app/context/${focus.ev.id}`} className="btn btn-sm btn-primary">
-                Add the why
-              </Link>
+              <Link href={`/app/context/${focus.ev.id}`} className="btn btn-sm btn-primary"><UiText text="Add the why " /></Link>
             ) : null}
             {focus.ev.iterationId ? (
-              <Link href={`/app/iterations/${focus.ev.iterationId}`} className="btn btn-sm">
-                Open iteration
-              </Link>
+              <Link href={`/app/iterations/${focus.ev.iterationId}`} className="btn btn-sm"><UiText text="Open iteration " /></Link>
             ) : null}
           </div>
-        </aside>
+        </UiElement>
       ) : null}
 
       {clusters.length ? (
-        <section className="mb-6" aria-label="Suggested clusters">
-          <h2 className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-text-3">Possible iterations (deterministic suggestion)</h2>
+        <UiElement as="section" className="mb-6" aria-label="Suggested clusters">
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-text-3"><UiText text="Possible iterations (deterministic suggestion)" /></h2>
           <div className="grid gap-3 md:grid-cols-2">
             {clusters.map((c) => (
               <form key={c.key} action={triageEvents} className="card p-3 text-sm">
@@ -112,24 +111,22 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
                 ))}
                 <div className="flex items-center gap-2">
                   <ProvenanceLabel kind="suggestion" />
-                  <span className="font-medium">{c.label}</span>
+                  <span className="font-medium"><UiText text={c.label} /></span>
                 </div>
-                <p className="mt-1 text-text-2">{c.reason}</p>
+                <p className="mt-1 text-text-2"><UiText text={c.reason} /></p>
                 <ul className="mono mt-2 max-h-24 overflow-y-auto text-xs text-text-3">
                   {c.eventIds.map((id) => (
                     <li key={id}>· {rows.find((r) => r.ev.id === id)?.ev.title}</li>
                   ))}
                 </ul>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  <input name="title" className="input !min-h-8 flex-1 text-sm" placeholder="Iteration title" required />
-                  <button name="action" value="create_iteration" className="btn btn-sm btn-primary">
-                    Group into new iteration
-                  </button>
+                  <UiElement as="input" name="title" className="input !min-h-8 flex-1 text-sm" placeholder="Iteration title" required />
+                  <button name="action" value="create_iteration" className="btn btn-sm btn-primary"><UiText text="Group into new iteration " /></button>
                 </div>
               </form>
             ))}
           </div>
-        </section>
+        </UiElement>
       ) : null}
 
       {rows.length === 0 ? (
@@ -138,80 +135,68 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
           body={status === "inbox" ? "Start with a photo or connect GitHub. New commits, CAD revisions and chat captures will arrive here automatically." : "Nothing here yet."}
           action={
             <div className="flex gap-2">
-              <Link href="/app/capture" className="btn btn-primary">
-                Capture
-              </Link>
-              <Link href="/app/integrations" className="btn">
-                Connect a source
-              </Link>
+              <Link href="/app/capture" className="btn btn-primary"><UiText text="Capture " /></Link>
+              <Link href="/app/integrations" className="btn"><UiText text="Connect a source " /></Link>
             </div>
           }
         />
       ) : (
         <form action={triageEvents}>
           <div className="card sticky top-[49px] z-10 mb-3 flex flex-wrap items-center gap-2 p-2 text-sm md:top-0">
-            <span className="px-1 text-text-3">Selected →</span>
-            <select name="iterationId" className="select !min-h-8 !w-auto text-sm" aria-label="Iteration to link">
-              <option value="">Choose iteration…</option>
+            <span className="px-1 text-text-3"><UiText text="Selected →" /></span>
+            <UiElement as="select" name="iterationId" className="select !min-h-8 !w-auto text-sm" aria-label="Iteration to link">
+              <option value=""><UiText text="Choose iteration…" /></option>
               {openIts.map((i) => (
                 <option key={i.id} value={i.id}>
-                  {i.title}
+                  <UiText text={i.title} />
                 </option>
               ))}
-            </select>
-            <button name="action" value="link" className="btn btn-sm btn-primary">
-              Link to iteration
-            </button>
-            <select name="subsystemId" className="select !min-h-8 !w-auto text-sm" aria-label="Subsystem">
-              <option value="">Subsystem…</option>
+            </UiElement>
+            <button name="action" value="link" className="btn btn-sm btn-primary"><UiText text="Link to iteration " /></button>
+            <UiElement as="select" name="subsystemId" className="select !min-h-8 !w-auto text-sm" aria-label="Subsystem">
+              <option value=""><UiText text="Subsystem…" /></option>
               {subs.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.name}
+                  <UiText text={s.name} />
                 </option>
               ))}
-            </select>
-            <button name="action" value="subsystem" className="btn btn-sm">
-              Set subsystem
-            </button>
-            <input name="title" className="input !min-h-8 !w-40 text-sm" placeholder="New iteration title" />
-            <button name="action" value="create_iteration" className="btn btn-sm">
-              Create iteration
-            </button>
+            </UiElement>
+            <button name="action" value="subsystem" className="btn btn-sm"><UiText text="Set subsystem " /></button>
+            <UiElement as="input" name="title" className="input !min-h-8 !w-40 text-sm" placeholder="New iteration title" />
+            <button name="action" value="create_iteration" className="btn btn-sm"><UiText text="Create iteration " /></button>
             {status === "inbox" ? (
-              <button name="action" value="ignore" className="btn btn-sm">
-                Ignore
-              </button>
+              <button name="action" value="ignore" className="btn btn-sm"><UiText text="Ignore " /></button>
             ) : (
-              <button name="action" value="restore" className="btn btn-sm">
-                Restore to inbox
-              </button>
+              <button name="action" value="restore" className="btn btn-sm"><UiText text="Restore to inbox " /></button>
             )}
             {ctx.canOrganize ? (
-              <button name="action" value="sensitive" className="btn btn-sm btn-danger">
-                Mark sensitive
-              </button>
+              <button name="action" value="sensitive" className="btn btn-sm btn-danger"><UiText text="Mark sensitive " /></button>
             ) : null}
           </div>
           <ul className="card divide-y divide-border">
             {rows.map(({ ev, actor, subsystem, artifact }) => (
               <li key={ev.id} className={`flex items-start gap-3 p-3 ${sp.event === ev.id ? "bg-blueprint-bg/40" : ""}`}>
-                <input type="checkbox" name="eventId" value={ev.id} aria-label={`Select ${ev.title}`} className="mt-1.5 h-4 w-4" />
-                {artifact?.storageKey ? <Image unoptimized width={48} height={48} src={`/api/media/${artifact.id}`} alt="" className="h-12 w-12 rounded border border-border object-cover" /> : null}
+                <UiElement as="input" type="checkbox" name="eventId" value={ev.id} aria-label={`Select ${ev.title}`} className="mt-1.5 h-4 w-4" />
+                {artifact?.storageKey && artifact.mimeType?.startsWith("image/") ? <Image unoptimized width={48} height={48} src={`/api/media/${artifact.id}`} alt="" className="h-12 w-12 rounded border border-border object-cover" /> : null}
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <SourceBadge provider={ev.provider} eventType={ev.eventType} />
-                    {subsystem ? <span className="badge">{subsystem}</span> : null}
-                    {ev.iterationId ? <span className="badge badge-success">linked</span> : null}
-                    {ev.visibility === "sensitive" ? <span className="badge badge-danger">sensitive</span> : null}
+                    {ev.visibility === "sensitive" ? <span className="badge badge-danger"><UiText text="sensitive" /></span> : null}
                   </div>
                   <Link href={`/app/inbox?status=${status}&event=${ev.id}`} className="mt-1 block truncate text-sm font-medium hover:underline">
                     {ev.title}
                   </Link>
-                  <div className="mono text-[11px] text-text-3">
-                    {actor ?? ev.actorExternalId ?? "unknown author"} · {fmtDate(ev.occurredAt, true)}
-                    {(ev.rawMetadata as { repository?: string }).repository ? ` · ${(ev.rawMetadata as { repository?: string }).repository}` : ""}
-                    {(ev.rawMetadata as { sha?: string }).sha ? ` · ${(ev.rawMetadata as { sha: string }).sha.slice(0, 7)}` : ""}
+                  <div className="mt-1 text-sm text-text-3">
+                    {fmtDate(ev.occurredAt, true)}
                   </div>
+                  <details className="metadata-details mt-2">
+                    <summary><UiText text="Details" /></summary>
+                    <dl className="grid gap-2 text-sm sm:grid-cols-2">
+                      <div><dt><UiText text="Author" /></dt><dd>{actor ?? ev.actorExternalId ?? "—"}</dd></div>
+                      <div><dt><UiText text="Source" /></dt><dd>{ev.provider}</dd></div>
+                      {subsystem ? <div><dt><UiText text="Subsystem" /></dt><dd>{subsystem}</dd></div> : null}
+                      <div><dt><UiText text="Type" /></dt><dd><UiText text={ev.eventType} /></dd></div>
+                    </dl>
+                  </details>
                 </div>
               </li>
             ))}

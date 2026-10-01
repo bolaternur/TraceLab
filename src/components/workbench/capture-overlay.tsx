@@ -1,5 +1,7 @@
 "use client";
 
+// locale-wired
+import { useUiText } from "@/components/locale-provider";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { CaptureSheet } from "@/app/app/capture/capture-sheet";
 import { panelTransition, surfaceTransition } from "@/components/spatial-motion/policy";
@@ -15,6 +17,7 @@ interface CaptureOverlayProps {
 }
 
 export function CaptureOverlay({ state, options, dispatch, onSaved }: CaptureOverlayProps) {
+  const t = useUiText();
   const reduceMotion = useReducedMotion();
   const kind = state.open && state.stage === "compose" ? state.kind : null;
 
@@ -35,7 +38,7 @@ export function CaptureOverlay({ state, options, dispatch, onSaved }: CaptureOve
           <motion.section
             role="dialog"
             aria-modal="true"
-            aria-label={`${kind} capture`}
+            aria-label={t("Capture evidence")}
             className="capture-overlay-panel max-h-[92dvh] w-full overflow-y-auto rounded-t-[26px] border border-white/10 bg-[#f7f7f3] p-3 text-[#111315] shadow-[0_28px_90px_rgb(0_0_0_/_0.42)] md:max-h-[calc(100dvh-40px)] md:w-[min(520px,calc(100vw-90px))] md:rounded-[26px]"
             initial={reduceMotion ? false : { opacity: 0, y: 18, scale: 0.985 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}

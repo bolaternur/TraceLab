@@ -1,3 +1,5 @@
+// locale-wired
+import { UiText } from "@/components/locale-provider";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { iterations, tests } from "@/db/schema";
@@ -5,7 +7,6 @@ import { requireTeam } from "@/server/auth";
 import { getActiveSeasonAndProject, listSubsystems } from "@/server/evidence";
 import { CaptureSheet } from "./capture-sheet";
 import { PageHeader, Notice } from "@/components/ui";
-import { TraceIcon } from "@/components/tracelab/trace-icon";
 
 export default async function CapturePage({ searchParams }: { searchParams: Promise<{ kind?: string; iteration?: string; subsystem?: string }> }) {
   const sp = await searchParams;
@@ -19,15 +20,9 @@ export default async function CapturePage({ searchParams }: { searchParams: Prom
       <PageHeader
         title="Capture evidence"
         subtitle="Capture now, enrich later. The project and season are attached automatically, and offline work stays visible instead of disappearing."
-        actions={
-          <div className="trace-chip min-h-10 gap-2 px-3 text-xs text-text-2">
-            <TraceIcon name="offline" size={15} />
-            Saved on this device first
-          </div>
-        }
       />
       {!ctx.canAuthorStudentContent ? (
-        <Notice tone="warning">Coaches can view evidence but do not create student captures. Ask a student to record this observation.</Notice>
+        <Notice tone="warning"><UiText text="Coaches can view evidence but do not create student captures. Ask a student to record this observation." /></Notice>
       ) : (
         <CaptureSheet
           teamId={ctx.team.id}

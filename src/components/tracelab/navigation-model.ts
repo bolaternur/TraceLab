@@ -63,6 +63,7 @@ export function buildNavigationModel({ isCoach, hasOrganization, unread = 0 }: {
       items: [
         { href: "/app/integrations", label: "Integrations", glyph: "integration" },
         { href: "/app/members", label: "Members", glyph: "members" },
+        { href: "/app/community", label: "Activity & reviews", glyph: "reflection" },
         ...(isCoach ? [{ href: "/app/coach", label: "Coach view", glyph: "coach" }] : []),
         ...(hasOrganization ? [{ href: "/app/org", label: "Organization", glyph: "org" }] : []),
         { href: "/app/notifications", label: "Notifications", glyph: "notification", badge: unread || undefined },

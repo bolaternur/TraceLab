@@ -1,5 +1,7 @@
 "use client";
 
+// locale-wired
+import { UiText, UiElement } from "@/components/locale-provider";
 import Link from "next/link";
 import { useState } from "react";
 import { TraceIcon } from "@/components/tracelab/trace-icon";
@@ -25,25 +27,24 @@ export function MobileWorkbench({ snapshot }: { snapshot: WorkbenchSnapshot }) {
   return (
     <div className="h-full overflow-y-auto bg-[#202124] pb-24 text-white md:hidden">
       <header className="px-4 pb-3 pt-4">
-        <div className="trace-meta text-[9px] uppercase text-white/38">Spatial workbench</div>
-        <div className="mt-1 flex items-end justify-between gap-3"><h1 className="min-w-0 truncate text-xl font-semibold">{snapshot.team.name}</h1><span className="mono shrink-0 text-[9px] uppercase text-white/30">Swipe →</span></div>
-        <p className="mt-1 truncate text-xs text-white/44">{snapshot.project.title ?? "Engineering evidence"}{snapshot.project.seasonLabel ? ` · ${snapshot.project.seasonLabel}` : ""}</p>
+        <div className="trace-meta text-[9px] uppercase text-white/38"><UiText text="Spatial workbench" /></div>
+        <div className="mt-1 flex items-end justify-between gap-3"><h1 className="min-w-0 truncate text-xl font-semibold"><UiText text={snapshot.team.name} /></h1><span className="mono shrink-0 text-[9px] uppercase text-white/30"><UiText text="Swipe →" /></span></div>
+        <p className="mt-1 truncate text-xs text-white/44"><UiText text={snapshot.project.title ?? "Engineering evidence"} /><UiText text={snapshot.project.seasonLabel ? ` · ${snapshot.project.seasonLabel}` : ""} /></p>
       </header>
 
-      <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto px-[7vw] pb-4" aria-label="Mobile workbench boards">
+      <UiElement as="div" className="flex snap-x snap-mandatory gap-3 overflow-x-auto px-[7vw] pb-4" aria-label="Mobile workbench boards">
         {MOBILE_ORDER.map((kind) => {
           const presentation = getWorkboardPresentation(kind, snapshot);
           return (
             <article key={kind} className="workbench-board min-h-[56vh] w-[88vw] shrink-0 snap-center overflow-hidden">
               <div className="workbench-artboard-header flex min-h-[62px] items-center gap-2 px-4 py-2.5">
                 <div className="min-w-0 flex-1">
-                  <div className="trace-meta text-[9px] uppercase text-black/38">{presentation.eyebrow}</div>
                   <div className="mt-0.5 flex items-center gap-2">
-                    <h2 className="truncate text-base font-semibold text-[#111315]">{presentation.title}</h2>
-                    {typeof presentation.count === "number" ? <span className="mono text-xs text-black/40">{presentation.count}</span> : null}
+                    <h2 className="truncate text-base font-semibold text-[#111315]"><UiText text={presentation.title} /></h2>
+                    {typeof presentation.count === "number" ? <span className="mono text-xs text-black/40"><UiText text={presentation.count} /></span> : null}
                   </div>
                 </div>
-                <button
+                <UiElement as="button"
                   type="button"
                   className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-black/8 bg-black/[0.025] text-black/55 active:bg-black/[0.06]"
                   aria-label={`Inspect board: ${presentation.title}`}
@@ -51,14 +52,14 @@ export function MobileWorkbench({ snapshot }: { snapshot: WorkbenchSnapshot }) {
                   onClick={() => setInspectedKind(kind)}
                 >
                   <TraceIcon name="search" size={17} />
-                  <span className="sr-only">Inspect board</span>
-                </button>
+                  <span className="sr-only"><UiText text="Inspect board" /></span>
+                </UiElement>
               </div>
               <div className="p-4 text-[#111315]"><WorkboardContent kind={kind} snapshot={snapshot} /></div>
             </article>
           );
         })}
-      </div>
+      </UiElement>
 
       <SpatialBottomSheet
         open={Boolean(inspectedKind && inspected)}
@@ -69,17 +70,17 @@ export function MobileWorkbench({ snapshot }: { snapshot: WorkbenchSnapshot }) {
         {inspectedKind && inspected ? (<>
             <header className="flex min-h-14 items-center gap-3 border-b border-white/8 px-4">
               <div className="min-w-0 flex-1">
-                <div className="trace-meta text-[9px] uppercase text-white/34">Mobile inspector</div>
-                <strong className="block truncate text-sm text-white/92">{inspected.title}</strong>
+                <div className="trace-meta text-[9px] uppercase text-white/34"><UiText text="Mobile inspector" /></div>
+                <strong className="block truncate text-sm text-white/92"><UiText text={inspected.title} /></strong>
               </div>
-              <button type="button" className="grid h-11 w-11 place-items-center rounded-xl text-white/46 active:bg-white/[0.06]" aria-label="Close mobile inspector" onClick={() => setInspectedKind(null)}>
+              <UiElement as="button" type="button" className="grid h-11 w-11 place-items-center rounded-xl text-white/46 active:bg-white/[0.06]" aria-label="Close mobile inspector" onClick={() => setInspectedKind(null)}>
                 <TraceIcon name="close" size={18} />
-              </button>
+              </UiElement>
             </header>
             <div className="space-y-4 p-4">
-              <p className="text-sm leading-6 text-white/54">{inspected.summary}</p>
-              <div className="workbench-mobile-inspector-note"><span className="trace-meta">Current lens</span><strong>{inspected.eyebrow}</strong><p>Open the canonical view for the complete evidence record and provenance.</p></div>
-              <Link href={ROUTE_BY_BOARD[inspectedKind]} className="flex min-h-11 items-center justify-center rounded-xl bg-[#f5f6f2] px-4 text-sm font-semibold text-[#111315]">Open full view</Link>
+              <p className="text-sm leading-6 text-white/54"><UiText text={inspected.summary} /></p>
+              <div className="workbench-mobile-inspector-note"><span className="trace-meta"><UiText text="Current lens" /></span><strong><UiText text={inspected.eyebrow} /></strong><p><UiText text="Open the canonical view for the complete evidence record and provenance." /></p></div>
+              <Link href={ROUTE_BY_BOARD[inspectedKind]} className="flex min-h-11 items-center justify-center rounded-xl bg-[#f5f6f2] px-4 text-sm font-semibold text-[#111315]"><UiText text="Open full view" /></Link>
             </div>
         </>) : null}
       </SpatialBottomSheet>

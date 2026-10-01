@@ -1,5 +1,7 @@
 "use client";
 
+// locale-wired
+import { UiText, UiElement } from "@/components/locale-provider";
 import { useEffect, useState } from "react";
 import { SyncStatus } from "@/components/tracelab/sync-status";
 import { TraceIcon } from "@/components/tracelab/trace-icon";
@@ -52,16 +54,15 @@ export function CaptureSheet({
 
       {failed.length ? (
         <div role="alert" className="rounded-xl border border-danger/20 bg-danger-bg px-4 py-3 text-sm text-danger">
-          <strong>{failed.length} capture{failed.length > 1 ? "s" : ""} could not sync.</strong> They remain on this device. {failed[0].error}
+          <strong><UiText text={failed.length} /><UiText text="capture" /><UiText text={failed.length > 1 ? "s" : ""} /><UiText text="could not sync." /></strong><UiText text="They remain on this device. " /><UiText text={failed[0].error} />
         </div>
       ) : null}
 
       {variant === "route" ? (
         <section>
           <div className="mb-3">
-            <div className="trace-meta text-[10px] uppercase text-text-3">Quick capture</div>
-            <h2 className="mt-1 text-2xl font-semibold tracking-[-0.03em]">What happened?</h2>
-            <p className="mt-1 text-sm text-text-2">Capture now. Enrich later. Known project context is attached automatically.</p>
+            <h2 className="mt-1 text-2xl font-semibold tracking-[-0.03em]"><UiText text="What happened?" /></h2>
+            <p className="mt-1 text-sm text-text-2"><UiText text="Capture now. Enrich later. Known project context is attached automatically." /></p>
           </div>
           <CaptureKindPicker value={kind} onChange={setKind} />
         </section>
@@ -75,14 +76,13 @@ export function CaptureSheet({
         <header className={variant === "overlay" ? "border-b border-border bg-canvas px-4 py-4" : "border-b border-border bg-canvas px-4 py-5 sm:px-6"}>
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
-              <div className="trace-meta text-[10px] uppercase text-blueprint">{prompt.eyebrow}</div>
-              <h3 className={variant === "overlay" ? "mt-1 text-lg font-semibold tracking-[-0.02em]" : "mt-1 text-xl font-semibold tracking-[-0.025em] sm:text-2xl"}>{prompt.title}</h3>
-              <p className="mt-1 max-w-2xl text-xs leading-5 text-text-3">{prompt.helper}</p>
+              <h3 className={variant === "overlay" ? "mt-1 text-lg font-semibold tracking-[-0.02em]" : "mt-1 text-xl font-semibold tracking-[-0.025em] sm:text-2xl"}><UiText text={prompt.title} /></h3>
+              <p className="mt-1 max-w-2xl text-xs leading-5 text-text-3"><UiText text={prompt.helper} /></p>
             </div>
             {variant === "overlay" && onRequestClose ? (
-              <button type="button" className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-text-3 hover:bg-black/[0.04] hover:text-ink" onClick={onRequestClose} aria-label="Close capture">
+              <UiElement as="button" type="button" className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-text-3 hover:bg-black/[0.04] hover:text-ink" onClick={onRequestClose} aria-label="Close capture">
                 <TraceIcon name="close" size={18} />
-              </button>
+              </UiElement>
             ) : null}
           </div>
         </header>
@@ -105,12 +105,12 @@ export function CaptureSheet({
 
           <button className="trace-button trace-button-primary trace-button-expressive w-full text-base" disabled={busy}>
             <TraceIcon name="capture" size={19} />
-            {busy ? "Saving on this device…" : "Save capture"}
+            <UiText text={busy ? "Saving on this device…" : "Save capture"} />
           </button>
 
           {toast ? (
             <p role="status" className={`mechanical-snap rounded-xl px-3 py-2.5 text-sm ${toast.tone === "ok" ? "bg-success-bg text-success" : toast.tone === "warn" ? "bg-warning-bg text-warning" : "bg-danger-bg text-danger"}`}>
-              {toast.text}
+              <UiText text={toast.text} />
             </p>
           ) : null}
         </div>
@@ -118,7 +118,7 @@ export function CaptureSheet({
 
       {pending.length ? (
         <details className={variant === "overlay" ? "rounded-xl border border-border bg-canvas p-3 text-sm" : "trace-surface p-3 text-sm"}>
-          <summary className="cursor-pointer list-none font-semibold">Local outbox · {pending.length}</summary>
+          <summary className="cursor-pointer list-none font-semibold"><UiText text="Local outbox · " /><UiText text={pending.length} /></summary>
           <ul className="mt-2 divide-y divide-border">
             {pending.map((item) => (
               <li key={item.clientId} className="flex min-h-12 items-center justify-between gap-3 py-2">

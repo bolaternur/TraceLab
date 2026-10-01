@@ -1,3 +1,5 @@
+// locale-wired
+import { UiText } from "@/components/locale-provider";
 import { PublicFooter, PublicNav } from "@/components/public-chrome";
 import { getCurrentUser } from "@/server/auth";
 import { brand } from "@/lib/brand";
@@ -22,14 +24,14 @@ export default async function TrustPage() {
     <div className="min-h-dvh">
       <PublicNav signedIn={!!user} locale="en" />
       <main id="main" className="mx-auto max-w-3xl px-5 py-14">
-        <p className="mono text-xs uppercase tracking-[0.12em] text-text-3">Trust center</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">How {brand.productName} protects student engineering work</h1>
-        <p className="mt-3 text-text-2">Plain statements about what the product does — and does not — do. Policy snapshot date: {brand.policySnapshotDate}.</p>
+        <p className="mono text-xs uppercase tracking-[0.12em] text-text-3"><UiText text="Trust center" /></p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight"><UiText text="How " /><UiText text={brand.productName} /><UiText text="protects student engineering work" /></h1>
+        <p className="mt-3 text-text-2"><UiText text="Plain statements about what the product does — and does not — do. Policy snapshot date: " /><UiText text={brand.policySnapshotDate} />.</p>
         <dl className="mt-10 space-y-8">
           {items.map(([t, b]) => (
             <div key={t} className="border-t border-border pt-5">
-              <dt className="font-semibold">{t}</dt>
-              <dd className="mt-1 text-sm text-text-2">{b}</dd>
+              <dt className="font-semibold"><UiText text={t} /></dt>
+              <dd className="mt-1 text-sm text-text-2"><UiText text={b} /></dd>
             </div>
           ))}
         </dl>

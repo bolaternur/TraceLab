@@ -1,3 +1,5 @@
+// locale-wired
+import { UiText } from "@/components/locale-provider";
 import type { SVGProps } from "react";
 
 export type TraceIconName =
@@ -11,6 +13,7 @@ interface TraceIconProps extends Omit<SVGProps<SVGSVGElement>, "name"> {
 }
 
 export function TraceIcon({ name, size = 18, className = "", ...props }: TraceIconProps) {
+  if (name === "evidence") return null;
   const common = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
   const icon = (() => {
     switch (name) {
@@ -47,5 +50,5 @@ export function TraceIcon({ name, size = 18, className = "", ...props }: TraceIc
       default: return <circle cx="12" cy="12" r="7" {...common}/>;
     }
   })();
-  return <svg width={size} height={size} viewBox="0 0 24 24" className={className} aria-hidden {...props}>{icon}</svg>;
+  return <svg width={size} height={size} viewBox="0 0 24 24" className={className} aria-hidden {...props}><UiText text={icon} /></svg>;
 }

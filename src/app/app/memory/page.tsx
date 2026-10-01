@@ -1,3 +1,5 @@
+// locale-wired
+import { UiText } from "@/components/locale-provider";
 import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
@@ -23,9 +25,7 @@ export default async function MemoryPage() {
         subtitle="Retrieve why past engineering decisions happened from stored evidence. Search and deterministic retrieval work first; generative phrasing is only a policy-gated layer on top."
         actions={
           <Link href="/app/graph" className="trace-button min-h-10 rounded-full px-4 text-sm">
-            <TraceIcon name="graph" size={16} />
-            Evidence trace
-          </Link>
+            <TraceIcon name="graph" size={16} /><UiText text="Evidence trace " /></Link>
         }
       />
 
@@ -36,18 +36,18 @@ export default async function MemoryPage() {
               <TraceIcon name="memory" size={18} />
             </span>
             <div>
-              <p className="text-sm font-semibold text-ink">Evidence-first answers</p>
-              <p className="mt-0.5 text-xs leading-5 text-text-3">If there is not enough project evidence, Memory should say so instead of filling the gap.</p>
+              <p className="text-sm font-semibold text-ink"><UiText text="Evidence-first answers" /></p>
+              <p className="mt-0.5 text-xs leading-5 text-text-3"><UiText text="If there is not enough project evidence, Memory should say so instead of filling the gap." /></p>
             </div>
           </div>
         </div>
         <div className="rounded-[18px] border border-border-subtle bg-surface px-4 py-3 text-xs">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-text-3">Generative layer</span>
+            <span className="text-text-3"><UiText text="Generative layer" /></span>
             <PolicyBadge decision={g.decision} />
           </div>
-          <p className="mt-1 max-w-[280px] leading-5 text-text-3">{g.reason}</p>
-          <p className="mt-1 text-text-3">Provider: <Mono>{provider.name}</Mono></p>
+          <p className="mt-1 max-w-[280px] leading-5 text-text-3"><UiText text={g.reason} /></p>
+          <p className="mt-1 text-text-3"><UiText text="Provider: " /><Mono><UiText text={provider.name} /></Mono></p>
         </div>
       </section>
 
@@ -56,30 +56,30 @@ export default async function MemoryPage() {
       <section className="mt-8">
         <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
           <div>
-            <h2 className="text-sm font-semibold text-ink">AI provenance log</h2>
-            <p className="mt-0.5 text-xs text-text-3">Only machine-assisted actions appear here. Deterministic retrieval does not need to masquerade as AI.</p>
+            <h2 className="text-sm font-semibold text-ink"><UiText text="AI provenance log" /></h2>
+            <p className="mt-0.5 text-xs text-text-3"><UiText text="Only machine-assisted actions appear here. Deterministic retrieval does not need to masquerade as AI." /></p>
           </div>
-          <span className="trace-meta text-[10px] uppercase text-text-3">Transparent by default</span>
+          <span className="trace-meta text-[10px] uppercase text-text-3"><UiText text="Transparent by default" /></span>
         </div>
         {logs.length === 0 ? (
-          <div className="rounded-[18px] border border-dashed border-border-default bg-canvas px-4 py-5 text-sm text-text-3">No AI actions yet.</div>
+          <div className="rounded-[18px] border border-dashed border-border-default bg-canvas px-4 py-5 text-sm text-text-3"><UiText text="No AI actions yet." /></div>
         ) : (
           <ul className="overflow-hidden rounded-[20px] border border-border-subtle bg-surface divide-y divide-border-subtle text-sm">
             {logs.map((l) => (
               <li key={l.id} className="p-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <Mono>{fmtDate(l.createdAt, true)}</Mono>
-                  <span className="badge">{l.action}</span>
+                  <span className="badge"><UiText text={l.action} /></span>
                   <PolicyBadge decision={l.policyDecision} />
-                  <span className="badge">{l.disposition}</span>
-                  <Mono>{l.provider ?? "—"}{l.model ? ` · ${l.model}` : ""}{l.outputHash ? ` · ${l.outputHash.slice(0, 10)}` : ""}</Mono>
+                  <span className="badge"><UiText text={l.disposition} /></span>
+                  <Mono><UiText text={l.provider ?? "—"} /><UiText text={l.model ? ` · ${l.model}` : ""} /><UiText text={l.outputHash ? ` · ${l.outputHash.slice(0, 10)}` : ""} /></Mono>
                 </div>
                 {l.prompt ? <p className="mt-2 text-text-2">Q: {l.prompt.slice(0, 160)}</p> : null}
                 {l.disposition === "pending" ? (
                   <form action={setAiDisposition} className="mt-3 flex gap-2">
                     <input type="hidden" name="id" value={l.id} />
-                    <button name="disposition" value="accepted" className="trace-button min-h-9 rounded-full px-3 text-xs">Mark useful</button>
-                    <button name="disposition" value="rejected" className="trace-button min-h-9 rounded-full px-3 text-xs">Reject</button>
+                    <button name="disposition" value="accepted" className="trace-button min-h-9 rounded-full px-3 text-xs"><UiText text="Mark useful" /></button>
+                    <button name="disposition" value="rejected" className="trace-button min-h-9 rounded-full px-3 text-xs"><UiText text="Reject" /></button>
                   </form>
                 ) : null}
               </li>

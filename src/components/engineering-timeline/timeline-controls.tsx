@@ -1,5 +1,7 @@
 "use client";
 
+// locale-wired
+import { UiText, UiElement } from "@/components/locale-provider";
 import type { TimelineScale } from "./types";
 
 const SCALES: Array<{ value: TimelineScale; label: string }> = [
@@ -26,21 +28,21 @@ export function TimelineControls({
   onHelp: () => void;
 }) {
   return (
-    <div className="timeline-controls" aria-label="Timeline controls">
-      <div className="timeline-scale-switch" role="group" aria-label="Timeline density">
+    <UiElement as="div" className="timeline-controls" aria-label="Timeline controls">
+      <UiElement as="div" className="timeline-scale-switch" role="group" aria-label="Timeline density">
         {SCALES.map((item) => (
           <button key={item.value} type="button" data-active={scale === item.value ? "true" : "false"} onClick={() => onScaleChange(item.value)} aria-pressed={scale === item.value}>
             {item.label}
           </button>
         ))}
-      </div>
+      </UiElement>
       <span className="timeline-control-divider" aria-hidden />
-      <button type="button" onClick={onReplay} className="timeline-replay-button" data-active={replaying ? "true" : "false"} aria-pressed={replaying} aria-label={replaying ? "Pause engineering trace replay" : "Replay engineering trace"}>
-        <span aria-hidden>{replaying ? "Ⅱ" : "▶"}</span> {replaying ? "Pause" : "Replay"}
-      </button>
-      <button type="button" onClick={onFit}>Fit history</button>
-      <button type="button" onClick={onLatest}>Latest</button>
-      <button type="button" onClick={onHelp} aria-label="Timeline shortcuts">?</button>
-    </div>
+      <UiElement as="button" type="button" onClick={onReplay} className="timeline-replay-button" data-active={replaying ? "true" : "false"} aria-pressed={replaying} aria-label={replaying ? "Pause engineering trace replay" : "Replay engineering trace"}>
+        <span aria-hidden><UiText text={replaying ? "Ⅱ" : "▶"} /></span> <UiText text={replaying ? "Pause" : "Replay"} />
+      </UiElement>
+      <button type="button" onClick={onFit}><UiText text="Fit history" /></button>
+      <button type="button" onClick={onLatest}><UiText text="Latest" /></button>
+      <UiElement as="button" type="button" onClick={onHelp} aria-label="Timeline shortcuts">?</UiElement>
+    </UiElement>
   );
 }

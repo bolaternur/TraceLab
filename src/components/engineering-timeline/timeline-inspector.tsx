@@ -1,5 +1,7 @@
 "use client";
 
+// locale-wired
+import { UiText, UiElement } from "@/components/locale-provider";
 import Link from "next/link";
 import { SpatialFadeSwap } from "@/components/spatial-motion/presence";
 import { TraceIcon } from "@/components/tracelab/trace-icon";
@@ -54,8 +56,8 @@ export function TimelineInspector({
     return (
       <aside className="timeline-inspector hidden min-w-0 md:flex" aria-live="polite">
         <div className="m-auto max-w-[250px] p-5 text-center">
-          <p className="trace-meta text-[9px] uppercase text-white/34">Engineering inspector</p>
-          <p className="mt-2 text-sm leading-6 text-white/56">Select a source event, iteration, test or decision to inspect its recorded time context and open the underlying evidence.</p>
+          <p className="trace-meta text-[9px] uppercase text-white/34"><UiText text="Engineering inspector" /></p>
+          <p className="mt-2 text-sm leading-6 text-white/56"><UiText text="Select a source event, iteration, test or decision to inspect its recorded time context and open the underlying evidence." /></p>
         </div>
       </aside>
     );
@@ -71,16 +73,16 @@ export function TimelineInspector({
   const traceHref = `/app/graph${traceSearch ? `?${traceSearch}` : ""}`;
 
   return (
-    <aside className="timeline-inspector hidden min-w-0 md:block" aria-live="polite" aria-label={`Engineering inspector: ${selected.title}`}>
+    <UiElement as="aside" className="timeline-inspector hidden min-w-0 md:block" aria-live="polite" aria-label={`Engineering inspector: ${selected.title}`}>
       <SpatialFadeSwap motionKey={selected.id} className="h-full">
       <div className="flex items-center justify-between gap-3 border-b border-white/8 px-4 py-3">
         <div className="min-w-0">
-          <p className="trace-meta text-[9px] uppercase text-white/34">Engineering inspector</p>
+          <p className="trace-meta text-[9px] uppercase text-white/34"><UiText text="Engineering inspector" /></p>
           <h2 className="truncate text-sm font-semibold text-white">{selected.title}</h2>
         </div>
-        <button type="button" onClick={onClose} aria-label="Close timeline inspector" className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-white/48 hover:bg-white/6 hover:text-white">
+        <UiElement as="button" type="button" onClick={onClose} aria-label="Close timeline inspector" className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-white/48 hover:bg-white/6 hover:text-white">
           <TraceIcon name="close" size={16} />
-        </button>
+        </UiElement>
       </div>
       <div className="max-h-[calc(100dvh-190px)] overflow-y-auto p-4">
         <div className="mb-4 inline-flex rounded-full border border-white/9 bg-white/[0.04] px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.08em] text-white/55">
@@ -89,30 +91,30 @@ export function TimelineInspector({
         <p className="text-sm leading-6 text-white/65">{selected.detail || "Recorded engineering evidence"}</p>
 
         <dl className="mt-5 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 border-t border-white/8 pt-4 text-xs">
-          <dt className="text-white/35">Recorded</dt><dd className="mono text-right text-white/64">{formatTechnicalDate(selected.occurredAt, snapshot.timeZone)}</dd>
-          <dt className="text-white/35">Provider</dt><dd className="mono text-right text-white/64">{selected.provider ?? "—"}</dd>
-          <dt className="text-white/35">Event type</dt><dd className="mono text-right text-white/64">{selected.eventType?.replaceAll("_", " ") ?? kindLabel(selected.kind)}</dd>
-          <dt className="text-white/35">Subsystem</dt><dd className="mono truncate text-right text-white/64">{selected.subsystemId ?? "All / unassigned"}</dd>
+          <dt className="text-white/35"><UiText text="Recorded" /></dt><dd className="mono text-right text-white/64">{formatTechnicalDate(selected.occurredAt, snapshot.timeZone)}</dd>
+          <dt className="text-white/35"><UiText text="Provider" /></dt><dd className="mono text-right text-white/64">{selected.provider ?? "—"}</dd>
+          <dt className="text-white/35"><UiText text="Event type" /></dt><dd className="mono text-right text-white/64">{selected.eventType?.replaceAll("_", " ") ?? kindLabel(selected.kind)}</dd>
+          <dt className="text-white/35"><UiText text="Subsystem" /></dt><dd className="mono truncate text-right text-white/64">{selected.subsystemId ?? "All / unassigned"}</dd>
         </dl>
 
         <section className="mt-5 border-t border-white/8 pt-4">
-          <div className="trace-meta text-[9px] uppercase text-white/34">Iteration context</div>
+          <div className="trace-meta text-[9px] uppercase text-white/34"><UiText text="Iteration context" /></div>
           {iteration ? (
             <Link href={iteration.href} className="mt-2 block rounded-[12px] border border-white/8 bg-white/[0.035] p-3 hover:bg-white/[0.055]">
               <strong className="block truncate text-xs font-semibold text-white/82">{iteration.title}</strong>
               <span className="mono mt-1 block text-[8px] uppercase text-white/32">{selected.iterationId}</span>
             </Link>
           ) : (
-            <p className="mt-2 text-xs leading-5 text-white/40">No iteration membership is stored for this timeline object.</p>
+            <p className="mt-2 text-xs leading-5 text-white/40"><UiText text="No iteration membership is stored for this timeline object." /></p>
           )}
         </section>
 
         <div className="mt-5 grid grid-cols-2 gap-2">
-          <Link href={selected.href} className="grid min-h-10 place-items-center rounded-xl border border-white/10 bg-white/[0.045] px-3 text-xs font-semibold text-white/74 hover:bg-white/[0.07]">Inspect</Link>
-          <Link href={traceHref} className="grid min-h-10 place-items-center rounded-xl bg-[#dfe5ff] px-3 text-xs font-semibold text-[#1c316f] hover:bg-white">Open in Trace</Link>
+          <Link href={selected.href} className="grid min-h-10 place-items-center rounded-xl border border-white/10 bg-white/[0.045] px-3 text-xs font-semibold text-white/74 hover:bg-white/[0.07]"><UiText text="Inspect" /></Link>
+          <Link href={traceHref} className="grid min-h-10 place-items-center rounded-xl bg-[#dfe5ff] px-3 text-xs font-semibold text-[#1c316f] hover:bg-white"><UiText text="Open in Trace" /></Link>
         </div>
       </div>
       </SpatialFadeSwap>
-    </aside>
+    </UiElement>
   );
 }

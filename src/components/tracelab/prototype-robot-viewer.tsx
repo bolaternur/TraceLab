@@ -1,5 +1,7 @@
 "use client";
 
+// locale-wired
+import { UiText, UiElement } from "@/components/locale-provider";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
@@ -130,15 +132,15 @@ export function PrototypeRobotViewer() {
   }, []);
 
   return (
-    <div className="prototype-viewer" aria-label="Interactive 3D model of Prototype 999">
+    <UiElement as="div" className="prototype-viewer" aria-label="Interactive 3D model of Prototype 999">
       <div ref={mountRef} className="absolute inset-0" />
       {state === "loading" ? (
-        <div className="prototype-viewer-status"><span className="prototype-loader" /> Calibrating model</div>
+        <div className="prototype-viewer-status"><span className="prototype-loader" /><UiText text="Calibrating model" /></div>
       ) : null}
       {state === "error" ? (
-        <div className="prototype-viewer-status text-failure">3D model unavailable</div>
+        <div className="prototype-viewer-status text-failure"><UiText text="3D model unavailable" /></div>
       ) : null}
-      <div className="prototype-viewer-hint">Drag to inspect · Scroll to zoom</div>
-    </div>
+      <div className="prototype-viewer-hint"><UiText text="Drag to inspect · Scroll to zoom" /></div>
+    </UiElement>
   );
 }

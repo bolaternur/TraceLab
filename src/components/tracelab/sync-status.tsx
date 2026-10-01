@@ -1,3 +1,5 @@
+// locale-wired
+import { UiText } from "@/components/locale-provider";
 import { TraceIcon } from "./trace-icon";
 
 export interface SyncStatusProps {
@@ -17,11 +19,11 @@ export function SyncStatus({ online, pendingCount, failedCount, onSync }: SyncSt
           <TraceIcon name={state === "offline" ? "offline" : "sync"} size={15} />
         </span>
         <div>
-          <div className="font-semibold">{copy}</div>
-          <div className="text-[10px] text-text-3">{online ? "Device is online" : "Uploads resume automatically when connected"}</div>
+          <div className="font-semibold"><UiText text={copy} /></div>
+          <div className="text-[10px] text-text-3"><UiText text={online ? "Device is online" : "Uploads resume automatically when connected"} /></div>
         </div>
       </div>
-      {online && pendingCount > 0 ? <button type="button" className="font-semibold text-blueprint" onClick={onSync}>Sync now</button> : null}
+      {online && pendingCount > 0 ? <button type="button" className="font-semibold text-blueprint" onClick={onSync}><UiText text="Sync now" /></button> : null}
     </div>
   );
 }
