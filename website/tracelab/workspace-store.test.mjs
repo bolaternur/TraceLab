@@ -142,6 +142,26 @@ test('links require unique identifiers, existing endpoints, and one relation per
   assert.equal(store.getProject().links[0].status, 'rejected');
 });
 
+test('different manual relation types coexist while normalized duplicate types fail atomically', () => {
+  const store = makeStore();
+  personal(store);
+  const from = store.addRecord(record({ id: 'SRC-TYPED' }));
+  const to = store.addRecord(record({ id: 'DEC-TYPED', kind: 'decision' }));
+  store.addLink({ from, to, relationType: 'SUPPORTS', label: 'Поддерживает решение' });
+  store.addLink({ from, to, relationType: 'RELATED_TO', label: 'Связанный материал', status: 'suggested' });
+  store.addLink({ from, to, label: 'Связь без указанного типа' });
+  assert.deepEqual(store.getProject().links.map(link => link.relationType || ''), ['SUPPORTS', 'RELATED_TO', '']);
+  const before = store.getState();
+  assert.throws(() => store.addLink({ from, to, relationType: ' SUPPORTS ', status: 'suggested' }), /уже существует/);
+  assert.throws(() => store.addLink({ from, to, relationType: '' }), /уже существует/);
+  assert.throws(() => store.addLink({ from, to }), /уже существует/);
+  assert.equal(store.getState(), before);
+  store.addLink({ from: to, to: from, relationType: 'SUPPORTS' });
+  const copy = makeStore();
+  copy.importProject(store.exportProject());
+  assert.deepEqual(copy.getProject().links, store.getProject().links);
+});
+
 test('study observations are paired, finite and do not silently duplicate participants', () => {
   const store = makeStore();
   personal(store);
@@ -415,4 +435,127 @@ test('educational provenance remains durable in editable copies, storage and JSO
   synthetic.project.educationalOrigin = false;
   fresh.importProject(JSON.stringify(synthetic));
   assert.equal(fresh.getProject().educationalOrigin, true);
+});
+
+test('moving demo nodes only changes layout and leaves evidence read-only and immutable', () => {
+  const store = makeStore();
+  const before = store.getProject();
+  let notifications = 0;
+  store.subscribe(() => { notifications += 1; });
+  store.setNodePosition('SRC-01', { x: -150.5, y: 320, ignored: 'not retained' });
+  const moved = store.getProject();
+  assert.deepEqual(moved.nodePositions, { 'SRC-01': { x: -150.5, y: 320 } });
+  assert.deepEqual(moved.records, before.records);
+  assert.deepEqual(moved.links, before.links);
+  assert.equal(moved.dataKind, 'synthetic');
+  assert.equal(moved.educationalOrigin, true);
+  assert.equal(Object.hasOwn(before, 'nodePositions'), false);
+  assert.throws(() => { moved.nodePositions['SRC-01'].x = 0; }, TypeError);
+  assert.throws(() => store.updateRecord('SRC-01', { title: 'Нельзя' }), /только для просмотра/);
+  assert.throws(() => store.addLink({ from: 'SRC-01', to: 'DEC-02' }), /только для просмотра/);
+  assert.equal(notifications, 1);
+  store.setNodePosition('SRC-01', { x: -150.5, y: 320 });
+  assert.equal(notifications, 1);
+});
+
+test('graph positions survive browser reload and JSON transfer with educational provenance', () => {
+  const storage = mockStorage();
+  const store = makeStore({ storage });
+  store.setNodePosition('SRC-01', { x: -100000, y: 100000 });
+  store.setNodePosition('DEC-01', { x: 0, y: -48.25 });
+  const restored = makeStore({ storage });
+  assert.deepEqual(restored.getState(), store.getState());
+  const transferred = makeStore();
+  transferred.importProject(restored.exportProject());
+  assert.deepEqual(transferred.getProject().nodePositions, restored.getProject().nodePositions);
+  assert.deepEqual(transferred.getProject().records, restored.getProject().records);
+  assert.equal(transferred.getProject().educationalOrigin, true);
+  const editable = JSON.parse(restored.exportProject());
+  editable.project.dataKind = 'personal';
+  transferred.importProject(JSON.stringify(editable));
+  transferred.setNodePosition('DEC-01', { x: 222, y: 333 });
+  const ownCopy = transferred.getProject();
+  assert.equal(ownCopy.educationalOrigin, true);
+  assert.deepEqual(ownCopy.nodePositions['SRC-01'], { x: -100000, y: 100000 });
+  assert.deepEqual(ownCopy.nodePositions['DEC-01'], { x: 222, y: 333 });
+});
+
+test('invalid positions and orphaned imported layout fail atomically', () => {
+  const store = makeStore();
+  store.setNodePosition('SRC-01', { x: 10, y: 20 });
+  const before = store.getState();
+  for (const position of [
+    { x: NaN, y: 0 }, { x: Infinity, y: 0 }, { x: -Infinity, y: 0 },
+    { x: 100001, y: 0 }, { x: 0, y: -100001 },
+    { x: '1', y: 0 }, { x: 1 }, { x: null, y: 0 }, [],
+  ]) {
+    assert.throws(() => store.setNodePosition('SRC-01', position), /[А-Яа-я]/);
+    assert.equal(store.getState(), before);
+  }
+  assert.throws(() => store.setNodePosition('MISSING', { x: 0, y: 0 }), /не найден/);
+  assert.equal(store.getState(), before);
+  const project = JSON.parse(store.exportProject()).project;
+  for (const nodePositions of [
+    { MISSING: { x: 1, y: 2 } },
+    { 'SRC-01': { x: 1, y: null } },
+    { 'SRC-01': { x: 0, y: 100001 } },
+    [], null,
+  ]) {
+    assert.throws(() => store.importProject(JSON.stringify({ ...project, nodePositions })), /[А-Яа-я]/);
+    assert.equal(store.getState(), before);
+  }
+});
+
+test('position imports retain only record IDs and coordinates and strip prototype metadata', () => {
+  const store = makeStore();
+  const input = JSON.parse(store.exportProject());
+  input.project.nodePositions = JSON.parse('{"SRC-01":{"x":1,"y":2,"extra":"removed","__proto__":{"polluted":true}},"__proto__":{"polluted":true},"constructor":{"prototype":{"polluted":true}},"prototype":{"polluted":true}}');
+  store.importProject(JSON.stringify(input));
+  assert.deepEqual(store.getProject().nodePositions, { 'SRC-01': { x: 1, y: 2 } });
+  assert.equal({}.polluted, undefined);
+  assert.equal(Object.hasOwn(store.getProject().nodePositions, '__proto__'), false);
+  assert.equal(Object.hasOwn(store.getProject().nodePositions, 'constructor'), false);
+});
+
+test('layout reset removes positions only while demo reset preserves personal graph layouts', () => {
+  const store = makeStore();
+  store.setNodePosition('SRC-01', { x: 1, y: 2 });
+  const movedDemo = store.getProject();
+  store.resetNodePositions();
+  assert.equal(Object.hasOwn(store.getProject(), 'nodePositions'), false);
+  assert.deepEqual(store.getProject().records, movedDemo.records);
+  assert.deepEqual(store.getProject().links, movedDemo.links);
+  store.setNodePosition('SRC-01', { x: 30, y: 40 });
+  personal(store);
+  const recordId = store.addRecord(record());
+  store.setNodePosition(recordId, { x: 50, y: 60 });
+  const personalBefore = store.getProject();
+  store.resetDemo();
+  assert.equal(Object.hasOwn(store.getProject(), 'nodePositions'), false);
+  assert.deepEqual(store.getState().projects.find(project => project.id === personalBefore.id), personalBefore);
+  store.selectProject(personalBefore.id);
+  store.resetNodePositions();
+  const expected = { ...personalBefore };
+  delete expected.nodePositions;
+  assert.deepEqual(store.getProject(), expected);
+});
+
+test('cross-tab synchronization transfers layout without changing graph data', () => {
+  let handler;
+  const storage = mockStorage();
+  const first = makeStore({ storage, eventTarget: { addEventListener(type, listener) { assert.equal(type, 'storage'); handler = listener; } } });
+  const second = makeStore({ storage });
+  second.setNodePosition('TEST-01', { x: 123, y: -45 });
+  handler({ key: STORAGE_KEY, newValue: storage.getItem(STORAGE_KEY), storageArea: storage });
+  assert.deepEqual(first.getState(), second.getState());
+  assert.deepEqual(first.getProject().nodePositions, { 'TEST-01': { x: 123, y: -45 } });
+  assert.equal(first.storageStatus, 'persistent');
+});
+
+test('native source exports do not fabricate positions from unrelated extra fields', () => {
+  const store = makeStore();
+  const fixture = nativeFixture();
+  fixture.nodePositions = { 'SOURCE-RAW': { x: 1, y: 2 } };
+  store.importProject(JSON.stringify(fixture));
+  assert.equal(Object.hasOwn(store.getProject(), 'nodePositions'), false);
 });

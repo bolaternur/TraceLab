@@ -170,6 +170,34 @@ function limitedArray(value, label, maximum) {
   return value;
 }
 
+function normalizeNodePosition(input) {
+  object(input, 'Положение узла');
+  const result = {};
+  for (const coordinate of ['x', 'y']) {
+    const value = own(input, coordinate) ? input[coordinate] : undefined;
+    if (typeof value !== 'number' || !Number.isFinite(value) || Math.abs(value) > 100000) {
+      fail(`Положение узла: координата ${coordinate} должна быть конечным числом от −100000 до 100000.`);
+    }
+    result[coordinate] = value;
+  }
+  return result;
+}
+
+function normalizeNodePositions(input, recordIds) {
+  object(input, 'Расположение графа');
+  // Only record identifiers and x/y coordinates form the layout. Prototype-shaped
+  // metadata is discarded; it can never become part of another object's prototype.
+  const entries = Object.entries(input).filter(([id]) => recordIds.has(id) || !['__proto__', 'constructor', 'prototype'].includes(id));
+  if (entries.length > LIMITS.records) fail(`Расположение графа: максимум ${LIMITS.records} узлов.`);
+  const result = {};
+  for (const [id, position] of entries) {
+    identifier(id, 'Узел графа');
+    if (!recordIds.has(id)) fail(`Положение узла «${id}» ссылается на отсутствующую запись.`);
+    result[id] = normalizeNodePosition(position);
+  }
+  return result;
+}
+
 function normalizeProject(input) {
   object(input, 'Проект');
   const dataKind = own(input, 'dataKind') ? input.dataKind : 'personal';
@@ -205,6 +233,7 @@ function normalizeProject(input) {
     allIds.add(item.id);
   }
   const recordIds = new Set(result.records.map(record => record.id));
+  if (own(input, 'nodePositions')) result.nodePositions = normalizeNodePositions(input.nodePositions, recordIds);
   const endpoints = new Set();
   for (const link of result.links) {
     if (!recordIds.has(link.from) || !recordIds.has(link.to)) fail(`Связь «${link.id}» ссылается на отсутствующую запись.`);
@@ -574,6 +603,23 @@ export function createWorkspaceStore(options = {}) {
       if (!state.projects.some(project => project.id === id)) fail('Проект не найден.');
       if (state.activeProjectId !== id) commit({ ...state, activeProjectId: id });
     },
+    setNodePosition(id, position) {
+      identifier(id, 'Узел графа');
+      const project = copy(getProject());
+      if (!project.records.some(record => record.id === id)) fail('Узел графа не найден.');
+      const normalized = normalizeNodePosition(position);
+      const previous = project.nodePositions?.[id];
+      if (previous?.x === normalized.x && previous?.y === normalized.y) return;
+      // Layout changes are safe for the synthetic example: authored evidence is untouched.
+      project.nodePositions = { ...project.nodePositions, [id]: normalized };
+      replaceProject(project);
+    },
+    resetNodePositions() {
+      const project = copy(getProject());
+      if (!own(project, 'nodePositions')) return;
+      delete project.nodePositions;
+      replaceProject(project);
+    },
     addRecord(fields) {
       object(fields, 'Новая запись');
       const project = mutableProject();
@@ -598,9 +644,12 @@ export function createWorkspaceStore(options = {}) {
       object(fields, 'Новая связь');
       const project = mutableProject();
       if (project.links.length >= LIMITS.links) fail(`В проекте может быть не больше ${LIMITS.links} связей.`);
-      if (project.links.some(link => link.from === fields.from && link.to === fields.to)) fail('Связь между этими записями уже существует.');
       const id = uniqueId('LINK', projectItemIds(project), own(fields, 'id') ? fields.id : undefined);
-      project.links.push(normalizeLink({ ...fields, id }));
+      const link = normalizeLink({ ...fields, id });
+      if (project.links.some(existing => existing.from === link.from && existing.to === link.to && (existing.relationType || '') === (link.relationType || ''))) {
+        fail('Связь этого типа между этими записями уже существует.');
+      }
+      project.links.push(link);
       replaceProject(project);
       return id;
     },

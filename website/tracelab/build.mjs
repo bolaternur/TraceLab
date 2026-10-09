@@ -15,8 +15,10 @@ function navigation(active = '') {
 }
 const footer = `<footer class="site-footer"><div class="container footer-top">${brand}<div class="footer-links"><a href="/demo">Учебный пример</a><a href="/research">Методика</a><a href="/materials">Материалы проекта</a></div></div><div class="container footer-bottom"><span>TraceLab · Сохраняйте ход инженерной мысли.</span><span>Демонстрационный MVP</span></div></footer>`;
 function page(title, description, content, active = '') {
-  const workspaceAssets = active === 'workspace' ? '<link rel="stylesheet" href="/workspace-views.css"><script type="module" src="/workspace.js"></script>' : '';
-  return `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080909"><meta name="robots" content="noindex,nofollow"><title>${title} — TraceLab</title><meta name="description" content="${description}"><link rel="icon" href="/assets/icon.svg" type="image/svg+xml"><link rel="preload" href="/assets/inter-cyrillic.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/tracelab.css"><link rel="stylesheet" href="/workspace.css"><script src="/tracelab.js" defer></script>${workspaceAssets}</head><body><a class="skip-link" href="#main">К содержимому</a>${navigation(active)}<main id="main">${content}</main>${footer}</body></html>`;
+  const workspaceAssets = active === 'workspace' ? '<link rel="stylesheet" href="/workspace-views.css"><link rel="stylesheet" href="/workspace-canvas.css"><link rel="stylesheet" href="/workspace-shell.css"><script type="module" src="/workspace.js"></script>' : '';
+  const header = active === 'workspace' ? '' : navigation(active);
+  const pageFooter = active === 'workspace' ? '' : footer;
+  return `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080909"><meta name="robots" content="noindex,nofollow"><title>${title} — TraceLab</title><meta name="description" content="${description}"><link rel="icon" href="/assets/icon.svg" type="image/svg+xml"><link rel="preload" href="/assets/inter-cyrillic.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/tracelab.css"><link rel="stylesheet" href="/workspace.css"><script src="/tracelab.js" defer></script>${workspaceAssets}</head><body class="${active === "workspace" ? "workspace-page" : "presentation-page"}"><a class="skip-link" href="#main">К содержимому</a>${header}<main id="main">${content}</main>${pageFooter}</body></html>`;
 }
 function traceWidget(compact = false) {
   return `<section class="trace-widget ${compact ? 'trace-compact' : ''}" aria-label="Интерактивный учебный пример" data-trace>
@@ -53,7 +55,7 @@ await mkdir(dist, { recursive: true });
 const backup = path.join(here, '../source/powder-preview.html');
 // The static publication builds directly from the curated source.
 await cp(path.join(here, 'assets'), path.join(dist, 'assets'), { recursive: true });
-for (const name of ['tracelab.css', 'tracelab.js', 'workspace.css', 'workspace.js', 'workspace-views.css', 'workspace-views.js', 'workspace-store.js']) { let content = await readFile(path.join(here,name),'utf8'); if (name.endsWith('.css')) content = content.replaceAll("url('/assets/", `url('${base}/assets/`); await writeFile(path.join(dist,name),content); }
+for (const name of ['tracelab.css', 'tracelab.js', 'workspace.css', 'workspace.js', 'workspace-views.css', 'workspace-views.js', 'workspace-store.js', 'workspace-shell.css', 'workspace-canvas.css', 'workspace-canvas.js']) { let content = await readFile(path.join(here,name),'utf8'); if (name.endsWith('.css')) content = content.replaceAll("url('/assets/", `url('${base}/assets/`); await writeFile(path.join(dist,name),content); }
 const pages = [
   ['/', 'История инженерного решения', 'TraceLab связывает материалы, испытания и объяснения участников в историю инженерного проекта.', home, ''],
   ['/demo', 'Учебный пример', 'Пройдите иллюстративную историю изменения робототехнического захвата.', demo, 'demo'],

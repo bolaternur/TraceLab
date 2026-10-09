@@ -1,5 +1,6 @@
 import { store } from './workspace-store.js';
-import { renderGraph,renderTestChart,renderStudyChart,renderTimeline } from './workspace-views.js';
+import { renderTestChart,renderStudyChart,renderTimeline } from './workspace-views.js';
+import { renderCanvas } from './workspace-canvas.js';
 
 const host=document.querySelector('[data-workspace]');
 const labels={source:'Материал',iteration:'Итерация',test:'Испытание',decision:'Решение'};
@@ -10,20 +11,38 @@ let selectedId=searchParams.get('record')||'DEC-01';
 let cleanup=()=>{};
 let replayTimer=null;
 let editingId=null;
+let inspectorOpen=false;
+let inspectorWidth=360;
+let connectionOrigin=null;
+try{const panels=JSON.parse(localStorage.getItem('tracelab.workspace.panels.v1')||'{}');inspectorOpen=panels.open===true&&innerWidth>800;inspectorWidth=Math.max(280,Math.min(520,Number(panels.width)||360));}catch{/* Browser storage may be unavailable. */}
 const $=selector=>document.querySelector(selector);
 const escape=value=>String(value??'').replace(/[&<>"']/g,character=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
 const dateLabel=value=>{const date=new Date(value);return Number.isNaN(date.getTime())?'Дата не указана':date.toLocaleString('ru',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});};
-function feedback(message,error=false){const element=$('#ws-feedback');element.textContent=message;element.dataset.error=String(error);}
+function feedback(message,error=false){const element=$('#ws-feedback');element.textContent=message;element.title=message;element.dataset.error=String(error);}
 function guarded(action){try{action();}catch(error){feedback(error.message||'Не удалось выполнить действие.',true);}}
-function personalProject(){if(store.getProject().dataKind==='synthetic'){feedback('Создайте свой проект или используйте учебный пример как основу, чтобы добавлять записи.',true);return false;}return true;}
+function preserveCanvasFocus(action){const active=document.activeElement;const recordId=active?.dataset?.recordId;const label=active?.getAttribute('aria-label');const port=active?.dataset?.port;action();const replacement=recordId?[...document.querySelectorAll(port?'.wc-port':'.wc-node')].find(control=>control.dataset.recordId===recordId&&(!port||control.dataset.port===port)):[...document.querySelectorAll('.wc-button')].find(control=>label&&control.getAttribute('aria-label')===label);replacement?.focus({preventScroll:true});}
+function copyExample(){const project=store.getProject();const id=store.importProject(JSON.stringify({...project,name:'Мой проект — на основе учебного примера',dataKind:'personal',educationalOrigin:true}));store.selectProject(id);feedback('Создана редактируемая копия. Исходный пример сохранён; учебные числа помечены.');return id;}
+function personalProject(){if(store.getProject().dataKind==='synthetic')copyExample();return true;}
+function setInspector(open){inspectorOpen=open;host.dataset.inspectorOpen=String(open);$('#ws-toggle-inspector').setAttribute('aria-expanded',String(open));$('#ws-toggle-inspector').setAttribute('aria-label',open?'Скрыть подробности':'Показать подробности');$('#ws-toggle-inspector').title=open?'Скрыть подробности':'Показать подробности';try{localStorage.setItem('tracelab.workspace.panels.v1',JSON.stringify({open,width:inspectorWidth}));}catch{/* Panel preferences are optional. */}}
+function setInspectorWidth(width){inspectorWidth=Math.max(280,Math.min(520,width));host.style.setProperty('--inspector-width',inspectorWidth+'px');$('#ws-inspector-resize').setAttribute('aria-valuenow',String(inspectorWidth));setInspector(inspectorOpen);}
+function openConnection(pair={}){
+  const active=document.activeElement;connectionOrigin={recordId:active?.dataset?.recordId,port:active?.dataset?.port,id:active?.id};
+  personalProject();const project=store.getProject();
+  if(project.records.length<2){feedback('Для связи нужны две записи. Добавьте ещё одну запись.',true);return;}
+  const form=$('#ws-connect-form');form.reset();form.querySelector('.ws-form-error').textContent='';
+  $('#ws-connect-from').innerHTML=project.records.map(record=>`<option value="${escape(record.id)}">${escape(record.title)} · ${escape(record.id)}</option>`).join('');
+  $('#ws-connect-from').value=pair.from||selectedId||project.records[0].id;if(!$('#ws-connect-from').value)$('#ws-connect-from').selectedIndex=0;
+  updateConnectionTargets(pair.to);$('#ws-connect-dialog').showModal();
+}
+function updateConnectionTargets(to){const from=$('#ws-connect-from').value;$('#ws-connect-to').innerHTML='<option value="">Выберите запись</option>'+store.getProject().records.filter(record=>record.id!==from).map(record=>`<option value="${escape(record.id)}">${escape(record.title)} · ${escape(record.id)}</option>`).join('');if(to)$('#ws-connect-to').value=to;}
 function filteredRecords(project){const query=$('#ws-search').value.trim().toLocaleLowerCase('ru');const kind=$('#ws-kind').value;return project.records.filter(record=>(kind==='all'||record.kind===kind)&&(!query||[record.id,record.title,record.body,record.author,record.rationale].join(' ').toLocaleLowerCase('ru').includes(query)));}
 function selectRecord(id){
   const active=document.activeElement;
-  const selectors=['.wv-node','.wv-record-button','.wv-test-row','.wv-measurement-select','.wv-timeline-button','.ws-record-list button'];
+  const selectors=['.wc-node','.wc-record-button','.wc-port','.wv-test-row','.wv-measurement-select','.wv-timeline-button','.ws-record-list button'];
   const controlSelector=selectors.find(selector=>active?.matches?.(selector));
   const fromInspector=Boolean(active?.closest?.('#ws-inspector'));
-  selectedId=id;const url=new URL(location.href);url.searchParams.set('record',id);history.replaceState(null,'',url);render();
-  const replacement=controlSelector?[...document.querySelectorAll(controlSelector)].find(control=>control.getAttribute('aria-label')?.startsWith(id+'.')||control.getAttribute('aria-label')?.startsWith(id+':')||control.querySelector('.wv-record-id')?.textContent===id||control.dataset.selectRecord===id):null;
+  selectedId=id;const url=new URL(location.href);if(id)url.searchParams.set('record',id);else url.searchParams.delete('record');history.replaceState(null,'',url);setInspector(Boolean(id));render();
+  const replacement=controlSelector?[...document.querySelectorAll(controlSelector)].find(control=>control.dataset.recordId===id||control.getAttribute('aria-label')?.startsWith(id+'.')||control.getAttribute('aria-label')?.startsWith(id+':')||control.querySelector('.wv-record-id')?.textContent===id||control.dataset.selectRecord===id):null;
   if(replacement)replacement.focus({preventScroll:true});
   else if(fromInspector){const heading=$('#ws-inspector h2');heading.tabIndex=-1;heading.focus({preventScroll:true});}
 }
@@ -55,9 +74,10 @@ function render(){
   if(!host)return;
   cleanup();cleanup=()=>{};
   const state=store.getState();const project=store.getProject();
+  host.dataset.view=activeView;
   $('#ws-project').innerHTML=state.projects.map(item=>`<option value="${escape(item.id)}" ${item.id===project.id?'selected':''}>${escape(item.name)}</option>`).join('');
   const synthetic=project.dataKind==='synthetic';
-  $('#ws-data-kind').textContent=synthetic?'Учебный пример · вымышленные данные':'Локальный проект · ваши записи и импортированные данные';
+  $('#ws-data-kind').textContent=synthetic?'Учебный пример · вымышленные данные':project.educationalOrigin?'Учебная копия · исходные данные вымышлены':'Локальный проект · ваши записи';
   $('#ws-storage').textContent=store.storageStatus==='persistent'?'Сохранено в этом браузере':'Хранение в памяти · скачайте JSON';
   $('#ws-context').textContent=synthetic?'Участники, даты и результаты 6/10 → 9/10 вымышлены. Выберите запись, чтобы увидеть её связи и авторское объяснение. Для своих данных создайте проект или импортируйте JSON.':`Записи хранятся на этом устройстве. ${store.storageMessage||'Скачивайте JSON для резервной копии или переноса проекта.'}`;
   if(!synthetic&&project.educationalOrigin)$('#ws-context').textContent+=' Проект создан из учебного примера: исходные записи и числа вымышлены. Замените их своими данными.';
@@ -65,19 +85,22 @@ function render(){
   $('#ws-import-notes').textContent=(project.importWarnings||[]).join('\n');
   $('#ws-counts').textContent=`${project.records.length} записей · ${project.records.filter(item=>item.kind==='test').length} испытаний · ${project.records.filter(item=>item.kind==='decision').length} решений`;
   $('#ws-copy-project').hidden=!synthetic;
-  $('#ws-add-record').disabled=synthetic;
-  $('#ws-add-record').title=synthetic?'Сначала создайте свой проект или скопируйте пример':'';
-  $('#ws-add-study').disabled=synthetic;
-  $('#ws-import-csv').disabled=synthetic;
+  $('#ws-edit-example').hidden=!synthetic;
+  $('#ws-add-record').disabled=false;
+  $('#ws-add-record').title=synthetic?'Добавить запись в отдельную редактируемую копию':'Добавить запись';
+  $('#ws-add-study').disabled=false;
+  $('#ws-import-csv').disabled=false;
   for(const button of document.querySelectorAll('[data-view]')){const active=button.dataset.view===activeView;button.setAttribute('aria-selected',String(active));button.tabIndex=active?0:-1;}
   $('#ws-panel').setAttribute('aria-labelledby',`ws-tab-${activeView}`);
   $('#ws-timeline-actions').hidden=activeView!=='timeline';
   $('#ws-study-actions').hidden=activeView!=='study';
+  $('#ws-connect').hidden=activeView!=='graph'&&activeView!=='history';
+  $('#ws-toggle-inspector').hidden=activeView==='study';
   $('.ws-search-label').hidden=activeView==='tests'||activeView==='study';
   $('#ws-kind').closest('label').hidden=activeView==='tests'||activeView==='study';
   $('.ws-workarea').dataset.wide=String(activeView==='study');
   const options={selectedId,query:$('#ws-search').value.trim(),kind:$('#ws-kind').value,onSelect:selectRecord};
-  if(activeView==='graph')cleanup=renderGraph($('#ws-view'),project,options)||(()=>{});
+  if(activeView==='graph')cleanup=renderCanvas($('#ws-view'),project,{...options,onConnect:openConnection,onMove:(id,position)=>guarded(()=>preserveCanvasFocus(()=>store.setNodePosition(id,position))),onResetLayout:()=>guarded(()=>preserveCanvasFocus(()=>store.resetNodePositions())),onRemoveLink:id=>guarded(()=>{personalProject();store.removeLink(id);feedback('Связь удалена из текущего проекта.');}),onError:message=>feedback(message,true)})||(()=>{});
   else if(activeView==='timeline')cleanup=renderTimeline($('#ws-view'),project,options)||(()=>{});
   else if(activeView==='tests')cleanup=renderTestChart($('#ws-view'),project,{onSelect:selectRecord})||(()=>{});
   else if(activeView==='study')cleanup=renderStudyChart($('#ws-view'),project)||(()=>{});
@@ -125,7 +148,7 @@ if(host){
   if(requestedProject&&store.getState().projects.some(project=>project.id===requestedProject))store.selectProject(requestedProject);
   for(const button of document.querySelectorAll('[data-view]')){
     button.addEventListener('click',()=>switchView(button.dataset.view));
-    button.addEventListener('keydown',event=>{const index=allowedViews.indexOf(button.dataset.view);let next;if(event.key==='ArrowRight')next=(index+1)%allowedViews.length;if(event.key==='ArrowLeft')next=(index+allowedViews.length-1)%allowedViews.length;if(event.key==='Home')next=0;if(event.key==='End')next=allowedViews.length-1;if(next!==undefined){event.preventDefault();switchView(allowedViews[next],true);}});
+    button.addEventListener('keydown',event=>{const index=allowedViews.indexOf(button.dataset.view);let next;if(event.key==='ArrowDown'||event.key==='ArrowRight')next=(index+1)%allowedViews.length;if(event.key==='ArrowUp'||event.key==='ArrowLeft')next=(index+allowedViews.length-1)%allowedViews.length;if(event.key==='Home')next=0;if(event.key==='End')next=allowedViews.length-1;if(next!==undefined){event.preventDefault();switchView(allowedViews[next],true);}});
   }
   $('#ws-project').addEventListener('change',event=>guarded(()=>{stopReplay();selectedId=null;store.selectProject(event.target.value);feedback('Открыт выбранный проект.');}));
   $('#ws-search').addEventListener('input',()=>{stopReplay();render();});
@@ -133,7 +156,21 @@ if(host){
   $('#ws-panel').addEventListener('click',event=>{const related=event.target.closest('[data-select-record]');const edit=event.target.closest('[data-edit-record]');if(related)selectRecord(related.dataset.selectRecord);if(edit)openRecord(edit.dataset.editRecord);});
   $('#ws-create-project').addEventListener('click',()=>{$('#ws-project-form').reset();$('#ws-project-form .ws-form-error').textContent='';$('#ws-project-dialog').showModal();});
   $('#ws-project-form').addEventListener('submit',event=>{event.preventDefault();const fields=new FormData(event.target);try{const id=store.createProject({name:String(fields.get('name')),description:String(fields.get('description'))});selectedId=null;store.selectProject(id);$('#ws-project-dialog').close();feedback('Проект создан. Теперь добавьте первую запись.');}catch(error){event.target.querySelector('.ws-form-error').textContent=error.message;}});
-  $('#ws-copy-project').addEventListener('click',()=>guarded(()=>{const project=store.getProject();const id=store.importProject(JSON.stringify({...project,name:'Мой проект — на основе учебного примера',dataKind:'personal',educationalOrigin:true}));store.selectProject(id);selectedId=store.getProject().records.find(record=>record.kind==='decision')?.id||null;render();feedback('Создана отдельная редактируемая копия. Исходные числа учебные; замените их своими измерениями.');}));
+  $('#ws-copy-project').addEventListener('click',()=>guarded(copyExample));
+  $('#ws-edit-example').addEventListener('click',()=>guarded(copyExample));
+  $('#ws-toggle-inspector').addEventListener('click',()=>setInspector(!inspectorOpen));
+  $('#ws-close-inspector').addEventListener('click',()=>{setInspector(false);$('#ws-toggle-inspector').focus();});
+  $('#ws-open-help').addEventListener('click',()=>$('#ws-help-dialog').showModal());
+  $('#ws-connect').addEventListener('click',()=>guarded(()=>openConnection()));
+  $('#ws-connect-from').addEventListener('change',()=>updateConnectionTargets());
+  $('#ws-connect-form').addEventListener('submit',event=>{event.preventDefault();const fields=new FormData(event.target);try{const relationType=String(fields.get('relationType'));const meanings={RELATED_TO:'Связана с',SUPPORTS:'Подтверждает',LEADS_TO:'Приводит к',CONTRADICTS:'Противоречит',SUPERSEDES:'Заменяет'};store.addLink({from:String(fields.get('from')),to:String(fields.get('to')),label:String(fields.get('label')).trim()||meanings[relationType],relationType,status:'accepted',origin:'student'});$('#ws-connect-dialog').close();feedback('Связь создана. Направление и значение сохранены в проекте.');}catch(error){event.target.querySelector('.ws-form-error').textContent=error.message;}});
+  $('#ws-connect-dialog').addEventListener('close',()=>{if($('#ws-connect-dialog').open)return;const origin=connectionOrigin;const current=document.activeElement;if(!current||current===document.body||!current.isConnected||$('#ws-connect-dialog').contains(current)){const replacement=origin?.recordId?[...document.querySelectorAll(origin.port?'.wc-port':'.wc-node')].find(control=>control.dataset.recordId===origin.recordId&&(!origin.port||control.dataset.port===origin.port)):origin?.id?document.getElementById(origin.id):null;(replacement||$('#ws-connect')).focus({preventScroll:true});}connectionOrigin=null;});
+  $('#ws-fullscreen').addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{feedback('Полотно уже занимает всю вкладку. Полный экран браузера можно включить клавишей F11.');}});
+  document.addEventListener('fullscreenchange',()=>{const active=Boolean(document.fullscreenElement);$('#ws-fullscreen').setAttribute('aria-pressed',String(active));$('#ws-fullscreen').setAttribute('aria-label',active?'Выйти из полного экрана':'На весь экран');});
+  const resize=$('#ws-inspector-resize');
+  resize.addEventListener('pointerdown',event=>{if(event.button!==0)return;event.preventDefault();const start=event.clientX,width=inspectorWidth;resize.setPointerCapture(event.pointerId);const move=next=>setInspectorWidth(width+start-next.clientX);const end=()=>{resize.removeEventListener('pointermove',move);resize.removeEventListener('pointerup',end);resize.removeEventListener('pointercancel',end);};resize.addEventListener('pointermove',move);resize.addEventListener('pointerup',end);resize.addEventListener('pointercancel',end);});
+  resize.addEventListener('keydown',event=>{if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();setInspectorWidth(inspectorWidth+(event.key==='ArrowLeft'?20:-20));}});
+  document.addEventListener('click',event=>{const menu=$('#ws-project-menu');if(!menu.contains(event.target)||event.target.closest('.ws-menu-popover button'))menu.open=false;});
   $('#ws-add-record').addEventListener('click',()=>openRecord());
   $('#ws-record-kind').addEventListener('change',configureRecordFields);
   $('#ws-record-form').addEventListener('submit',event=>{
@@ -157,5 +194,5 @@ if(host){
   $('#ws-replay').addEventListener('click',()=>{if(replayTimer){stopReplay();return;}const sequence=filteredRecords(store.getProject()).sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt));if(!sequence.length){feedback('Для воспроизведения нужны записи.');return;}let index=0;selectedId=sequence[0].id;render();$('#ws-replay').textContent='Остановить воспроизведение';$('#ws-replay').setAttribute('aria-pressed','true');replayTimer=setInterval(()=>{index++;if(index>=sequence.length){stopReplay();feedback('История просмотрена до последней записи.');return;}selectedId=sequence[index].id;render();$('#ws-replay').textContent='Остановить воспроизведение';$('#ws-replay').setAttribute('aria-pressed','true');},2200);});
   document.addEventListener('visibilitychange',()=>{if(document.hidden)stopReplay();});
   store.subscribe(()=>{const project=store.getProject();const url=new URL(location.href);url.searchParams.set('project',project.id);if(!project.records.some(record=>record.id===selectedId))url.searchParams.delete('record');history.replaceState(null,'',url);stopReplay();render();});
-  render();
+  setInspectorWidth(inspectorWidth);setInspector(inspectorOpen);render();
 }
