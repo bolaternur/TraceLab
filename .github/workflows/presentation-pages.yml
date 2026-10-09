@@ -26,6 +26,8 @@ jobs:
           node-version: '24'
           package-manager-cache: false
       - uses: actions/configure-pages@v5
+      - name: Validate workspace data and native imports
+        run: node --test website/tracelab/workspace-store.test.mjs
       - name: Build static site
         run: node website/tracelab/build.mjs
         env:

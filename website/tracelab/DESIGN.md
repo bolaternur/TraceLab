@@ -9,6 +9,10 @@ colors:
   line: "#303334"
   accent: "#d3e6b7"
   button-ink: "#17191a"
+  operate-surface: "#151a17"
+  field: "#181c1b"
+  field-line: "#444b46"
+  evidence-pending: "#c9b493"
 typography:
   display:
     fontFamily: "Inter, Arial, sans-serif"
@@ -44,6 +48,8 @@ rounded:
   surface: "16px"
   viewport: "24px"
   button: "30px"
+  field: "8px"
+  plot: "4px"
 spacing:
   control-inline: "24px"
   work: "30px"
@@ -51,6 +57,8 @@ spacing:
   gutter-mobile: "20px"
   section: "120px"
   section-mobile: "76px"
+  operate-gap: "22px"
+  inspector: "24px"
 components:
   button-primary:
     backgroundColor: "{colors.ink}"
@@ -84,6 +92,26 @@ components:
     textColor: "#c4c7c3"
     rounded: "4px"
     padding: "3px 7px"
+  operate-field:
+    backgroundColor: "{colors.field}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.field}"
+    padding: "10px 12px"
+  operate-inspector:
+    backgroundColor: "{colors.operate-surface}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.surface}"
+    padding: "{spacing.inspector}"
+  operate-tab:
+    backgroundColor: "transparent"
+    textColor: "#b9c2b9"
+    rounded: "26px"
+    padding: "11px 16px"
+  operate-tab-selected:
+    backgroundColor: "#273229"
+    textColor: "{colors.ink}"
+    rounded: "26px"
+    padding: "11px 16px"
 ---
 
 # Design System: TraceLab / Powder adaptation
@@ -94,7 +122,7 @@ components:
 
 This is a scoped adaptation of the user's selected Powder template. Its warm dusk landscape, centered hero, spacious sections and near-black surfaces remain the visual authority. Local Inter and the existing TraceLab icon preserve that continuity.
 
-The engineering example sits in a restrained graphite viewport. Muted metadata, tabular measurements and explicit evidence states give the presentation its working character. This record describes the shipped presentation in `build.mjs`, `tracelab.css` and `tracelab.js`; it does not define a replacement identity or the main application's visual system.
+The engineering example sits in a restrained graphite viewport. Muted metadata, tabular measurements and explicit evidence states give the presentation its working character. The local workspace extends this system with compact project controls, linked records and measured diagrams. This record describes the shipped presentation and local workspace in `build.mjs`, `tracelab.css`, `tracelab.js`, `workspace-surface.mjs`, `workspace.css` and `workspace-views.css`; it does not define a replacement identity or the main application's visual system.
 
 **Key Characteristics:**
 - Retained transparent landscape layers behind the dusk hero.
@@ -102,6 +130,7 @@ The engineering example sits in a restrained graphite viewport. Muted metadata, 
 - Local Inter for Cyrillic and Latin, with compact engineering metadata.
 - Spacious sections, rounded work surfaces and pill actions.
 - One visible record updated through four evidence stages.
+- Compact working views with adjacent record context, labeled connections and readable chart values.
 
 ## Colors
 
@@ -110,6 +139,9 @@ Warm imagery sits over cool dark neutrals; the existing icon supplies the pale g
 ### Primary
 - **Evidence green** (`accent`): linked-source actions, status dots, export feedback, selection and keyboard focus; also the primary button's hover state.
 
+### Secondary
+- **Pending evidence sand** (`evidence-pending`): suggested graph connections and their arrows. A dashed line and explicit confirmation text accompany the color.
+
 ### Neutral
 - **Near-black page** (`page`): continuous page background and the hero's lower fade.
 - **Graphite surface** (`surface`): the interactive engineering viewport.
@@ -117,6 +149,9 @@ Warm imagery sits over cool dark neutrals; the existing icon supplies the pale g
 - **Quiet secondary** (`muted`): descriptions and supporting context.
 - **Structural line** (`line`): work-surface divisions, tables and editorial rows.
 - **Button dark** (`button-ink`): text on the light primary action.
+- **Working inset** (`operate-surface`): the record inspector, dialogs and compact connection preview.
+- **Field dark** (`field`): editable input, select and textarea backgrounds.
+- **Field boundary** (`field-line`): the quiet stroke that makes editable fields distinguishable from surrounding working surfaces.
 
 **The Evidence Accent Rule.** Green identifies evidence, interaction or state; broad page surfaces remain dark.
 
@@ -136,6 +171,8 @@ The display is medium-weight and tightly tracked. Body copy is quieter, with pla
 - **Body:** the frontmatter's body role is the base. Hero leads use 16px / 1.55, compact explanations usually 13px / 1.6, and editorial prose 1.75 line height. Typical explanatory measures are 53–72ch.
 - **Label:** the frontmatter's label role for secondary status and metadata; final record metadata and details use 12px on desktop, with specific mobile overrides. These are functional labels, not decorative headings.
 
+The compact working view uses a 32px / 1.2 title with tight tracking, changing to 29px at 800px and 27px at 520px. Inspector headings use 22px / 1.3. Working controls and explanatory text use 12–14px; graph labels and chart axes use 12px, with 13px node titles and 19–21px highlighted test values. Dates, record IDs, zoom percentages and measurements remain tabular. These compact roles belong to working views rather than replacing the presentation's display scale.
+
 **The One Family Rule.** Keep local Inter across the presentation and use tabular figures for engineering values.
 
 ## Layout
@@ -146,6 +183,12 @@ Desktop content alternates centered hero and closing blocks with split explanato
 
 The selected home sequence is hero and educational preview, rationale problem, evidence workflow, supported capabilities, research method, concise FAQ and closing demo action. `/demo`, `/research` and `/materials` provide the necessary supporting detail. This is the presentation's surface composition, not a required sequence for future interfaces.
 
+Working surfaces use a wider 1320px container with the same page gutters. Project selection and transfer actions precede horizontally scrollable view tabs; search and type controls sit directly above the active view. The normal work area places a flexible evidence surface beside a 330px inspector, using the compact gap from the frontmatter. At 1120px the inspector contracts to 295px and the gap to 16px; at 800px it moves below the view. Controls wrap, then become full-width at 520px. The paired-measurement view uses the full work area without an inspector.
+
+Graphs keep their own scrollable viewport and explicit zoom/fit controls. Compact widths preserve readable labels by allowing graph scrolling. Research charts retain a 640px minimum plot width inside a horizontal scroller; tables use a separate horizontal scroller. Timeline rows move from date/content columns to one column at 700px. The graph toolbar also wraps at that breakpoint.
+
+**The Working Context Rule.** Keep the active record's provenance, explanation and related evidence beside the working view on wide screens and immediately below it on compact screens.
+
 ## Elevation & Depth
 
 The shipped interface has no box-shadow vocabulary. Tonal backgrounds, thin borders, the retained landscape layers and its soft masks provide depth. Work content stays visible at rest. State transitions use a short background/color change; the arriving record briefly clears a blur. Reduced-motion preferences disable animation and transitions and replace smooth scrolling with immediate scrolling.
@@ -155,6 +198,8 @@ The shipped interface has no box-shadow vocabulary. Tonal backgrounds, thin bord
 ## Shapes
 
 Primary and outline actions are pills. Standard work surfaces use the surface radius; the large engineering viewport uses the viewport radius on desktop and the surface radius at 800px. Source thumbnails use the source radius, and evidence stages use the smaller stage radius. The mobile navigation disclosure uses 14px corners. Editorial lists and tables stay flat with thin horizontal divisions.
+
+Working tabs keep pill silhouettes; fields use the field radius, compact graph controls reuse the stage radius and test tracks use the smaller plot radius. Graph nodes use rounded rectangles, while connections and table rows supply the structure without enclosing every fact in another card.
 
 ## Components
 
@@ -173,6 +218,22 @@ The work viewport has a graphite fill, a translucent light border and clipped ro
 ### Navigation
 The desktop header has 13px links and a subdued pill demo action; active and hovered links brighten. At 800px the labeled menu button controls a dark disclosure. Escape closes it and returns focus to the toggle; activating a link also closes it.
 
+### Working fields and dialogs
+Fields use the frontmatter's working fill, boundary, radius and padding with 13px / 1.5 Inter. Focus uses a two-pixel evidence-green outline offset by three pixels. Dialogs reuse the working inset and surface radius, with a dim backdrop and internal scrolling. Their two-column forms stack at 520px; validation feedback appears next to the form rather than as a decorative badge.
+
+### Working view tabs
+View selection uses a darker green-toned pill, a visible border and foreground text. Unselected tabs are quiet until hovered. The tablist supports left/right arrows, Home and End with one keyboard tab stop; horizontal scrolling keeps every view reachable on compact screens.
+
+### Evidence graph and inspector
+Nodes retain an ID, type and readable title. Selection strengthens the evidence-green stroke; neighboring records keep a lighter neutral stroke while unrelated records recede. Accepted connections use solid directed lines, suggested connections use sand-colored dashed lines, and the selected record's links use the evidence accent. Relationship labels and the expandable text list supply meaning alongside the diagram. Enter or Space selects a focused node.
+
+The inspector groups record details with thin divisions and text-led related-record actions. Missing authorship, explanation or supporting tests receive explicit text. Annotation history sits in a disclosure, preserving the compact working view.
+
+### Test and research diagrams
+Tests use horizontal evidence-green bars with a printed value, context and units. Each test row can select its record. Research measurements use neutral baseline dots and evidence-green TraceLab dots joined by a line; a legend, participant codes, numeric axis and disclosed table keep comparisons readable. Empty views provide a written next action. These encodings describe entered data rather than supplying research claims.
+
+**The Evidence Encoding Rule.** Accompany diagram color with labels, printed values and a text or table path; distinguish suggested relations through both dashed strokes and explicit status.
+
 ### Evidence record
 Four stages update one authored record and its linked test or decision. Stage selection uses a darker filled control and foreground text. Left/right arrows, Home and End support keyboard selection with a single tab stop. Inspecting a source opens its explanation inline; selecting a stage closes that explanation.
 
@@ -185,6 +246,8 @@ Replay advances every three seconds and can be stopped; changing the stage or in
 - **Do** keep engineering measurements tabular and distinguish evidence, authorship and missing information.
 - **Do** preserve visible content, keyboard focus and reduced-motion behavior.
 - **Do** use the established pills, surface radii and spacious container rhythm when extending this presentation.
+- **Do** use compact controls and adjacent record context for working views while retaining the presentation's palette and type family.
+- **Do** retain units, readable diagram labels and a text or table alternative when presenting evidence.
 
 ### Don't:
 - **Don't** replace the approved Powder visual world while adapting this presentation.

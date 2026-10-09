@@ -1,0 +1,354 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-09T17:45:02.672Z",
+  "title": "Design System: TraceLab / Powder adaptation",
+  "extensions": {
+    "colorMeta": {
+      "page": {
+        "role": "neutral",
+        "displayName": "Near-black page",
+        "tonalRamp": [
+          "oklch(15% 0.0019 196.94)",
+          "oklch(26% 0.0019 196.94)",
+          "oklch(37% 0.0019 196.94)",
+          "oklch(49% 0.0019 196.94)",
+          "oklch(60% 0.0019 196.94)",
+          "oklch(72% 0.0019 196.94)",
+          "oklch(84% 0.0019 196.94)",
+          "oklch(95% 0.0019 196.94)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Graphite surface",
+        "tonalRamp": [
+          "oklch(15% 0.0037 229.00)",
+          "oklch(26% 0.0037 229.00)",
+          "oklch(37% 0.0037 229.00)",
+          "oklch(49% 0.0037 229.00)",
+          "oklch(60% 0.0037 229.00)",
+          "oklch(72% 0.0037 229.00)",
+          "oklch(84% 0.0037 229.00)",
+          "oklch(95% 0.0037 229.00)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Warm foreground",
+        "tonalRamp": [
+          "oklch(15% 0.0045 78.30)",
+          "oklch(26% 0.0045 78.30)",
+          "oklch(37% 0.0045 78.30)",
+          "oklch(49% 0.0045 78.30)",
+          "oklch(60% 0.0045 78.30)",
+          "oklch(72% 0.0045 78.30)",
+          "oklch(84% 0.0045 78.30)",
+          "oklch(95% 0.0045 78.30)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Quiet secondary",
+        "tonalRamp": [
+          "oklch(15% 0.0026 165.05)",
+          "oklch(26% 0.0026 165.05)",
+          "oklch(37% 0.0026 165.05)",
+          "oklch(49% 0.0026 165.05)",
+          "oklch(60% 0.0026 165.05)",
+          "oklch(72% 0.0026 165.05)",
+          "oklch(84% 0.0026 165.05)",
+          "oklch(95% 0.0026 165.05)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Structural line",
+        "tonalRamp": [
+          "oklch(15% 0.0046 219.62)",
+          "oklch(26% 0.0046 219.62)",
+          "oklch(37% 0.0046 219.62)",
+          "oklch(49% 0.0046 219.62)",
+          "oklch(60% 0.0046 219.62)",
+          "oklch(72% 0.0046 219.62)",
+          "oklch(84% 0.0046 219.62)",
+          "oklch(95% 0.0046 219.62)"
+        ]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Evidence green",
+        "tonalRamp": [
+          "oklch(15% 0.0655 125.59)",
+          "oklch(26% 0.0655 125.59)",
+          "oklch(37% 0.0655 125.59)",
+          "oklch(49% 0.0655 125.59)",
+          "oklch(60% 0.0655 125.59)",
+          "oklch(72% 0.0655 125.59)",
+          "oklch(84% 0.0655 125.59)",
+          "oklch(95% 0.0655 125.59)"
+        ]
+      },
+      "button-ink": {
+        "role": "neutral",
+        "displayName": "Button dark",
+        "tonalRamp": [
+          "oklch(15% 0.0037 228.98)",
+          "oklch(26% 0.0037 228.98)",
+          "oklch(37% 0.0037 228.98)",
+          "oklch(49% 0.0037 228.98)",
+          "oklch(60% 0.0037 228.98)",
+          "oklch(72% 0.0037 228.98)",
+          "oklch(84% 0.0037 228.98)",
+          "oklch(95% 0.0037 228.98)"
+        ]
+      },
+      "operate-surface": {
+        "role": "neutral",
+        "displayName": "Working inset",
+        "tonalRamp": [
+          "oklch(15% 0.0096 159.15)",
+          "oklch(26% 0.0096 159.15)",
+          "oklch(37% 0.0096 159.15)",
+          "oklch(49% 0.0096 159.15)",
+          "oklch(60% 0.0096 159.15)",
+          "oklch(72% 0.0096 159.15)",
+          "oklch(84% 0.0096 159.15)",
+          "oklch(95% 0.0096 159.15)"
+        ]
+      },
+      "field": {
+        "role": "neutral",
+        "displayName": "Field dark",
+        "tonalRamp": [
+          "oklch(15% 0.0063 179.03)",
+          "oklch(26% 0.0063 179.03)",
+          "oklch(37% 0.0063 179.03)",
+          "oklch(49% 0.0063 179.03)",
+          "oklch(60% 0.0063 179.03)",
+          "oklch(72% 0.0063 179.03)",
+          "oklch(84% 0.0063 179.03)",
+          "oklch(95% 0.0063 179.03)"
+        ]
+      },
+      "field-line": {
+        "role": "neutral",
+        "displayName": "Field boundary",
+        "tonalRamp": [
+          "oklch(15% 0.0123 154.72)",
+          "oklch(26% 0.0123 154.72)",
+          "oklch(37% 0.0123 154.72)",
+          "oklch(49% 0.0123 154.72)",
+          "oklch(60% 0.0123 154.72)",
+          "oklch(72% 0.0123 154.72)",
+          "oklch(84% 0.0123 154.72)",
+          "oklch(95% 0.0123 154.72)"
+        ]
+      },
+      "evidence-pending": {
+        "role": "secondary",
+        "displayName": "Pending evidence sand",
+        "tonalRamp": [
+          "oklch(15% 0.0509 79.03)",
+          "oklch(26% 0.0509 79.03)",
+          "oklch(37% 0.0509 79.03)",
+          "oklch(49% 0.0509 79.03)",
+          "oklch(60% 0.0509 79.03)",
+          "oklch(72% 0.0509 79.03)",
+          "oklch(84% 0.0509 79.03)",
+          "oklch(95% 0.0509 79.03)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Presentation headings; working-view headings use the documented compact local sizes."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Presentation section headings."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Section subheads and evidence record titles."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Presentation copy; working explanations use compact local sizes."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Functional status and metadata; working diagrams use readable 12px labels."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "ease-standard",
+        "value": "cubic-bezier(.16,1,.3,1)",
+        "purpose": "Shared button state easing."
+      },
+      {
+        "name": "button-state",
+        "value": "background .2s var(--ease), color .2s var(--ease), transform .2s var(--ease)",
+        "purpose": "Presentation and working pill actions."
+      },
+      {
+        "name": "operate-tab-state",
+        "value": "background .15s, color .15s",
+        "purpose": "Working-view tab state changes."
+      },
+      {
+        "name": "evidence-row-state",
+        "value": "background .18s",
+        "purpose": "Test and chronology rows; disabled for reduced-motion preferences."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "operate-compact",
+        "value": "1120px"
+      },
+      {
+        "name": "split-compact",
+        "value": "1050px"
+      },
+      {
+        "name": "tablet",
+        "value": "800px"
+      },
+      {
+        "name": "diagram-compact",
+        "value": "700px"
+      },
+      {
+        "name": "phone",
+        "value": "520px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The light pill action shared by presentation and working surfaces.",
+      "html": "<button class=\"ds-primary\">Добавить запись</button>",
+      "css": ".ds-primary{display:inline-flex;align-items:center;justify-content:center;gap:13px;padding:13px 24px;min-height:47px;border-radius:30px;font-size:13px;font-weight:500;font-family:Inter,Arial,sans-serif;border:1px solid transparent;transition:background .2s var(--ease,cubic-bezier(.16,1,.3,1)),color .2s var(--ease,cubic-bezier(.16,1,.3,1)),transform .2s var(--ease,cubic-bezier(.16,1,.3,1));cursor:pointer;background:var(--ink,#f4f2ef);color:#17191a}.ds-primary:hover{background:var(--accent,#d3e6b7)}.ds-primary:focus-visible{outline:2px solid var(--accent,#d3e6b7);outline-offset:5px;}.ds-primary:active{transform:translateY(1px)}@media(prefers-reduced-motion:reduce){.ds-primary{transition:none}}"
+    },
+    {
+      "name": "Outline action",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "A quiet secondary action for replay and measurement entry.",
+      "html": "<button class=\"ds-outline\">Воспроизвести историю</button>",
+      "css": ".ds-outline{display:inline-flex;align-items:center;justify-content:center;gap:13px;padding:13px 24px;min-height:47px;border-radius:30px;font-size:13px;font-weight:500;font-family:Inter,Arial,sans-serif;border:1px solid transparent;transition:background .2s var(--ease,cubic-bezier(.16,1,.3,1)),color .2s var(--ease,cubic-bezier(.16,1,.3,1)),transform .2s var(--ease,cubic-bezier(.16,1,.3,1));cursor:pointer;background:transparent;color:var(--ink,#f4f2ef);border-color:#484d48}.ds-outline:hover{background:#29322b;border-color:#71806c}.ds-outline:focus-visible{outline:2px solid var(--accent,#d3e6b7);outline-offset:5px;}.ds-outline:active{transform:translateY(1px)}@media(prefers-reduced-motion:reduce){.ds-outline{transition:none}}"
+    },
+    {
+      "name": "Working text action",
+      "kind": "button",
+      "description": "Compact evidence-green import, export and record actions.",
+      "html": "<button class=\"ds-text-action\">Экспорт JSON</button>",
+      "css": ".ds-text-action{display:inline-flex;align-items:center;gap:8px;background:none;border:0;padding:8px 0;min-height:34px;font-size:12px;line-height:1.4;font-family:Inter,Arial,sans-serif;color:var(--accent,#d3e6b7);cursor:pointer;text-align:left}.ds-text-action:hover{text-decoration:underline}.ds-text-action:focus-visible{outline:2px solid var(--accent,#d3e6b7);outline-offset:5px;}.ds-text-action:active{transform:translateY(1px)}.ds-text-action:disabled{color:var(--muted,#b4b6b5);opacity:.6;cursor:default}"
+    },
+    {
+      "name": "Working field",
+      "kind": "input",
+      "refersTo": "operate-field",
+      "description": "Compact editable fields for search, capture and linking.",
+      "html": "<label class=\"ds-field-label\" for=\"ds-search\">Поиск по записям<input class=\"ds-field\" id=\"ds-search\" placeholder=\"Название, ID, автор или заметка\" type=\"search\"></label>",
+      "css": ".ds-field-label{display:flex;flex-direction:column;gap:7px;font-size:11px;font-family:Inter,Arial,sans-serif;color:#b3bdb2;max-width:420px}.ds-field{font:400 13px/1.5 Inter,Arial,sans-serif;color:var(--ink,#f4f2ef);background:#181c1b;border:1px solid #444b46;border-radius:8px;padding:10px 12px;min-height:41px;caret-color:var(--accent,#d3e6b7)}.ds-field::placeholder{color:#a2ada4}.ds-field:focus-visible{outline:2px solid var(--accent,#d3e6b7);outline-offset:3px}"
+    },
+    {
+      "name": "Working view tabs",
+      "kind": "nav",
+      "refersTo": "operate-tab",
+      "description": "Pill tabs retain compact evidence navigation and selected state.",
+      "html": "<div class=\"ds-tabs\" role=\"tablist\" aria-label=\"Представления проекта\"><button class=\"ds-tab\" role=\"tab\" aria-selected=\"true\">Граф связей</button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\" tabindex=\"-1\">Хронология</button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\" tabindex=\"-1\">Испытания и графики</button></div>",
+      "css": ".ds-tabs{display:flex;gap:6px;overflow-x:auto;padding:16px 0 20px}.ds-tab{padding:11px 16px;white-space:nowrap;font-family:Inter,Arial,sans-serif;font-size:13px;color:#b9c2b9;background:transparent;border:1px solid transparent;border-radius:26px;transition:background .15s,color .15s;cursor:pointer}.ds-tab:hover{background:#1b211c;color:var(--ink,#f4f2ef)}.ds-tab[aria-selected=true]{background:#273229;border-color:#465645;color:var(--ink,#f4f2ef)}.ds-tab:focus-visible{outline:2px solid var(--accent,#d3e6b7);outline-offset:5px;}.ds-tab:active{transform:translateY(1px)}@media(prefers-reduced-motion:reduce){.ds-tab{transition:none}}"
+    },
+    {
+      "name": "Educational provenance label",
+      "kind": "chip",
+      "refersTo": "educational-label",
+      "description": "A real-data provenance label that distinguishes the illustrative record.",
+      "html": "<span class=\"ds-educational\">Учебные данные</span>",
+      "css": ".ds-educational{display:inline-block;font-family:Inter,Arial,sans-serif;font-size:11px;line-height:1.6;background:#ffffff0b;color:#c4c7c3;border-radius:4px;padding:3px 7px}"
+    },
+    {
+      "name": "Engineering viewport",
+      "kind": "card",
+      "refersTo": "work-viewport",
+      "description": "The retained graphite frame around an evidence record.",
+      "html": "<section class=\"ds-viewport\"><div class=\"ds-viewport-header\">История инженерного проекта</div><div class=\"ds-viewport-record\"><h3>Объяснение решения</h3><p>Материалы, испытания и авторская заметка остаются вместе.</p></div></section>",
+      "css": ".ds-viewport{background:var(--surface,#151718);color:var(--ink,#f4f2ef);border:1px solid #ffffff12;border-radius:24px;overflow:hidden;font-family:Inter,Arial,sans-serif;}.ds-viewport-header{padding:18px 24px;border-bottom:1px solid var(--line,#303334);font-size:12px;color:var(--muted,#b4b6b5)}.ds-viewport-record{padding:30px}.ds-viewport-record h3{margin:0 0 14px;font-size:19px;line-height:1.4;font-weight:500;letter-spacing:-.02em}.ds-viewport-record p{margin:0;color:var(--muted,#b4b6b5);font-size:13px;line-height:1.6}@media(max-width:800px){.ds-viewport{border-radius:16px}.ds-viewport-record{padding:22px}}"
+    },
+    {
+      "name": "Working record inspector",
+      "kind": "card",
+      "refersTo": "operate-inspector",
+      "description": "A compact context surface with text-led related evidence.",
+      "html": "<aside class=\"ds-inspector\"><p class=\"ds-record-id\">Решение · DEC-01</p><h2>Объяснение автора</h2><p>Авторское объяснение не добавлено.</p><section class=\"ds-evidence-note\"><strong>Почему принято это решение?</strong><p>Связанное испытание не указано.</p></section><button class=\"ds-related\"><strong>Связанная запись</strong><span>Материал · источник</span></button></aside>",
+      "css": ".ds-inspector{background:#151a17;color:var(--ink,#f4f2ef);border-radius:16px;padding:24px;font-family:Inter,Arial,sans-serif;;max-width:330px}.ds-inspector h2{margin:0 0 16px;font-size:22px;line-height:1.3;font-weight:500;letter-spacing:-.02em}.ds-inspector p{margin:0;font-size:13px;line-height:1.7;color:var(--muted,#b4b6b5)}.ds-inspector .ds-record-id{margin-bottom:10px;font-size:11px;color:#bdcab6;font-variant-numeric:tabular-nums}.ds-evidence-note{padding:14px 0;border-block:1px solid var(--line,#303334);margin-top:20px}.ds-evidence-note strong{display:block;font-size:13px;font-weight:500;margin-bottom:6px}.ds-related{display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;background:none;border:0;border-bottom:1px solid var(--line,#303334);padding:13px 0;text-align:left;color:var(--ink,#f4f2ef);font-size:12px;font-family:Inter,Arial,sans-serif;cursor:pointer}.ds-related:hover{color:var(--accent,#d3e6b7)}.ds-related span{font-size:11px;color:var(--muted,#b4b6b5)}.ds-related:focus-visible{outline:2px solid var(--accent,#d3e6b7);outline-offset:5px;}.ds-related:active{transform:translateY(1px)}"
+    },
+    {
+      "name": "Evidence graph",
+      "kind": "custom",
+      "description": "Directed evidence relationships use readable nodes and explicit relation states.",
+      "html": "<section class=\"ds-graph\"><div class=\"ds-graph-legend\"><span class=\"ds-established-key\">Подтверждённая связь</span><span class=\"ds-suggested-key\">Предложенная связь</span></div><div class=\"ds-graph-scroll\"><svg class=\"ds-graph-svg\" viewBox=\"0 0 610 150\" width=\"610\" height=\"150\" role=\"img\" aria-label=\"Материал связан с решением\"><path class=\"ds-edge\" d=\"M240 75H356\"/><path class=\"ds-arrow\" d=\"m349 69 7 6-7 6\"/><g class=\"ds-node\" tabindex=\"0\" role=\"button\" aria-label=\"Материал\"><rect x=\"18\" y=\"32\" width=\"222\" height=\"86\" rx=\"8\"/><text class=\"ds-node-id\" x=\"32\" y=\"55\">Материал</text><text class=\"ds-node-title\" x=\"32\" y=\"79\">Исходная версия</text><text class=\"ds-node-kind\" x=\"32\" y=\"101\">Источник</text></g><g class=\"ds-node ds-selected\" tabindex=\"0\" role=\"button\" aria-label=\"Выбранное решение\" aria-pressed=\"true\"><rect x=\"356\" y=\"32\" width=\"236\" height=\"86\" rx=\"8\"/><text class=\"ds-node-id\" x=\"370\" y=\"55\">Решение</text><text class=\"ds-node-title\" x=\"370\" y=\"79\">Авторское объяснение</text><text class=\"ds-node-kind\" x=\"370\" y=\"101\">Связанная запись</text></g></svg></div><details class=\"ds-graph-list\"><summary>Связи текстом</summary><p>Материал → Решение · основание</p></details></section>",
+      "css": ".ds-graph{background:var(--surface,#151718);color:var(--ink,#f4f2ef);border:1px solid var(--line,#303334);border-radius:16px;overflow:hidden;font-family:Inter,Arial,sans-serif;}.ds-graph-legend{display:flex;gap:18px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--line,#303334);font-size:12px;color:var(--muted,#b4b6b5)}.ds-established-key,.ds-suggested-key{display:inline-flex;align-items:center;gap:8px}.ds-established-key::before,.ds-suggested-key::before{content:'';width:23px;border-top:1px solid #879284}.ds-suggested-key::before{border-top-style:dashed;border-top-color:#c9b493}.ds-graph-scroll{overflow:auto;background:#101312}.ds-graph-svg{display:block;max-width:none;fill:none;stroke:none;margin:auto}.ds-graph-svg text{stroke:none;font-family:Inter,Arial,sans-serif;}.ds-edge{fill:none;stroke:#737e71;stroke-width:1.5}.ds-arrow{fill:none;stroke:#879284;stroke-width:1.2}.ds-node{cursor:pointer;outline:none}.ds-node rect{fill:#202524;stroke:#4a534b;stroke-width:1}.ds-node:hover rect{fill:#29302b;stroke:#96a38f}.ds-node:focus-visible rect{stroke:var(--accent,#d3e6b7);stroke-width:2.5}.ds-selected rect{fill:#2b3429;stroke:var(--accent,#d3e6b7);stroke-width:2}.ds-node-id{fill:#d4ddd0;font-size:12px;font-variant-numeric:tabular-nums}.ds-node-title{fill:var(--ink,#f4f2ef);font-size:13px;font-weight:500}.ds-node-kind{fill:#bbc4b9;font-size:12px}.ds-graph-list{border-top:1px solid var(--line,#303334)}.ds-graph-list summary{padding:15px 20px;font-size:13px;cursor:pointer}.ds-graph-list summary:focus-visible{outline:2px solid var(--accent,#d3e6b7);outline-offset:5px;}.ds-graph-list p{padding:0 20px 14px;margin:0;font-size:12px;color:var(--muted,#b4b6b5)}@media(max-width:700px){.ds-graph-legend{gap:10px;padding:14px}.ds-graph-svg{margin:0}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The selected Powder landscape and engineering work surface",
+    "overview": "This is a scoped adaptation of the user's selected Powder template. Its warm dusk landscape, centered hero, spacious sections and near-black surfaces remain the visual authority. Local Inter and the existing TraceLab icon preserve that continuity.\n\nThe engineering example sits in a restrained graphite viewport. Muted metadata, tabular measurements and explicit evidence states give the presentation its working character. The local workspace extends this system with compact project controls, linked records and measured diagrams. This record describes the shipped presentation and local workspace in `build.mjs`, `tracelab.css`, `tracelab.js`, `workspace-surface.mjs`, `workspace.css` and `workspace-views.css`; it does not define a replacement identity or the main application's visual system.",
+    "keyCharacteristics": [
+      "Retained transparent landscape layers behind the dusk hero.",
+      "Near-black page, graphite work surfaces and pale green evidence accents.",
+      "Local Inter for Cyrillic and Latin, with compact engineering metadata.",
+      "Spacious sections, rounded work surfaces and pill actions.",
+      "One visible record updated through four evidence stages.",
+      "Compact working views with adjacent record context, labeled connections and readable chart values."
+    ],
+    "rules": [
+      {
+        "name": "The Evidence Accent Rule",
+        "body": "Green identifies evidence, interaction or state; broad page surfaces remain dark.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Family Rule",
+        "body": "Keep local Inter across the presentation and use tabular figures for engineering values.",
+        "section": "typography"
+      },
+      {
+        "name": "The Working Context Rule",
+        "body": "Keep the active record's provenance, explanation and related evidence beside the working view on wide screens and immediately below it on compact screens.",
+        "section": "layout"
+      },
+      {
+        "name": "The Tonal Depth Rule",
+        "body": "Reuse the observed dark surfaces and divisions for hierarchy; preserve the landscape's original transparent contours.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Evidence Encoding Rule",
+        "body": "Accompany diagram color with labels, printed values and a text or table path; distinguish suggested relations through both dashed strokes and explicit status.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "**Do** preserve local Inter, the existing TraceLab icon, the selected dusk landscape and its transparent contours.",
+      "**Do** keep engineering measurements tabular and distinguish evidence, authorship and missing information.",
+      "**Do** preserve visible content, keyboard focus and reduced-motion behavior.",
+      "**Do** use the established pills, surface radii and spacious container rhythm when extending this presentation.",
+      "**Do** use compact controls and adjacent record context for working views while retaining the presentation's palette and type family.",
+      "**Do** retain units, readable diagram labels and a text or table alternative when presenting evidence."
+    ],
+    "donts": [
+      "**Don't** replace the approved Powder visual world while adapting this presentation.",
+      "**Don't** add pricing grids, invented testimonials, unsupported metrics or unrelated SaaS forms to this scoped site.",
+      "**Don't** disguise synthetic example measurements as research results."
+    ]
+  }
+}
