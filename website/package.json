@@ -1,0 +1,8 @@
+{
+  "name": "tracelab-presentation",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node tracelab/build.mjs"
+  }
+}

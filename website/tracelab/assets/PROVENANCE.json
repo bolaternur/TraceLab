@@ -1,0 +1,29 @@
+{
+  "assets": [
+    {
+      "name": "hill-left.png",
+      "origin": "https://framerusercontent.com/images/h5VHoQg2qBhfygdenEQ0WUtEZU.png?scale-down-to=2048"
+    },
+    {
+      "name": "hill-right.png",
+      "origin": "https://framerusercontent.com/images/T6hTfVKiQ81oLHCljxjb0WPLHY8.png?scale-down-to=2048"
+    },
+    {
+      "name": "hill-front.png",
+      "origin": "https://framerusercontent.com/images/rNwNiQxFN2tkAEI5eUdmAxB9v4.png?scale-down-to=2048"
+    },
+    {
+      "name": "inter-cyrillic.woff2",
+      "origin": "https://framerusercontent.com/assets/ZRl8AlxwsX1m7xS1eJCiSPbztg.woff2"
+    },
+    {
+      "name": "inter-latin.woff2",
+      "origin": "https://framerusercontent.com/assets/7lw0VWkeXrGYJT05oB3DsFy8BaY.woff2"
+    }
+  ],
+  "projectAssets": [
+    "public/icon.svg",
+    "public/evidence/demo-robot.jpg"
+  ],
+  "note": "Landscape assets and fonts retained from the Powder template. Robot image is a pre-existing illustrative demo asset."
+}
