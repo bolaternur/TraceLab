@@ -2,7 +2,13 @@ import { mkdir, readFile, writeFile, copyFile, cp, access } from 'node:fs/promis
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { workspaceContent } from './workspace-surface.mjs';
+import { createHash } from 'node:crypto';
 const here = path.dirname(fileURLToPath(import.meta.url));
+const assetFiles = ['tracelab.css', 'tracelab.js', 'workspace.css', 'workspace.js', 'workspace-views.css', 'workspace-views.js', 'workspace-store.js', 'workspace-shell.css', 'workspace-canvas.css', 'workspace-canvas.js'];
+const fingerprint = createHash('sha256');
+for (const name of [...assetFiles, 'build.mjs', 'workspace-surface.mjs']) fingerprint.update(await readFile(path.join(here, name)));
+const revision = fingerprint.digest('hex').slice(0, 12);
+const versionAssets = html => html.replace(/((?:href|src)="[^"]+\.(?:css|js))"/g, `$1?v=${revision}"`);
 const root = path.resolve(here, '../..');
 const dist = process.env.OUTPUT_DIR ? path.resolve(process.env.OUTPUT_DIR) : path.resolve(here, '../dist');
 const base = (process.env.BASE_PATH || '').replace(/\/$/, '');
@@ -55,7 +61,7 @@ await mkdir(dist, { recursive: true });
 const backup = path.join(here, '../source/powder-preview.html');
 // The static publication builds directly from the curated source.
 await cp(path.join(here, 'assets'), path.join(dist, 'assets'), { recursive: true });
-for (const name of ['tracelab.css', 'tracelab.js', 'workspace.css', 'workspace.js', 'workspace-views.css', 'workspace-views.js', 'workspace-store.js', 'workspace-shell.css', 'workspace-canvas.css', 'workspace-canvas.js']) { let content = await readFile(path.join(here,name),'utf8'); if (name.endsWith('.css')) content = content.replaceAll("url('/assets/", `url('${base}/assets/`); await writeFile(path.join(dist,name),content); }
+for (const name of assetFiles) { let content = await readFile(path.join(here,name),'utf8'); if (name.endsWith('.css')) content = content.replaceAll("url('/assets/", `url('${base}/assets/`); if (name.endsWith('.js')) content = content.replace(/from '(\.\/[^']+\.js)'/g, `from '$1?v=${revision}'`); await writeFile(path.join(dist,name),content); }
 const pages = [
   ['/', 'История инженерного решения', 'TraceLab связывает материалы, испытания и объяснения участников в историю инженерного проекта.', home, ''],
   ['/demo', 'Учебный пример', 'Пройдите иллюстративную историю изменения робототехнического захвата.', demo, 'demo'],
@@ -66,7 +72,7 @@ const pages = [
 for (const [route, title, description, content, active] of pages) {
   const directory = path.join(dist, route.slice(1));
   await mkdir(directory, { recursive: true });
-  await writeFile(path.join(directory, 'index.html'), prefix(page(title, description, content, active)));
+  await writeFile(path.join(directory, 'index.html'), versionAssets(prefix(page(title, description, content, active))));
 }
 const docs = [
   ['README.md', 'project-overview.md'],
