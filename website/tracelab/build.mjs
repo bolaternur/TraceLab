@@ -3,10 +3,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { workspaceContent } from './workspace-surface.mjs';
 import { createHash } from 'node:crypto';
+import { astraPages } from './astra-pages.mjs';
 const here = path.dirname(fileURLToPath(import.meta.url));
-const assetFiles = ['tracelab.css', 'tracelab.js', 'workspace.css', 'workspace.js', 'workspace-views.css', 'workspace-views.js', 'workspace-store.js', 'workspace-shell.css', 'workspace-canvas.css', 'workspace-canvas.js'];
+const assetFiles = ['tracelab.css', 'tracelab.js', 'workspace.css', 'workspace.js', 'workspace-views.css', 'workspace-views.js', 'workspace-store.js', 'workspace-shell.css', 'workspace-canvas.css', 'workspace-canvas.js', 'astra.css', 'astra.js', 'astra-copy.js'];
 const fingerprint = createHash('sha256');
-for (const name of [...assetFiles, 'build.mjs', 'workspace-surface.mjs']) fingerprint.update(await readFile(path.join(here, name)));
+for (const name of [...assetFiles, 'build.mjs', 'workspace-surface.mjs', 'astra-pages.mjs']) fingerprint.update(await readFile(path.join(here, name)));
 const revision = fingerprint.digest('hex').slice(0, 12);
 const versionAssets = html => html.replace(/((?:href|src)="[^"]+\.(?:css|js))"/g, `$1?v=${revision}"`);
 const root = path.resolve(here, '../..');
@@ -72,8 +73,15 @@ const pages = [
 for (const [route, title, description, content, active] of pages) {
   const directory = path.join(dist, route.slice(1));
   await mkdir(directory, { recursive: true });
-  await writeFile(path.join(directory, 'index.html'), versionAssets(prefix(page(title, description, content, active))));
+  await writeFile(path.join(directory, 'index.html'), versionAssets(prefix(astraPages[route]?.html || page(title, description, content, active))));
 }
+for (const [route, entry] of Object.entries(astraPages)) {
+  if (pages.some(([existing]) => existing === route)) continue;
+  const directory = path.join(dist, route.slice(1));
+  await mkdir(directory, { recursive: true });
+  await writeFile(path.join(directory, 'index.html'), versionAssets(prefix(entry.html)));
+}
+await writeFile(path.join(dist, '404.html'), versionAssets(prefix(astraPages['/404'].html)));
 const docs = [
   ['README.md', 'project-overview.md'],
   ['PRODUCT_CAPABILITIES.md', 'capabilities.md'],
@@ -83,6 +91,7 @@ const docs = [
 ];
 for (const [source, destination] of docs) await copyFile(path.join(here,'materials',path.basename(source)), path.join(dist, 'materials', destination));
 for (const [old, route] of [['about','/#product'],['pricing','/research'],['blog','/materials'],['changelog','/materials'],['get-started','/demo'],['terms-of-use','/materials'],['privacy-policy','/materials'],['cookie-policy','/materials']]) {
+  if (astraPages[`/${old}`]) continue;
   await mkdir(path.join(dist, old), { recursive: true });
   await writeFile(path.join(dist, old, 'index.html'), `<!doctype html><html lang="ru"><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=${base}${route}"><title>TraceLab</title><a href="${base}${route}">Открыть TraceLab</a></html>`);
 }
