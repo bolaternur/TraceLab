@@ -141,7 +141,7 @@
   letter-spacing: -.045em;
 }
 .a-brand img { width: 126px; height: 35px; object-fit: contain; }
-.a-brand { padding: 5px 10px; border-radius: 10px; background: #f7f7f5; }
+.a-brand { padding: 5px 10px; border-radius: 10px; background: transparent; }
 .a-nav-main,
 .a-nav-links { display: flex; align-items: center; }
 .a-nav-main { gap: 22px; }

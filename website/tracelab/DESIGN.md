@@ -166,7 +166,7 @@ components:
 
 **Creative North Star: "The selected Powder landscape and engineering work surface"**
 
-This is a scoped adaptation of the user's selected Powder template. Its warm dusk landscape, centered hero, spacious sections and near-black surfaces remain the visual authority. Local Inter preserves interface continuity. The user-approved mechanical Iznera wordmark appears on a light backing so its red and metallic letters remain readable on the dark shell.
+This is a scoped adaptation of the user's selected Powder template. Its warm dusk landscape, centered hero, spacious sections and near-black surfaces remain the visual authority. Local Inter preserves interface continuity. The user-approved mechanical Iznera wordmark keeps its transparent background and appears directly on the existing shell, without a white plaque, light panel or surrounding frame.
 
 The engineering example sits in a restrained graphite viewport. Muted metadata, tabular measurements and explicit evidence states give the presentation its working character. The local workspace extends this system into a full-viewport workbench with compact project controls, movable linked records and measured diagrams. This record describes the shipped presentation and local workspace in `build.mjs`, `tracelab.css`, `tracelab.js`, `workspace-surface.mjs`, `workspace.css`, `workspace-views.css`, `workspace-shell.css`, `workspace-canvas.css` and `workspace-canvas.js`; it does not define a replacement identity or the server application's visual system.
 
