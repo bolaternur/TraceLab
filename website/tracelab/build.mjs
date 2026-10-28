@@ -5,7 +5,14 @@ import { workspaceContent } from './workspace-surface.mjs';
 import { createHash } from 'node:crypto';
 import { astraPages } from './astra-pages.mjs';
 const here = path.dirname(fileURLToPath(import.meta.url));
-const assetFiles = ['tracelab.css', 'tracelab.js', 'workspace.css', 'workspace.js', 'workspace-views.css', 'workspace-views.js', 'workspace-store.js', 'workspace-shell.css', 'workspace-canvas.css', 'workspace-canvas.js', 'astra.css', 'astra.js', 'astra-copy.js'];
+const assetFiles = ['tracelab.css', 'tracelab.js', 'workspace.css', 'workspace.js', 'workspace-server.js', 'workspace-product-controls.js', 'workspace-i18n.js', 'workspace-views.css', 'workspace-views.js', 'workspace-store.js', 'workspace-shell.css', 'workspace-canvas.css', 'workspace-canvas.js', 'workspace-astra.css', 'astra.css', 'astra.js', 'astra-copy.js'];
+assetFiles.push('workspace-outbox.js');
+assetFiles.push('workspace-report.js');
+assetFiles.push('workspace-shell-i18n.js');
+assetFiles.push('workspace-media.js','workspace-media-copy.js','workspace-media-editor.js','workspace-media.css');
+assetFiles.push('workspace-filters.js','workspace-sources.js','workspace-sources-copy.js');
+assetFiles.push('workspace-record-history.js','workspace-inbox.js','workspace-inbox-copy.js');
+assetFiles.push('workspace-team.js','workspace-team-copy.js');
 const fingerprint = createHash('sha256');
 for (const name of [...assetFiles, 'build.mjs', 'workspace-surface.mjs', 'astra-pages.mjs']) fingerprint.update(await readFile(path.join(here, name)));
 const revision = fingerprint.digest('hex').slice(0, 12);
@@ -22,7 +29,7 @@ function navigation(active = '') {
 }
 const footer = `<footer class="site-footer"><div class="container footer-top">${brand}<div class="footer-links"><a href="/demo">Учебный пример</a><a href="/research">Методика</a><a href="/materials">Материалы проекта</a></div></div><div class="container footer-bottom"><span>TraceLab · Сохраняйте ход инженерной мысли.</span><span>Демонстрационный MVP</span></div></footer>`;
 function page(title, description, content, active = '') {
-  const workspaceAssets = active === 'workspace' ? '<link rel="stylesheet" href="/workspace-views.css"><link rel="stylesheet" href="/workspace-canvas.css"><link rel="stylesheet" href="/workspace-shell.css"><script type="module" src="/workspace.js"></script>' : '';
+  const workspaceAssets = active === 'workspace' ? '<link rel="stylesheet" href="/workspace-views.css"><link rel="stylesheet" href="/workspace-canvas.css"><link rel="stylesheet" href="/workspace-shell.css"><link rel="stylesheet" href="/workspace-media.css"><link rel="stylesheet" href="/workspace-astra.css"><script type="module" src="/workspace.js"></script>' : '';
   const header = active === 'workspace' ? '' : navigation(active);
   const pageFooter = active === 'workspace' ? '' : footer;
   return `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080909"><meta name="robots" content="noindex,nofollow"><title>${title} — TraceLab</title><meta name="description" content="${description}"><link rel="icon" href="/assets/icon.svg" type="image/svg+xml"><link rel="preload" href="/assets/inter-cyrillic.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/tracelab.css"><link rel="stylesheet" href="/workspace.css"><script src="/tracelab.js" defer></script>${workspaceAssets}</head><body class="${active === "workspace" ? "workspace-page" : "presentation-page"}"><a class="skip-link" href="#main">К содержимому</a>${header}<main id="main">${content}</main>${pageFooter}</body></html>`;
@@ -89,7 +96,7 @@ const docs = [
   ['docs/rknp/pilot_measurements_template.csv', 'pilot-measurements.csv'],
   ['docs/rknp/RKNP_JUDGE_DEMO.md', 'judge-demo.md']
 ];
-for (const [source, destination] of docs) await copyFile(path.join(here,'materials',path.basename(source)), path.join(dist, 'materials', destination));
+for (const [source, destination] of docs) await copyFile(path.join(root,source), path.join(dist, 'materials', destination));
 for (const [old, route] of [['about','/#product'],['pricing','/research'],['blog','/materials'],['changelog','/materials'],['get-started','/demo'],['terms-of-use','/materials'],['privacy-policy','/materials'],['cookie-policy','/materials']]) {
   if (astraPages[`/${old}`]) continue;
   await mkdir(path.join(dist, old), { recursive: true });

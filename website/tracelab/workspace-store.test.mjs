@@ -1,8 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createWorkspaceStore, STORAGE_KEY, LIMITS } from './workspace-store.js';
-
 const DATE = '2026-10-09T10:00:00.000Z';
+
+test('iteration closeout defaults to draft and requires authored change, why and disposition',()=>{
+  const store=makeStore();personal(store);const id=store.addRecord(record({kind:'iteration',body:''}));
+  assert.equal(store.getProject().records[0].status,'draft');
+  for(const fields of [{status:'closed'},{status:'closed',body:'Change',rationale:'Why'},{status:'closed',body:'Change',rationale:' ',outcome:'kept'}])assert.throws(()=>store.updateRecord(id,fields),/завершённой версии/);
+  store.updateRecord(id,{status:'closed',body:'Added softer contact surface',rationale:'Measured slipping on the original surface',outcome:'iterate',nextStep:'Repeat the same trial'});
+  assert.equal(store.getProject().records[0].status,'closed');assert.equal(store.getProject().records[0].outcome,'iterate');
+  store.updateRecord(id,{status:'draft'});const current=store.getProject().records[0];assert.equal(current.status,'draft');assert.equal(current.recordHistory.versions.at(-2).snapshot.status,'closed');
+});
+test('legacy iterations without lifecycle remain readable drafts, including their version snapshots',()=>{
+  const store=makeStore();personal(store);const id=store.addRecord(record({kind:'iteration'}));const exported=JSON.parse(store.exportProject());
+  const old=exported.project.records.find(item=>item.id===id);delete old.status;for(const version of old.recordHistory.versions)delete version.snapshot.status;
+  const imported=makeStore();imported.importProject(JSON.stringify(exported));assert.equal(imported.getProject().records[0].status,'draft');
+  assert.equal(imported.getProject().records[0].recordHistory.versions[0].snapshot.status,'draft');
+});
 
 function mockStorage(initial = {}) {
   const values = new Map(Object.entries(initial));
@@ -146,7 +160,7 @@ test('different manual relation types coexist while normalized duplicate types f
   const store = makeStore();
   personal(store);
   const from = store.addRecord(record({ id: 'SRC-TYPED' }));
-  const to = store.addRecord(record({ id: 'DEC-TYPED', kind: 'decision' }));
+  const to = store.addRecord(record({ id: 'DEC-TYPED', kind: 'decision', status: 'draft' }));
   store.addLink({ from, to, relationType: 'SUPPORTS', label: 'Поддерживает решение' });
   store.addLink({ from, to, relationType: 'RELATED_TO', label: 'Связанный материал', status: 'suggested' });
   store.addLink({ from, to, label: 'Связь без указанного типа' });
@@ -558,4 +572,304 @@ test('native source exports do not fabricate positions from unrelated extra fiel
   fixture.nodePositions = { 'SOURCE-RAW': { x: 1, y: 2 } };
   store.importProject(JSON.stringify(fixture));
   assert.equal(Object.hasOwn(store.getProject(), 'nodePositions'), false);
+});
+
+test('authored changes keep the original and ordered versions through restart, JSON transfer, and restoration', () => {
+  const storage = mockStorage();
+  const store = makeStore({ storage });
+  personal(store);
+  const id = store.addRecord(record({ title: 'Исходное название', revision: 'v1', createdAt: '2026-09-01T08:00:00Z' }));
+  const original = store.getProject().records[0];
+  store.updateRecord(id, { body: 'Исправленное наблюдение', author: 'Другой автор', title: 'Уточнённое название', createdAt: DATE, revision: 'v2' });
+  store.updateRecord(id, { body: 'Дополнительное наблюдение' });
+  const edited = store.getProject().records[0];
+  assert.equal(edited.recordHistory.versions.length, 3);
+  assert.equal(edited.originalAuthorLabel, original.author);
+  assert.equal(edited.recordHistory.versions[0].snapshot.body, original.body);
+  assert.equal(edited.recordHistory.versions[0].snapshot.author, original.author);
+  assert.equal(edited.recordHistory.versions[0].snapshot.title, original.title);
+  assert.equal(edited.recordHistory.versions[0].snapshot.createdAt, '2026-09-01T08:00:00.000Z');
+  assert.equal(edited.recordHistory.versions[0].snapshot.revision, 'v1');
+  assert.equal(edited.recordHistory.versions[1].previousVersionId, edited.recordHistory.versions[0].id);
+  assert.equal(edited.recordHistory.versions[2].previousVersionId, edited.recordHistory.versions[1].id);
+  const restarted = makeStore({ storage });
+  const transferred = makeStore();
+  transferred.importProject(restarted.exportProject());
+  assert.deepEqual(transferred.getProject().records[0], edited);
+  const first = transferred.getProject().records[0].recordHistory.versions[0].snapshot;
+  transferred.updateRecord(id, { body: first.body, author: first.author, title: first.title, createdAt: first.createdAt, revision: first.revision });
+  const restored = transferred.getProject().records[0];
+  assert.equal(restored.body, original.body);
+  assert.equal(restored.recordHistory.versions.length, 4);
+  assert.equal(restored.recordHistory.versions[2].snapshot.body, 'Дополнительное наблюдение');
+  assert.deepEqual(restored.recordHistory.versions.slice(0, 3), edited.recordHistory.versions);
+});
+
+test('legacy records acquire history on first edit without changing original labels or imported annotations', () => {
+  const store = makeStore();
+  store.importProject(JSON.stringify({ id: 'LEGACY', name: 'Старая копия', records: [{ ...record(), id: 'SOURCE', createdAt: DATE }] }));
+  assert.equal(store.getProject().records[0].recordHistory, undefined);
+  store.updateRecord('SOURCE', { body: 'Новое пояснение', author: 'USER-LOOKS-VERIFIED' });
+  const edited = store.getProject().records[0];
+  assert.equal(edited.originalAuthorLabel, 'Участник P-01');
+  assert.equal(edited.authorProvenance, 'local-unverified');
+  assert.equal(edited.recordHistory.versions[0].provenance, 'legacy-unverified');
+  assert.equal(edited.recordHistory.versions[0].sourceMethod, 'legacy-snapshot');
+  assert.equal(edited.recordHistory.versions[1].provenance, 'local-unverified');
+  assert.equal(Object.hasOwn(edited, 'authorUserId'), false);
+  assert.equal(Object.hasOwn(edited.recordHistory.versions[1], 'authorUserId'), false);
+  const native = makeStore();
+  native.importProject(JSON.stringify(nativeFixture()));
+  const original = native.getProject().records.find(item => item.id === 'DEC-RAW');
+  native.updateRecord('DEC-RAW', { rationale: 'Новое ручное объяснение', author: 'Имя, не аккаунт' });
+  const revised = native.getProject().records.find(item => item.id === 'DEC-RAW');
+  assert.deepEqual(revised.annotationHistory, original.annotationHistory);
+  assert.deepEqual(revised.nativeRef, original.nativeRef);
+  assert.equal(revised.recordHistory.versions[0].snapshot.rationale, 'Последняя авторская причина');
+  assert.equal(revised.recordHistory.versions[0].provenance, 'imported-unverified');
+  assert.equal(revised.recordHistory.versions[0].sourceMethod, 'imported-snapshot');
+  assert.deepEqual(revised.recordHistory.versions[0].snapshot.annotationHistory, original.annotationHistory);
+});
+
+test('history cannot be overwritten by record edits and invalid edits or no-ops do not add versions', () => {
+  const store = makeStore();
+  personal(store);
+  const id = store.addRecord(record());
+  const before = store.getState();
+  for (const fields of [
+    { recordHistory: { versions: [] } }, { originalAuthorLabel: 'Replacement' },
+    { authorProvenance: 'verified' }, { annotationHistory: [] }, { nativeRef: {} },
+    { body: 'a'.repeat(12001) }, { createdAt: 'invalid' },
+  ]) {
+    assert.throws(() => store.updateRecord(id, fields), /[А-Яа-я]/);
+    assert.equal(store.getState(), before);
+  }
+  store.updateRecord(id, { body: record().body });
+  assert.equal(store.getState(), before);
+  assert.throws(() => { store.getProject().records[0].recordHistory.versions[0].snapshot.body = 'Mutated'; }, TypeError);
+});
+
+test('malformed version chains and mismatched current snapshots fail import atomically', () => {
+  const source = makeStore();
+  personal(source);
+  const id = source.addRecord(record());
+  source.updateRecord(id, { body: 'Вторая версия' });
+  const target = makeStore();
+  const before = target.getState();
+  for (const mutate of [
+    history => { history.versions[1].previousVersionId = 'MISSING'; },
+    history => { history.versions[1].id = history.versions[0].id; },
+    history => { history.versions[0].previousVersionId = history.versions[1].id; },
+    history => { history.currentVersionId = 'MISSING'; },
+    history => { history.versions[1].snapshot.body = 'Подмена текущего текста'; },
+    history => { history.versions[0].snapshot.id = 'OTHER'; },
+    history => { history.versions[0].snapshot.recordHistory = {}; },
+    history => { history.conflictVersionIds = [history.currentVersionId]; },
+    history => { history.versions[0].provenance = 'verified'; },
+    history => { history.schemaVersion = 2; },
+  ]) {
+    const input = JSON.parse(source.exportProject());
+    mutate(input.project.records[0].recordHistory);
+    assert.throws(() => target.importProject(JSON.stringify(input)), /[А-Яа-я]/);
+    assert.equal(target.getState(), before);
+  }
+});
+
+test('decisions require an authored why unless explicitly drafted, including closing and reopening', () => {
+  const store = makeStore();
+  personal(store);
+  const before = store.exportProject();
+  for (const fields of [{}, { rationale: '  ' }, { status: 'closed' }, { status: 'recorded' }]) {
+    assert.throws(() => store.addRecord(record({ kind: 'decision', ...fields })), /решения|решение|draft/);
+    assert.equal(store.exportProject(), before);
+  }
+  const id = store.addRecord(record({ kind: 'decision', status: 'draft', rationale: '' }));
+  assert.equal(store.getProject().records[0].status, 'draft');
+  const drafted = store.exportProject();
+  assert.throws(() => store.updateRecord(id, { status: 'closed' }), /Почему/);
+  assert.equal(store.exportProject(), drafted);
+  store.updateRecord(id, { status: 'closed', rationale: 'Три срыва в испытании потребовали изменить поверхность.' });
+  const closed = store.exportProject();
+  assert.throws(() => store.updateRecord(id, { rationale: ' ' }), /Почему/);
+  assert.throws(() => store.updateRecord(id, { rationale: null }), /Почему/);
+  assert.equal(store.exportProject(), closed);
+  store.updateRecord(id, { status: 'draft', rationale: '' });
+  assert.equal(store.getProject().records[0].status, 'draft');
+  assert.equal(store.getProject().records[0].recordHistory.versions[1].snapshot.status, 'closed');
+  assert.match(store.getProject().records[0].recordHistory.versions[1].snapshot.rationale, /Три срыва/);
+  const complete = store.addRecord(record({ kind: 'decision', rationale: 'Проверенный исходный материал.' }));
+  assert.equal(store.getProject().records.find(item => item.id === complete).status, 'closed');
+});
+
+test('legacy and native incomplete decisions migrate to explicit drafts without inventing why', () => {
+  const legacy = { id: 'LEGACY', name: 'Старые решения', dataKind: 'personal', records: [{ id: 'D-1', kind: 'decision', title: 'Незавершённое', body: 'Выбор', author: 'Имя', createdAt: DATE }] };
+  const storage = mockStorage({ [STORAGE_KEY]: JSON.stringify({ schemaVersion: 1, activeProjectId: 'LEGACY', projects: [legacy] }) });
+  const store = makeStore({ storage });
+  assert.equal(store.storageStatus, 'persistent');
+  assert.equal(store.getProject().records[0].status, 'draft');
+  assert.equal(store.getProject().records[0].rationale, undefined);
+  assert.equal(store.getProject().records[0].body, 'Выбор');
+  const imported = makeStore();
+  imported.importProject(store.exportProject());
+  assert.deepEqual(imported.getProject().records, store.getProject().records);
+  const fixture = nativeFixture();
+  fixture.annotations = fixture.annotations.filter(note => note.field !== 'rationale' || note.provenance === 'generated');
+  imported.importProject(JSON.stringify(fixture));
+  const decision = imported.getProject().records.find(item => item.id === 'DEC-RAW');
+  assert.equal(decision.status, 'draft');
+  assert.equal(decision.rationale, undefined);
+  assert.ok(decision.annotationHistory.some(note => note.provenance === 'generated'));
+  const invalid = JSON.parse(store.exportProject());
+  invalid.project.records[0].status = 'closed';
+  const before = imported.getState();
+  assert.throws(() => imported.importProject(JSON.stringify(invalid)), /Почему/);
+  assert.equal(imported.getState(), before);
+});
+
+test('stale tab edits retain both authored variants, flag conflict, and survive restart and JSON transfer', () => {
+  const storage = mockStorage();
+  const first = makeStore({ storage });
+  personal(first);
+  const id = first.addRecord(record());
+  const second = makeStore({ storage });
+  first.updateRecord(id, { body: 'Первое авторское исправление', author: 'Первый участник' });
+  const current = first.getProject().records[0];
+  assert.throws(() => second.updateRecord(id, { body: 'Независимое исправление второй вкладки', author: 'Второй участник' }), error => error.code === 'RECORD_VERSION_CONFLICT');
+  const merged = second.getProject().records[0];
+  assert.equal(second.storageStatus, 'persistent');
+  assert.equal(merged.body, current.body);
+  assert.equal(merged.author, current.author);
+  assert.equal(merged.recordHistory.versions.length, 3);
+  assert.equal(merged.recordHistory.conflictVersionIds.length, 1);
+  const alternative = merged.recordHistory.versions.find(version => merged.recordHistory.conflictVersionIds.includes(version.id));
+  assert.equal(alternative.snapshot.body, 'Независимое исправление второй вкладки');
+  assert.equal(alternative.snapshot.author, 'Второй участник');
+  assert.equal(alternative.previousVersionId, 'ORIGINAL');
+  assert.equal(alternative.sourceMethod, 'conflict-edit');
+  const restarted = makeStore({ storage });
+  const transferred = makeStore();
+  transferred.importProject(restarted.exportProject());
+  assert.deepEqual(transferred.getProject().records[0], merged);
+  transferred.updateRecord(id, { body: 'Объяснение после сравнения двух версий' });
+  assert.deepEqual(transferred.getProject().records[0].recordHistory.versions.slice(0, 3), merged.recordHistory.versions);
+});
+
+test('stale storage events cannot discard record history inside an otherwise present personal project', () => {
+  let handler;
+  const storage = mockStorage();
+  const store = makeStore({ storage, eventTarget: { addEventListener(type, listener) { handler = listener; } } });
+  personal(store);
+  const id = store.addRecord(record());
+  const stale = storage.getItem(STORAGE_KEY);
+  store.updateRecord(id, { body: 'Авторское уточнение, которое нельзя потерять' });
+  const before = store.getState();
+  handler({ key: STORAGE_KEY, newValue: stale, storageArea: storage });
+  assert.equal(store.getState(), before);
+  assert.equal(store.storageStatus, 'memory');
+  assert.match(store.storageMessage, /истории версий/);
+  assert.equal(JSON.parse(store.exportProject()).project.records[0].recordHistory.versions.length, 2);
+});
+
+test('a storage write failure keeps complete new history exportable without overwriting the saved version', () => {
+  const storage = mockStorage();
+  const store = makeStore({ storage });
+  personal(store);
+  const id = store.addRecord(record());
+  const saved = storage.getItem(STORAGE_KEY);
+  storage.failWrite = true;
+  store.updateRecord(id, { body: 'Правка при заполненном хранилище' });
+  assert.equal(store.storageStatus, 'memory');
+  assert.equal(storage.getItem(STORAGE_KEY), saved);
+  const backup = makeStore();
+  backup.importProject(store.exportProject());
+  assert.equal(backup.getProject().records[0].recordHistory.versions.length, 2);
+  assert.equal(backup.getProject().records[0].recordHistory.versions[0].snapshot.body, record().body);
+  assert.equal(backup.getProject().records[0].body, 'Правка при заполненном хранилище');
+});
+
+test('an intervening write during an edit cannot overwrite the other stored copy', () => {
+  const storage = mockStorage();
+  const store = makeStore({ storage });
+  personal(store);
+  const id = store.addRecord(record());
+  const independent = makeStore();
+  independent.importProject(store.exportProject());
+  independent.updateRecord(id, { body: 'Другая авторская правка' });
+  const competingState = JSON.parse(storage.getItem(STORAGE_KEY));
+  const active = competingState.projects.find(project => project.id === competingState.activeProjectId);
+  active.records = JSON.parse(independent.exportProject()).project.records;
+  const competing = JSON.stringify(competingState);
+  const originalGet = storage.getItem.bind(storage);
+  let reads = 0;
+  storage.getItem = key => {
+    reads += 1;
+    if (reads === 2) storage.values.set(STORAGE_KEY, competing);
+    return originalGet(key);
+  };
+  store.updateRecord(id, { body: 'Правка из этой вкладки' });
+  assert.equal(store.storageStatus, 'memory');
+  assert.equal(originalGet(STORAGE_KEY), competing);
+  assert.equal(store.getProject().records[0].body, 'Правка из этой вкладки');
+  assert.equal(JSON.parse(store.exportProject()).project.records[0].recordHistory.versions.length, 2);
+  assert.equal(makeStore({ storage }).getProject().records[0].body, 'Другая авторская правка');
+});
+
+test('editing from an older external snapshot preserves unrelated record histories in memory', () => {
+  const storage = mockStorage();
+  const store = makeStore({ storage });
+  personal(store);
+  const first = store.addRecord(record({ id: 'FIRST' }));
+  const old = storage.getItem(STORAGE_KEY);
+  store.addRecord(record({ id: 'SECOND', body: 'Другая важная запись' }));
+  storage.values.set(STORAGE_KEY, old);
+  store.updateRecord(first, { body: 'Продолжение первой записи' });
+  assert.equal(store.storageStatus, 'memory');
+  assert.equal(storage.getItem(STORAGE_KEY), old);
+  assert.equal(store.getProject().records.length, 2);
+  assert.equal(store.getProject().records.find(record => record.id === 'SECOND').body, 'Другая важная запись');
+  assert.equal(store.getProject().records.find(record => record.id === 'FIRST').recordHistory.versions.length, 2);
+});
+
+test('study row batches commit once and a failing final row leaves no partial import', () => {
+  const storage = mockStorage();
+  const store = makeStore({ storage });
+  personal(store);
+  store.addStudyRow({ participantCode: 'EXISTING', baselineSeconds: 12, traceSeconds: 10 });
+  const before = store.getState();
+  const saved = storage.getItem(STORAGE_KEY);
+  let notifications = 0;
+  store.subscribe(() => { notifications += 1; });
+  const first = { participantCode: 'P-01', baselineSeconds: 30, traceSeconds: 20 };
+  for (const last of [
+    { participantCode: 'P-02', baselineSeconds: NaN, traceSeconds: 10 },
+    { participantCode: 'EXISTING', baselineSeconds: 2, traceSeconds: 1 },
+    { ...first },
+  ]) {
+    assert.throws(() => store.addStudyRows([first, last]), /[А-Яа-я]/);
+    assert.equal(store.getState(), before);
+    assert.equal(storage.getItem(STORAGE_KEY), saved);
+    assert.equal(notifications, 0);
+  }
+  const ids = store.addStudyRows([first, { participantCode: 'P-02', baselineSeconds: 10, traceSeconds: 15 }]);
+  assert.equal(ids.length, 2);
+  assert.equal(new Set(ids).size, 2);
+  assert.equal(notifications, 1);
+  assert.equal(store.getProject().studyRows.length, 3);
+  assert.deepEqual(makeStore({ storage }).getProject().studyRows, store.getProject().studyRows);
+  assert.deepEqual(store.addStudyRows([]), []);
+  assert.equal(notifications, 1);
+});
+
+test('missing native annotation account IDs remain null and unverified author labels stay separate', () => {
+  const fixture = nativeFixture();
+  fixture.annotations[3].authorUserId = null;
+  fixture.annotations[3].originalAuthorLabel = 'Имя из старой выгрузки';
+  const store = makeStore();
+  store.importProject(JSON.stringify(fixture));
+  const note = store.getProject().annotationHistory.find(item => item.id === 'NOTE-NEXT');
+  assert.equal(note.authorUserId, null);
+  assert.equal(note.originalAuthorLabel, 'Имя из старой выгрузки');
+  const restored = makeStore();
+  restored.importProject(store.exportProject());
+  assert.deepEqual(restored.getProject().annotationHistory.find(item => item.id === 'NOTE-NEXT'), note);
 });

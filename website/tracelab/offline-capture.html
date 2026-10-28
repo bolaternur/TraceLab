@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><meta name="theme-color" content="#0c0c0f"><link rel="manifest" href="/manifest.webmanifest"><title>TraceLab · Capture</title><link rel="stylesheet" href="/offline-capture.css"></head>
+<body><main>
+  <header><a href="/workspace/">TraceLab</a><select id="locale" aria-label="Language"><option value="ru">RU</option><option value="en">EN</option><option value="kk">KK</option></select></header>
+  <h1 data-copy="title">Быстрая запись</h1><p data-copy="intro">Запишите сейчас. Отправьте в команду, когда появится соединение.</p><p id="context"></p>
+  <form id="capture" hidden>
+    <label><span data-copy="kind">Тип</span><select name="kind" id="capture-kind"><option value="source" data-copy="source">Наблюдение</option><option value="photo" data-copy="photo">Фото</option><option value="test" data-copy="test">Испытание</option><option value="decision" data-copy="decision">Решение — черновик</option></select></label>
+    <div id="photo-fields" hidden><label><span data-copy="choosePhoto">Выберите фото</span><input id="photo-file" type="file" accept="image/jpeg,image/png,image/webp"></label><input id="camera-file" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" hidden><button type="button" id="camera" class="secondary" data-copy="camera">Снять фото</button><p id="photo-name"></p><p class="note" data-copy="photoHint"></p><label><span data-copy="alt">Описание изображения</span><input name="alt" maxlength="500"></label></div>
+    <label><span data-copy="name">Название</span><input name="title" required maxlength="160"></label>
+    <label><span data-copy="body">Что произошло?</span><textarea name="body" rows="5" maxlength="10000"></textarea></label>
+    <button type="submit" data-copy="save">Сохранить на устройстве</button>
+  </form>
+  <p id="status" role="status"></p>
+  <section><h2 data-copy="queue">Ожидают отправки</h2><p class="note" data-copy="localHint"></p><div id="pending"></div><div class="actions"><button type="button" id="sync" data-copy="sync">Отправить в команду</button><button type="button" id="export" class="secondary" data-copy="export">Скачать записи JSON</button></div><p class="note" data-copy="exportHint"></p></section>
+  <a href="/workspace/" data-copy="workspace">Вернуться в рабочую область</a>
+</main><script type="module" src="/offline-capture.js"></script></body></html>

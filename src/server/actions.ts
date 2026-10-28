@@ -3,7 +3,7 @@
 import { and, desc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { db } from "@/db";
@@ -22,7 +22,6 @@ import {
   projects,
   relations,
   seasons,
-  sourceConnections,
   sourceEvents,
   subscriptions,
   subsystems,
@@ -35,27 +34,24 @@ import {
 import {
   AuthorizationError,
   assertRole,
-  createSession,
-  DUMMY_PASSWORD_HASH,
-  destroySession,
   getCurrentUser,
-  hashPassword,
   policyActorRole,
   requireTeam,
   requireUser,
   setCurrentTeamCookie,
-  verifyPassword,
 } from "./auth";
-import { audit, enqueueJob, notify, track } from "./audit";
+import { accountMutation } from "./account-http";
+import type { AccountAction } from "./account-contract";
+import { audit, notify, track } from "./audit";
 import { gate, logAiAction } from "./policy";
-import { encryptSecret, newStorageKey, sha256, storage } from "./storage";
+import { newStorageKey, sha256, storage } from "./storage";
 import { explainWhy, getActiveSeasonAndProject, seasonHandoff, similarHistory, testResultLabel, type EntityType } from "./evidence";
 import { getAiProvider } from "@/modules/ai/provider";
 import { isLocale } from "@/lib/i18n";
 import { isPolicyAction, isPolicyDecision, POLICY_ACTIONS, type ActionMatrix } from "@/modules/policies/engine";
 import { brand } from "@/lib/brand";
 import { parseCsv } from "@/lib/csv";
-import { canInviteRole, developmentBillingEnabled, devSimulatorEnabled, entityTypeSchema, safeInternalPath } from "@/lib/security";
+import { canInviteRole, entityTypeSchema, safeInternalPath } from "@/lib/security";
 import { captureSchema, persistCaptureInternal } from "./capture";
 
 export type ActionState = { ok: boolean; error?: string; message?: string; id?: string } | null;
@@ -85,42 +81,33 @@ function safeError(err: unknown): ActionState {
 // ---------------------------------------------------------------------------
 // Auth
 // ---------------------------------------------------------------------------
-const credentials = z.object({ email: z.string().trim().toLowerCase().email().max(254), password: z.string().min(8).max(200) });
+async function legacyAccountRequest(action: AccountAction, formData: FormData) {
+  const requestHeaders = new Headers(await headers());
+  requestHeaders.set("content-type", "application/json");
+  const origin = process.env.APP_URL ?? requestHeaders.get("origin") ?? "http://localhost:3000";
+  const body = fd(formData);
+  if (typeof body.invite === "string" && body.invite) body.next = `/join/${encodeURIComponent(body.invite)}`;
+  const response = await accountMutation(action, new Request(new URL(`/api/account/${action}`, origin), {
+    method: "POST", headers: requestHeaders, body: JSON.stringify(body),
+  }));
+  return response.json() as Promise<{ ok: boolean; code: string; next?: string }>;
+}
 
 export async function signUp(_: ActionState, formData: FormData): Promise<ActionState> {
-  try {
-    const input = credentials.extend({ displayName: str(80).min(1), locale: z.string().optional() }).parse(fd(formData));
-    const existing = await db.select({ id: users.id }).from(users).where(eq(users.email, input.email)).limit(1);
-    if (existing[0]) return fail("An account with this email already exists.");
-    const [user] = await db
-      .insert(users)
-      .values({ email: input.email, passwordHash: await hashPassword(input.password), displayName: input.displayName, locale: isLocale(input.locale) ? input.locale : "en" })
-      .returning();
-    await createSession(user.id);
-    await track("user.signed_up", { userId: user.id });
-  } catch (err) {
-    return safeError(err);
-  }
-  const invite = formData.get("invite");
-  redirect(typeof invite === "string" && invite ? `/join/${encodeURIComponent(invite)}` : "/onboarding");
+  const result = await legacyAccountRequest("signup", formData);
+  if (!result.ok) return fail("Account request could not be completed. Check your fields or try again later.");
+  return { ok: true, message: "If this address can receive an account email, a verification link has been requested. Verify your email before signing in." };
 }
 
 export async function signIn(_: ActionState, formData: FormData): Promise<ActionState> {
-  try {
-    const input = credentials.parse(fd(formData));
-    const [user] = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
-    const passwordValid = await verifyPassword(input.password, user?.passwordHash ?? DUMMY_PASSWORD_HASH);
-    if (!user || !passwordValid) return fail("Invalid email or password.");
-    await createSession(user.id);
-  } catch (err) {
-    return safeError(err);
-  }
-  const next = formData.get("next");
-  redirect(safeInternalPath(next));
+  const result = await legacyAccountRequest("signin", formData);
+  if (!result.ok) return fail("Unable to sign in. Check your details and confirm your email, or try again later.");
+  redirect(safeInternalPath(result.next, "/workspace/"));
 }
 
 export async function signOut() {
-  await destroySession();
+  const result = await legacyAccountRequest("logout", new FormData());
+  if (!result.ok) throw new AuthorizationError();
   redirect("/");
 }
 
@@ -748,61 +735,19 @@ async function buildExport(teamId: string, userId: string, type: string, seasonI
 // Integrations
 // ---------------------------------------------------------------------------
 export async function connectSource(_: ActionState, formData: FormData): Promise<ActionState> {
-  try {
-    const ctx = await requireTeam();
-    assertRole(ctx, ["student_lead", "coach", "org_admin"]);
-    const input = z.object({ provider: z.enum(["github", "onshape", "telegram", "discord"]), label: str(120).min(1), externalId: optStr(200), secret: optStr(500) }).parse(fd(formData));
-    const webhookSecret = input.provider === "github" || input.provider === "discord" ? randomBytes(24).toString("hex") : null;
-    const [row] = await db
-      .insert(sourceConnections)
-      .values({
-        teamId: ctx.team.id,
-        provider: input.provider,
-        label: input.label,
-        externalId: input.externalId,
-        status: input.provider === "onshape" && !process.env.ONSHAPE_CLIENT_ID ? "pending" : input.provider === "telegram" && !input.secret ? "pending" : "active",
-        encryptedSecret: encryptSecret(JSON.stringify({ webhookSecret, token: input.secret ?? null })),
-        config: { webhookSecretHint: webhookSecret ? `${webhookSecret.slice(0, 6)}…` : null },
-        createdBy: ctx.user.id,
-      })
-      .returning();
-    await audit({ teamId: ctx.team.id, actorUserId: ctx.user.id, action: "source.connected", entityType: "source_connection", entityId: row.id, metadata: { provider: input.provider } });
-    await track("source.connected", { teamId: ctx.team.id, props: { provider: input.provider } });
-    revalidatePath("/app/integrations");
-    return { ok: true, id: row.id, message: webhookSecret ? `Connected. Webhook secret (shown once): ${webhookSecret}` : "Connected." };
-  } catch (err) {
-    return safeError(err);
-  }
+  void _; void formData;
+  return fail("Откройте раздел «Источники» в рабочей области. Старый способ подключения отключён; он не проверял реальную доставку.");
 }
 
 export async function disconnectSource(formData: FormData) {
-  const ctx = await requireTeam();
-  assertRole(ctx, ["student_lead", "coach", "org_admin"]);
-  const id = uuid.parse(formData.get("id"));
-  await db.update(sourceConnections).set({ status: "disconnected", encryptedSecret: null }).where(and(eq(sourceConnections.id, id), eq(sourceConnections.teamId, ctx.team.id)));
-  await audit({ teamId: ctx.team.id, actorUserId: ctx.user.id, action: "source.disconnected", entityId: id });
-  await track("source.disconnected", { teamId: ctx.team.id });
-  revalidatePath("/app/integrations");
+  void formData;
+  redirect("/workspace?view=sources");
 }
 
-/** Development simulator: injects a realistic provider event through the same normalisation path as webhooks. */
+/** Real team evidence cannot be populated by the retired provider simulator. */
 export async function simulateSourceEvent(formData: FormData) {
-  if (!devSimulatorEnabled()) throw new AuthorizationError("Not found");
-  const ctx = await requireTeam();
-  if (!ctx.canOrganize) throw new AuthorizationError();
-  const provider = z.enum(["github", "onshape", "telegram"]).parse(formData.get("provider"));
-  const { season, project } = await getActiveSeasonAndProject(ctx.team.id);
-  const id = randomBytes(6).toString("hex");
-  const samples = {
-    github: { eventType: "commit", title: `fix: intake PID overshoot (${id.slice(0, 7)})`, meta: { repository: "team/orion-robot", sha: id + id, branch: "main", simulated: true } },
-    onshape: { eventType: "cad_revision", title: `Intake roller spacing v${Math.floor(Math.random() * 30) + 1}`, meta: { documentId: "d-orion-intake", elementId: "e-roller", microversion: id, simulated: true } },
-    telegram: { eventType: "message", title: "#test #intake 36 mm spacing 17/20 success", meta: { chat: "team-workshop", tags: ["test", "intake"], simulated: true } },
-  } as const;
-  const s = samples[provider];
-  await db.insert(sourceEvents).values({ teamId: ctx.team.id, seasonId: season?.id ?? null, projectId: project?.id ?? null, provider, providerEventId: `sim-${id}`, eventType: s.eventType, actorExternalId: "dev-simulator", actorUserId: ctx.user.id, title: s.title, occurredAt: new Date(), rawMetadata: s.meta, contentHash: sha256(JSON.stringify(s)) }).onConflictDoNothing();
-  await track("source.event_ingested", { teamId: ctx.team.id, props: { provider, simulated: true } });
-  revalidatePath("/app/inbox");
-  redirect("/app/inbox");
+  void formData;
+  throw new AuthorizationError("Симулятор не добавляет данные в реальные проекты. Учебный пример доступен отдельно в /demo/workspace.");
 }
 
 // ---------------------------------------------------------------------------
@@ -939,28 +884,21 @@ export async function updateOrganization(formData: FormData) {
   const patch: Partial<typeof organizations.$inferInsert> = {};
   if (input.retentionDays !== undefined) patch.retentionDays = input.retentionDays ? Number(input.retentionDays) : null;
   if (input.plan) {
-    if (process.env.STRIPE_SECRET_KEY) {
-      // Live billing: plan changes go through the Stripe adapter (checkout) — never set directly.
-      throw new Error("Live billing is configured; change plans via the billing portal.");
-    }
-    if (!developmentBillingEnabled()) throw new Error("Billing is not configured on this deployment.");
-    patch.plan = input.plan;
-    await db.update(subscriptions).set({ plan: input.plan, status: "active", updatedAt: new Date() }).where(eq(subscriptions.organizationId, ctx.team.organizationId));
+    throw new Error("TraceLab is free. Historical billing records cannot change access.");
   }
   await db.update(organizations).set(patch).where(eq(organizations.id, ctx.team.organizationId));
   await audit({ organizationId: ctx.team.organizationId, actorUserId: ctx.user.id, action: "organization.updated", metadata: input });
   revalidatePath("/app/org");
 }
 
-export async function deleteTeam(formData: FormData) {
-  const ctx = await requireTeam();
-  assertRole(ctx, ["student_lead", "org_admin"]);
-  const confirm = str(120).parse(formData.get("confirm"));
-  if (confirm !== ctx.team.name) throw new Error("Confirmation text does not match the team name.");
-  await audit({ teamId: ctx.team.id, organizationId: ctx.team.organizationId, actorUserId: ctx.user.id, action: "team.deleted", entityType: "team", entityId: ctx.team.id });
-  await enqueueJob("storage.cleanup", { teamId: ctx.team.id }, `cleanup-${ctx.team.id}`);
-  await db.delete(teams).where(eq(teams.id, ctx.team.id));
-  const jar = await cookies();
-  jar.delete("pt_team");
-  redirect("/onboarding");
+export async function deleteTeam() {
+  const user = await requireUser();
+  // The former action queued whole-prefix file removal before DB deletion was
+  // confirmed. Keep all data until a reviewed, transactional deletion workflow exists.
+  const messages = {
+    ru: "Удаление команды пока недоступно. Записи и файлы сохранены; можно скачать резервную копию проекта.",
+    en: "Team deletion is not available yet. Records and files are preserved; you can download a project backup.",
+    kk: "Команданы жою әзірге қолжетімсіз. Жазбалар мен файлдар сақталды; жобаның сақтық көшірмесін жүктеуге болады.",
+  };
+  throw new Error(messages[user.locale as keyof typeof messages] ?? messages.en);
 }

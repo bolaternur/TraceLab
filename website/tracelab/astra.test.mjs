@@ -99,6 +99,28 @@ test('homepage retains the requested Russian hero and exposes RU, EN and KK sele
   }
 });
 
+test('marketing pages omit ornamental brand labels and sequence counters while keeping evidence values', () => {
+  for (const build of builds) {
+    for (const [route, html] of build.html) {
+      if (route === 'workspace') continue;
+      const visible = visibleText(html);
+      assert.doesNotMatch(visible, /TraceLab\s*\/\s*Engineering evidence/i, `${route}: obsolete hero label`);
+      assert.doesNotMatch(visible, /TraceLab\s*\/\s*01\s*[—–-]\s*03/, `${route}: obsolete demo label`);
+      const ornamentalLabels = [...html.matchAll(/<(span|small)\b([^>]*)>([^<>]*)<\/\1>/gi)];
+      for (const [, , , label] of ornamentalLabels) {
+        assert.doesNotMatch(label.trim(), /^0[1-9]$/, `${route}: standalone decorative counter ${label}`);
+      }
+    }
+    for (const route of ['', 'demo']) {
+      const html = build.html.get(route);
+      assert.ok(visibleText(html).includes(copy.ru.testTitle), `${route}: test result title is retained`);
+      assert.ok(visibleText(html).includes('lab-photo-018'), `${route}: source identifier is retained`);
+      const initialDate = html.match(/<[^>]+\bdata-detail-date[^>]*>([\s\S]*?)<\/[^>]+>/i)?.[1] ?? '';
+      assert.match(visibleText(initialDate), /2026/, `${route}: the observation date is retained`);
+    }
+  }
+});
+
 test('RU, EN and KK provide nonempty translations for every rendered copy and metadata key', () => {
   const locales = ['ru', 'en', 'kk'];
   assert.deepEqual(Object.keys(copy).sort(), [...locales].sort());
@@ -170,6 +192,28 @@ test('Astra assets exist and marketing pages load the new stylesheet and interac
   }
 });
 
+test('workspace Astra theme is published last in the cascade without leaking into marketing routes', async () => {
+  for (const build of builds) {
+    const cssFile = path.join(build.directory, 'workspace-astra.css');
+    assert.ok((await stat(cssFile)).isFile(), `${build.base}: workspace theme asset is published`);
+    const html = build.html.get('workspace');
+    const stylesheets = [...html.matchAll(/<link\b[^>]*>/gi)]
+      .map(match => match[0])
+      .filter(tag => attributes(tag, 'rel')[0] === 'stylesheet')
+      .map(tag => attributes(tag, 'href')[0].split('?')[0]);
+    assert.equal(stylesheets.at(-1), `${build.base}/workspace-astra.css`, 'neutral workspace theme must override inherited green styles');
+    for (const file of ['workspace.css', 'workspace-views.css', 'workspace-canvas.css', 'workspace-shell.css']) {
+      assert.ok(stylesheets.includes(`${build.base}/${file}`), `${file}: keep existing workspace layout and interaction styles`);
+    }
+    const theme = await readFile(cssFile, 'utf8');
+    assert.match(theme, /\.workspace-page\b/, 'workspace palette must be scoped to the workspace');
+    for (const [route, page] of build.html) {
+      if (route === 'workspace') continue;
+      assert.equal(attributes(page, 'href').some(value => value.split('?')[0] === `${build.base}/workspace-astra.css`), false, `${route}: workspace-only theme must not replace marketing styles`);
+    }
+  }
+});
+
 test('published route, image, stylesheet, script and font references resolve under both base paths', async () => {
   for (const build of builds) {
     for (const [route, html] of build.html) {
@@ -189,7 +233,8 @@ test('published route, image, stylesheet, script and font references resolve und
 });
 
 test('the real workspace preserves existing views, persistence, editing and export controls', async () => {
-  const source = await readFile(path.join(sourceDirectory, 'workspace.js'), 'utf8');
+  const moduleNames = ['workspace.js', 'workspace-store.js', 'workspace-canvas.js', 'workspace-views.js'];
+  const sources = new Map(await Promise.all(moduleNames.map(async filename => [filename, await readFile(path.join(sourceDirectory, filename), 'utf8')])));
   for (const build of builds) {
     const html = build.html.get('workspace');
     assert.match(html, /\bdata-workspace(?:\s|>|=)/);
@@ -197,10 +242,10 @@ test('the real workspace preserves existing views, persistence, editing and expo
     for (const id of ['ws-project', 'ws-view', 'ws-inspector', 'ws-add-record', 'ws-connect', 'ws-import', 'ws-export-json', 'ws-export-html', 'ws-storage']) {
       assert.match(html, new RegExp(`\\bid=["']${id}["']`));
     }
-    const builtSource = await readFile(path.join(build.directory, 'workspace.js'), 'utf8');
-    assert.equal(builtSource.replace(/(\.\/[^'"\s]+\.js)\?v=[a-f\d]+/g, '$1'), source, 'build must preserve workspace interactions apart from import cache versions');
-    const builtStore = await readFile(path.join(build.directory, 'workspace-store.js'), 'utf8');
-    assert.equal(builtStore, await readFile(path.join(sourceDirectory, 'workspace-store.js'), 'utf8'), 'published data store must be unchanged');
+    for (const filename of moduleNames) {
+      const published = await readFile(path.join(build.directory, filename), 'utf8');
+      assert.equal(published.replace(/(\.\/[^'"\s]+\.js)\?v=[a-f\d]+/g, '$1'), sources.get(filename), `${filename}: publishing the theme must preserve evidence, persistence and all five views apart from import cache versions`);
+    }
   }
 });
 

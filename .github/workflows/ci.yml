@@ -9,17 +9,24 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16
+        image: postgres:17.11
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: app_db
+          POSTGRES_DB: tracelab_unified_test_ci
         ports: ["5432:5432"]
         options: >-
           --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
     env:
-      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/app_db
+      DATABASE_URL: postgresql://tracelab_ci_runtime:ci_runtime_password@127.0.0.1:5432/tracelab_unified_test_ci
+      DATABASE_MIGRATION_URL: postgresql://postgres:postgres@127.0.0.1:5432/tracelab_unified_test_ci
       SECRETS_ENCRYPTION_KEY: ci-only-key-ci-only-key-ci-only-key-0123
+      APP_URL: http://localhost:3000
+      MAIL_TRANSPORT: local
+      MAIL_PREVIEW_ENABLED: 'true'
+      MAIL_ENABLE_EXTERNAL_DELIVERY: 'false'
+      STORAGE_PROVIDER: local
+      AI_PROVIDER: disabled
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -29,11 +36,34 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
-      - name: Apply schema (migration check)
-        run: npx drizzle-kit push --force
-      - run: npm run db:seed
-      - run: npm test
+      - name: Create restricted CI runtime role
+        run: |
+          node --input-type=module <<'NODE'
+          import pg from 'pg';
+          const owner = new URL(process.env.DATABASE_MIGRATION_URL);
+          const runtime = new URL(process.env.DATABASE_URL);
+          if (owner.hostname !== '127.0.0.1' || owner.pathname !== '/tracelab_unified_test_ci'
+            || runtime.pathname !== owner.pathname || !/^[a-z_][a-z0-9_]*$/.test(runtime.username)) throw new Error('CI database scope is invalid.');
+          const client = new pg.Client({ connectionString: owner.href });
+          await client.connect();
+          try {
+            const password = decodeURIComponent(runtime.password).replaceAll("'", "''");
+            await client.query(`CREATE ROLE "${runtime.username}" LOGIN PASSWORD '${password}' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS`);
+          } finally { await client.end(); }
+          NODE
+      - name: Apply registered migrations with owner; runtime stays restricted
+        run: npm run db:migrate
+      - name: Verify migration hashes
+        run: node scripts/check-migrations.mjs
+      - name: Unit and security tests (no seeded legacy database)
+        run: env -u DATABASE_URL -u DATABASE_MIGRATION_URL npm test
+      - name: Current real database integration tests
+        run: npm run test:db
+      - run: npm run test:static
+      - run: node --test tests/pilot-preflight.node.test.mjs
       - run: npm run build
+      - name: Production HTTPS proxy and cross-origin boundary
+        run: node scripts/verify-production-origin.mjs
       - name: Secret scan (no committed .env)
         run: |
-          if git ls-files | grep -E '(^|/)\.env$'; then echo ".env must not be committed"; exit 1; fi
+          if git ls-files | grep -E '(^|/)\.env(\.(local|production|development|test)(\.local)?)?$'; then echo "Private environment files must not be committed"; exit 1; fi

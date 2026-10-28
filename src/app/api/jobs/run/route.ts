@@ -3,8 +3,6 @@ import { and, asc, eq, lte, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { jobs, sourceEvents, teamMemberships, tests, relations, notifications } from "@/db/schema";
 import { log } from "@/server/audit";
-import { storage } from "@/server/storage";
-import { z } from "zod";
 
 export const runtime = "nodejs";
 
@@ -38,10 +36,9 @@ export async function POST(req: Request) {
 
 async function runJob(kind: string, payload: Record<string, unknown>) {
   if (kind === "storage.cleanup") {
-    const teamId = z.string().uuid().parse(payload.teamId);
-    await storage.deletePrefix(teamId);
-    log("info", "storage_cleanup_completed", { teamId });
-    return;
+    // Old jobs did not prove that a team deletion committed. Never execute
+    // their whole-prefix cleanup against current private team evidence.
+    throw new Error("Legacy team storage cleanup is disabled; source files are preserved.");
   }
   if (kind === "notify.tests_without_decisions") {
     const teamId = String(payload.teamId);

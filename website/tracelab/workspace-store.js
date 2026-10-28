@@ -5,7 +5,7 @@
  */
 export const STORAGE_KEY = 'tracelab.workspace.v1';
 export const LIMITS = Object.freeze({
-  projects: 20, records: 500, links: 1000, studyRows: 1000, annotations: 2000,
+  projects: 20, records: 500, links: 1000, studyRows: 1000, annotations: 2000, recordVersions: 2000,
   importBytes: 2 * 1024 * 1024, stateCharacters: 5 * 1024 * 1024,
 });
 
@@ -13,6 +13,8 @@ const DEMO_ID = 'SYNTHETIC-GRIPPER';
 const kinds = new Set(['source', 'iteration', 'test', 'decision']);
 const statuses = new Set(['accepted', 'suggested', 'rejected']);
 const dataKinds = new Set(['synthetic', 'personal']);
+const authorOrigins = new Set(['local-unverified', 'imported-unverified', 'legacy-unverified', 'synthetic']);
+const versionMethods = new Set(['manual-create', 'manual-edit', 'legacy-snapshot', 'imported-snapshot', 'conflict-edit']);
 const own = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
 const fail = message => { throw new Error(message); };
 
@@ -77,11 +79,13 @@ function normalizeAnnotation(input) {
     entityId: identifier(own(input, 'entityId') ? input.entityId : undefined, 'Запись заметки'),
     field: string(own(input, 'field') ? input.field : undefined, 'Поле заметки', 100, true),
     body: string(own(input, 'body') ? input.body : '', 'Текст заметки', 12000),
-    authorUserId: string(own(input, 'authorUserId') && input.authorUserId != null ? input.authorUserId : 'Автор не указан', 'Автор заметки', 160),
+    // A missing source account ID stays absent; a translated label is not an ID.
+    authorUserId: own(input, 'authorUserId') && input.authorUserId != null ? string(input.authorUserId, 'Автор заметки', 160) : null,
     createdAt: timestamp(own(input, 'createdAt') ? input.createdAt : undefined),
   };
   optionalString(result, input, 'provenance', 'Происхождение заметки', 80);
   optionalString(result, input, 'sourceMethod', 'Способ создания заметки', 80);
+  optionalString(result, input, 'originalAuthorLabel', 'Исходное имя автора заметки', 160);
   if (own(input, 'supersedesId') && input.supersedesId != null) result.supersedesId = identifier(input.supersedesId, 'Предыдущая версия заметки');
   return result;
 }
@@ -98,7 +102,7 @@ function normalizeManifest(input) {
   return result;
 }
 
-function normalizeRecord(input) {
+function normalizeRecordContent(input, { requireDecisionWhy = false } = {}) {
   object(input, 'Запись');
   if (!own(input, 'kind') || !kinds.has(input.kind)) fail('Тип записи: выберите материал, версию, испытание или решение.');
   const result = {
@@ -113,6 +117,30 @@ function normalizeRecord(input) {
     ['sourceType', 'Тип материала', 80], ['revision', 'Версия', 80], ['unit', 'Единица измерения', 80],
     ['rationale', 'Обоснование', 12000], ['criterion', 'Критерий испытания', 1000], ['conditions', 'Условия испытания', 2000],
   ]) optionalString(result, input, key, label, maximum);
+  result.originalAuthorLabel = string(own(input, 'originalAuthorLabel') ? input.originalAuthorLabel : result.author, 'Исходное имя автора', 160);
+  result.authorProvenance = own(input, 'authorProvenance') ? input.authorProvenance : own(input, 'nativeRef') ? 'imported-unverified' : 'legacy-unverified';
+  if (!authorOrigins.has(result.authorProvenance)) fail('Происхождение автора: имя из локальной записи не является проверенным аккаунтом.');
+  if (result.kind === 'decision') {
+    // Old JSON did not have a lifecycle field. Keep its incomplete decisions as
+    // explicit drafts; a new mutation must opt into draft rather than imply completion.
+    result.status = own(input, 'status') ? input.status : (requireDecisionWhy || result.rationale ? 'closed' : 'draft');
+    if (!['draft', 'closed'].includes(result.status)) fail('Статус решения: выберите draft или closed.');
+    if (result.status === 'closed' && !result.rationale) fail('Для завершённого решения нужно авторское объяснение «Почему?». Неполное решение можно сохранить только как draft.');
+  }
+  if (result.kind === 'iteration') {
+    // Old versions did not have a closeout contract. Preserve them as drafts;
+    // never infer a completed engineering cycle from an imported description.
+    result.status = own(input, 'status') ? input.status : 'draft';
+    if (!['draft', 'closed'].includes(result.status)) fail('Статус версии: выберите draft или closed.');
+    optionalString(result, input, 'nextStep', 'Следующий шаг', 2000);
+    if (own(input, 'outcome') && input.outcome !== '' && input.outcome !== undefined && input.outcome !== null) {
+      if (!['kept', 'reverted', 'iterate', 'deferred', 'rejected'].includes(input.outcome)) fail('Итог версии: выберите дальнейшее действие.');
+      result.outcome = input.outcome;
+    }
+    if (result.status === 'closed' && (!result.body || !result.rationale || !result.outcome)) {
+      fail('Для завершённой версии нужны описание изменения, авторское «Почему?» и итог. Неполную версию сохраните как draft.');
+    }
+  }
   if (own(input, 'measuredValue') && input.measuredValue !== undefined && input.measuredValue !== null) {
     result.measuredValue = number(input.measuredValue, 'Измеренное значение');
   }
@@ -135,6 +163,66 @@ function normalizeRecord(input) {
     }
   }
   return result;
+}
+
+function normalizeRecordHistory(input, current) {
+  object(input, 'История версий записи');
+  if (input.schemaVersion !== 1) fail('Версия истории записи не поддерживается.');
+  const seen = new Set();
+  const versions = limitedArray(input.versions, 'Версии записи', LIMITS.recordVersions).map((entry, index) => {
+    object(entry, 'Версия записи');
+    const id = identifier(entry.id, 'Идентификатор версии');
+    if (seen.has(id)) fail(`Повторяется идентификатор версии «${id}».`);
+    const previousVersionId = entry.previousVersionId === null ? null : identifier(entry.previousVersionId, 'Предыдущая версия');
+    if ((index === 0 && previousVersionId !== null) || (index > 0 && !seen.has(previousVersionId))) fail('История записи ссылается на отсутствующую предыдущую версию.');
+    if (!authorOrigins.has(entry.provenance) || !versionMethods.has(entry.sourceMethod)) fail('Версия записи: неизвестное происхождение или способ изменения.');
+    object(entry.snapshot, 'Снимок версии');
+    if (own(entry.snapshot, 'recordHistory')) fail('Снимок версии не может содержать вложенную историю.');
+    const snapshot = normalizeRecordContent(entry.snapshot);
+    if (snapshot.id !== current.id || snapshot.originalAuthorLabel !== current.originalAuthorLabel) fail('История относится к другой записи или изменяет исходное имя автора.');
+    seen.add(id);
+    return { id, previousVersionId, recordedAt: timestamp(entry.recordedAt), provenance: entry.provenance, sourceMethod: entry.sourceMethod, snapshot };
+  });
+  const currentVersionId = identifier(input.currentVersionId, 'Текущая версия');
+  const selected = versions.find(version => version.id === currentVersionId);
+  if (!selected || JSON.stringify(selected.snapshot) !== JSON.stringify(current)) fail('Текущая запись не совпадает с сохранённой версией.');
+  const conflictVersionIds = limitedArray(own(input, 'conflictVersionIds') ? input.conflictVersionIds : [], 'Конфликтные версии', LIMITS.recordVersions).map(value => identifier(value, 'Конфликтная версия'));
+  if (new Set(conflictVersionIds).size !== conflictVersionIds.length || conflictVersionIds.some(id => !seen.has(id) || id === currentVersionId)) fail('История содержит некорректную ссылку на конфликтную версию.');
+  return { schemaVersion: 1, currentVersionId, versions, conflictVersionIds };
+}
+
+function normalizeRecord(input) {
+  const result = normalizeRecordContent(input);
+  if (own(input, 'recordHistory')) result.recordHistory = normalizeRecordHistory(input.recordHistory, result);
+  return result;
+}
+
+function recordHistory(record, recordedAt, sourceMethod = 'legacy-snapshot') {
+  if (record.recordHistory) return copy(record.recordHistory);
+  return {
+    schemaVersion: 1, currentVersionId: 'ORIGINAL', conflictVersionIds: [],
+    versions: [{
+      id: 'ORIGINAL', previousVersionId: null, recordedAt,
+      provenance: record.authorProvenance, sourceMethod,
+      snapshot: normalizeRecordContent(record),
+    }],
+  };
+}
+
+function preservesRecordHistory(previous, next, exceptProjectId, exceptRecordId) {
+  return previous.projects.filter(project => project.dataKind === 'personal').every(project => {
+    const incoming = next.projects.find(item => item.id === project.id);
+    return incoming && project.records.every(record => {
+      if (project.id === exceptProjectId && record.id === exceptRecordId) return true;
+      const incomingRecord = incoming.records.find(item => item.id === record.id);
+      if (!incomingRecord) return false;
+      if (!record.recordHistory) {
+        const original = JSON.stringify(normalizeRecordContent(record));
+        return original === JSON.stringify(normalizeRecordContent(incomingRecord)) || incomingRecord.recordHistory?.versions.some(version => JSON.stringify(version.snapshot) === original);
+      }
+      return record.recordHistory.versions.every(version => incomingRecord?.recordHistory?.versions.some(candidate => candidate.id === version.id && JSON.stringify(candidate) === JSON.stringify(version)));
+    });
+  });
 }
 
 function normalizeLink(input) {
@@ -417,7 +505,7 @@ function nativeProject(input) {
         if (field === 'rationale') record.rationale = note.body;
         else if (note.body) {
           const heading = noteLabels[field] || field;
-          record.body += `${record.body ? '\n\n' : ''}${heading} (авторская заметка ${note.authorUserId}): ${note.body}`;
+          record.body += `${record.body ? '\n\n' : ''}${heading} (авторская заметка ${note.authorUserId || note.originalAuthorLabel || 'Автор не указан'}): ${note.body}`;
         }
       }
       records.push(normalizeRecord(record));
@@ -494,6 +582,7 @@ export function createWorkspaceStore(options = {}) {
   const listeners = new Set();
   let state = freeze(initialState());
   let canWriteStorage = true;
+  let persistedValue = null;
 
   function persistent() {
     storageStatus = 'persistent';
@@ -515,7 +604,8 @@ export function createWorkspaceStore(options = {}) {
         try { parsed = JSON.parse(raw); } catch { fail('Сохранённые данные повреждены.'); }
         state = freeze(normalizeState(parsed));
       }
-      storage.setItem(STORAGE_KEY, JSON.stringify(state));
+      persistedValue = JSON.stringify(state);
+      storage.setItem(STORAGE_KEY, persistedValue);
       persistent();
     }
   } catch {
@@ -530,11 +620,22 @@ export function createWorkspaceStore(options = {}) {
     }
   }
 
-  function commit(next) {
+  function commit(next, expectedStoredValue = persistedValue) {
     const normalized = freeze(normalizeState(next));
     state = normalized;
     if (storage && canWriteStorage) {
-      try { storage.setItem(STORAGE_KEY, JSON.stringify(state)); persistent(); }
+      try {
+        // localStorage has no compare-and-swap transaction. Detect an intervening
+        // write before replacing it; keep this tab's full snapshot exportable.
+        if (storage.getItem(STORAGE_KEY) !== expectedStoredValue) {
+          canWriteStorage = false;
+          memory('Другая вкладка сохранила изменения одновременно. Её копия не перезаписана; эта версия доступна в памяти. Выгрузите JSON перед закрытием.');
+        } else {
+          persistedValue = JSON.stringify(state);
+          storage.setItem(STORAGE_KEY, persistedValue);
+          persistent();
+        }
+      }
       catch { canWriteStorage = false; memory(); }
     }
     notify();
@@ -575,6 +676,27 @@ export function createWorkspaceStore(options = {}) {
     if (state.projects.length >= LIMITS.projects) fail(`Достигнут лимит: ${LIMITS.projects} проектов. Сохраните JSON текущих проектов.`);
     commit({ ...state, activeProjectId: project.id, projects: [...state.projects, project] });
     return project.id;
+  }
+
+  function addStudyRows(rows) {
+    const inputs = limitedArray(rows, 'Измерения для добавления', LIMITS.studyRows);
+    const project = mutableProject();
+    if (project.studyRows.length + inputs.length > LIMITS.studyRows) fail(`В проекте может быть не больше ${LIMITS.studyRows} пар измерений.`);
+    if (!inputs.length) return [];
+    const used = projectItemIds(project);
+    const ids = [];
+    for (const fields of inputs) {
+      object(fields, 'Новое измерение');
+      const id = uniqueId('STUDY', used, own(fields, 'id') ? fields.id : undefined);
+      const row = normalizeStudyRow({ ...fields, id });
+      used.add(id);
+      ids.push(id);
+      project.studyRows.push(row);
+    }
+    // normalizeProject also rejects duplicate participant/task codes across the
+    // whole batch. Nothing is committed until every row and the full state pass.
+    replaceProject(project);
+    return ids;
   }
 
   const api = {
@@ -625,7 +747,13 @@ export function createWorkspaceStore(options = {}) {
       const project = mutableProject();
       if (project.records.length >= LIMITS.records) fail(`В проекте может быть не больше ${LIMITS.records} записей.`);
       const id = uniqueId('RECORD', projectItemIds(project), own(fields, 'id') ? fields.id : undefined);
-      const record = normalizeRecord({ ...fields, id, createdAt: own(fields, 'createdAt') ? fields.createdAt : now() });
+      const recordedAt = timestamp(now());
+      const record = normalizeRecordContent({
+        ...fields, id, createdAt: own(fields, 'createdAt') ? fields.createdAt : recordedAt,
+        originalAuthorLabel: own(fields, 'author') ? fields.author : '', authorProvenance: 'local-unverified',
+      }, { requireDecisionWhy: true });
+      if (own(fields, 'recordHistory')) fail('Историю версий можно перенести через импорт JSON, но нельзя задать при создании записи.');
+      record.recordHistory = recordHistory(record, recordedAt, 'manual-create');
       project.records.push(record);
       replaceProject(project);
       return id;
@@ -634,11 +762,86 @@ export function createWorkspaceStore(options = {}) {
       identifier(id, 'Запись');
       object(fields, 'Изменения записи');
       if (own(fields, 'id') && fields.id !== id) fail('Идентификатор существующей записи нельзя изменить.');
+      for (const key of ['recordHistory', 'originalAuthorLabel', 'authorProvenance', 'annotationHistory', 'nativeRef']) {
+        if (own(fields, key)) fail('Исходное авторство, происхождение и сохранённую историю нельзя перезаписать при редактировании записи.');
+      }
       const project = mutableProject();
       const index = project.records.findIndex(record => record.id === id);
       if (index === -1) fail('Запись не найдена.');
-      project.records[index] = normalizeRecord({ ...project.records[index], ...fields, id });
-      replaceProject(project);
+      const base = project.records[index];
+      const proposed = normalizeRecordContent({
+        ...base, ...fields, id,
+        authorProvenance: own(fields, 'author') && fields.author !== base.author ? 'local-unverified' : base.authorProvenance,
+      }, { requireDecisionWhy: true });
+      if (JSON.stringify(proposed) === JSON.stringify(normalizeRecordContent(base))) return;
+      const recordedAt = timestamp(now());
+      let nextState = state;
+      let expectedStoredValue = persistedValue;
+      if (storage && canWriteStorage) {
+        try {
+          const raw = storage.getItem(STORAGE_KEY);
+          if (raw !== persistedValue) {
+            if (typeof raw !== 'string' || raw.length > LIMITS.stateCharacters) fail('Некорректное обновление другой вкладки.');
+            nextState = normalizeState(JSON.parse(raw));
+            expectedStoredValue = raw;
+          }
+        } catch {
+          canWriteStorage = false;
+          memory('Не удалось проверить копию другой вкладки. Изменения сохраняются в памяти; выгрузите JSON перед закрытием.');
+        }
+      }
+      if (!preservesRecordHistory(state, nextState, project.id, id)) {
+        canWriteStorage = false;
+        memory('В другой вкладке обнаружена неполная история. Её копия не изменена; ваши записи сохранены в памяти. Выгрузите JSON перед закрытием.');
+        nextState = state;
+      }
+      const incomingProject = nextState.projects.find(item => item.id === project.id);
+      const incoming = incomingProject?.records.find(item => item.id === id);
+      // A removed project/record must not cause a stale tab to recreate it or
+      // overwrite newer data. Its proposed edit stays in this tab's export.
+      if (!incoming) {
+        canWriteStorage = false;
+        memory('В другой вкладке нет этой записи. Её текущая копия не изменена; ваша правка сохранена в памяти. Выгрузите JSON перед закрытием.');
+        nextState = state;
+      }
+      const current = incoming || base;
+      const baseHistory = recordHistory(base, recordedAt, base.nativeRef ? 'imported-snapshot' : 'legacy-snapshot');
+      const currentHistory = recordHistory(current, recordedAt, current.nativeRef ? 'imported-snapshot' : 'legacy-snapshot');
+      // Identical legacy snapshots can have different observed-at times in two
+      // tabs. Reuse the persisted root rather than fabricate an edit conflict.
+      if (!base.recordHistory && JSON.stringify(baseHistory.versions[0].snapshot) === JSON.stringify(currentHistory.versions[0].snapshot)) {
+        baseHistory.versions[0] = copy(currentHistory.versions[0]);
+      }
+      const versions = [...baseHistory.versions];
+      for (const version of currentHistory.versions) {
+        const existing = versions.find(item => item.id === version.id);
+        if (existing && JSON.stringify(existing) !== JSON.stringify(version)) fail('Конфликт идентификаторов истории: сохранённые версии различаются. Выгрузите обе копии JSON.');
+        if (!existing) versions.push(version);
+      }
+      const conflict = JSON.stringify(normalizeRecordContent(current)) !== JSON.stringify(normalizeRecordContent(base));
+      const versionId = uniqueId('VERSION', new Set(versions.map(version => version.id)));
+      versions.push({
+        id: versionId, previousVersionId: conflict ? baseHistory.currentVersionId : currentHistory.currentVersionId,
+        recordedAt, provenance: 'local-unverified', sourceMethod: conflict ? 'conflict-edit' : 'manual-edit', snapshot: proposed,
+      });
+      const conflicts = new Set([...baseHistory.conflictVersionIds, ...currentHistory.conflictVersionIds]);
+      if (conflict) conflicts.add(versionId);
+      const currentVersionId = conflict ? currentHistory.currentVersionId : versionId;
+      conflicts.delete(currentVersionId);
+      const updated = {
+        ...(conflict ? normalizeRecordContent(current) : proposed),
+        recordHistory: { schemaVersion: 1, currentVersionId, versions, conflictVersionIds: [...conflicts] },
+      };
+      const target = copy(incoming ? incomingProject : project);
+      target.records[target.records.findIndex(record => record.id === id)] = updated;
+      commit({ ...nextState, activeProjectId: project.id, projects: nextState.projects.map(item => item.id === project.id ? target : item) }, expectedStoredValue);
+      if (conflict) {
+        const error = new Error('Запись изменена в другой вкладке. Обе версии сохранены в истории; текущая запись не заменена. Сравните версии перед новой правкой.');
+        error.code = 'RECORD_VERSION_CONFLICT';
+        error.recordId = id;
+        error.versionId = versionId;
+        throw error;
+      }
     },
     addLink(fields) {
       object(fields, 'Новая связь');
@@ -661,14 +864,9 @@ export function createWorkspaceStore(options = {}) {
       replaceProject(project);
     },
     addStudyRow(fields) {
-      object(fields, 'Новое измерение');
-      const project = mutableProject();
-      if (project.studyRows.length >= LIMITS.studyRows) fail(`В проекте может быть не больше ${LIMITS.studyRows} пар измерений.`);
-      const id = uniqueId('STUDY', projectItemIds(project), own(fields, 'id') ? fields.id : undefined);
-      project.studyRows.push(normalizeStudyRow({ ...fields, id }));
-      replaceProject(project);
-      return id;
+      return addStudyRows([fields])[0];
     },
+    addStudyRows,
     importProject(jsonText) {
       const input = object(parseJson(jsonText, 'Импорт'), 'Импорт');
       if (own(input, 'schemaVersion') && input.schemaVersion !== 1) fail('Версия JSON не поддерживается. Нужна schemaVersion: 1.');
@@ -704,11 +902,12 @@ export function createWorkspaceStore(options = {}) {
       if (typeof event.newValue !== 'string' || event.newValue.length > LIMITS.stateCharacters) fail('Некорректное обновление.');
       const next = freeze(normalizeState(JSON.parse(event.newValue)));
       const nextIds = new Set(next.projects.map(project => project.id));
-      if (state.projects.some(project => project.dataKind === 'personal' && !nextIds.has(project.id))) {
+      if (state.projects.some(project => project.dataKind === 'personal' && !nextIds.has(project.id)) || !preservesRecordHistory(state, next)) {
         canWriteStorage = false;
-        memory('В другой вкладке обнаружена более ранняя копия. Личные проекты сохранены в памяти этой вкладки; выгрузите JSON.');
+        memory('В другой вкладке обнаружена более ранняя копия или потеря истории версий. Личные проекты сохранены в памяти этой вкладки; выгрузите JSON.');
       } else {
         state = next;
+        persistedValue = event.newValue;
         persistent();
       }
       notify();

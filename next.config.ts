@@ -28,6 +28,34 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  outputFileTracingIncludes: { "/api/workspace/report": ["./assets/report-fonts/**/*"] },
+  async redirects() {
+    const views: Record<string,string>={graph:'graph',timeline:'timeline',tests:'tests',decisions:'history',models:'models',gallery:'gallery',study:'study'};
+    return [
+      ...Object.entries(views).map(([route,view])=>({source:`/app/${route}`,destination:`/workspace?view=${view}`,permanent:false})),
+      {source:'/app/capture',destination:'/workspace?capture=1',permanent:false},
+      {source:'/app',destination:'/workspace',permanent:false},
+      {source:'/app/:path*',destination:'/workspace',permanent:false},
+      {source:'/pricing',destination:'/about',permanent:false},
+    ];
+  },
+  async rewrites() {
+    const pages = ["features", "about", "faq", "research", "contact", "privacy-policy", "materials", "demo", "workspace"];
+    const assets = ["assets", "materials"];
+    const files = ["astra.css", "astra.js", "astra-copy.js", "tracelab.css", "tracelab.js", "workspace.css", "workspace.js", "workspace-store.js", "workspace-views.css", "workspace-views.js", "workspace-shell.css", "workspace-canvas.css", "workspace-canvas.js", "workspace-astra.css", "workspace-server.js", "workspace-product-controls.js", "workspace-i18n.js", "product-entry.js", "workspace-measurements-template.csv"];
+    return { beforeFiles: [
+      ...['workspace-team.js','workspace-team-copy.js','workspace-inbox.js','workspace-inbox-copy.js'].map(name=>({source:`/${name}`,destination:`/_presentation/${name}`})),
+      {source:'/workspace-record-history.js',destination:'/_presentation/workspace-record-history.js'},
+      ...["workspace-filters.js","workspace-sources.js","workspace-sources-copy.js"].map(name=>({source:`/${name}`,destination:`/_presentation/${name}`})),
+      ...["workspace-media.js","workspace-media-copy.js","workspace-media-editor.js","workspace-media.css"].map(name=>({source:`/${name}`,destination:`/_presentation/${name}`})),
+      ...["workspace-outbox.js","workspace-report.js","workspace-shell-i18n.js","offline-capture.html","offline-capture.js","offline-capture.css"].map(name=>({source:`/${name}`,destination:`/_presentation/${name}`})),
+      { source: "/", destination: "/_presentation/index.html" },
+      ...pages.map(name => ({ source: `/${name}`, destination: `/_presentation/${name}/index.html` })),
+      { source: "/demo/workspace", destination: "/_presentation/workspace/index.html" },
+      ...files.map(name => ({ source: `/${name}`, destination: `/_presentation/${name}` })),
+      ...assets.map(name => ({ source: `/${name}/:path*`, destination: `/_presentation/${name}/:path*` })),
+    ], afterFiles: [], fallback: [] };
+  },
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },

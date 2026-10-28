@@ -1,10 +1,10 @@
 /* TraceLab workspace views. Imported text is always rendered with textContent. */
 const NS = 'http://www.w3.org/2000/svg';
-const TYPE = { source: 'Материал', iteration: 'Версия', test: 'Испытание', decision: 'Решение' };
+import { t, recordType, getWorkspaceLocale, formatDate, formatNumber, formatPercent, formatDayKey, formatDayLabel } from './workspace-i18n.js';
 let graphSerial = 0;
 const graphViewports = new Map();
 const noop = () => {};
-const numberFormat = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 });
+
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -25,21 +25,17 @@ function linksOf(project) {
     .filter(link => link.status !== 'rejected' && ids.has(link.from) && ids.has(link.to));
 }
 function matches(record, query = '', kind = 'all') {
-  const needle = String(query || '').trim().toLocaleLowerCase('ru');
+  const needle = String(query || '').trim().toLocaleLowerCase(getWorkspaceLocale());
   return (!kind || kind === 'all' || record.kind === kind) && (!needle ||
-    [record.title, record.body, record.rationale, record.id, record.author].some(value => String(value || '').toLocaleLowerCase('ru').includes(needle)));
+    [record.title, record.body, record.rationale, record.id, record.author].some(value => String(value || '').toLocaleLowerCase(getWorkspaceLocale()).includes(needle)));
 }
-function sorted(records) {
+function sorted(records, order = 'oldest') {
   return [...records].sort((a, b) => {
     const left = Date.parse(a.createdAt); const right = Date.parse(b.createdAt);
-    return (Number.isFinite(left) ? left : Infinity) - (Number.isFinite(right) ? right : Infinity);
+    if (!Number.isFinite(left)) return Number.isFinite(right) ? 1 : String(a.id).localeCompare(String(b.id));
+    if (!Number.isFinite(right)) return -1;
+    return (order === 'newest' ? right - left : left - right) || String(a.id).localeCompare(String(b.id));
   });
-}
-function formatDate(value) {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? 'Дата не указана' : new Intl.DateTimeFormat('ru-RU', {
-    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Qyzylorda',
-  }).format(date);
 }
 function empty(container, title, body) {
   container.replaceChildren();
@@ -53,7 +49,7 @@ function button(label, className, handler) {
   if (handler) node.addEventListener('click', handler);
   return node;
 }
-function disclosureTable(headers, rows, caption, label = 'Показать данные таблицей') {
+function disclosureTable(headers, rows, caption, label = t('common.table')) {
   const details = el('details', 'wv-table-disclosure');
   details.append(el('summary', '', label));
   const scroller = el('div', 'wv-table-scroll');
@@ -81,7 +77,7 @@ function shortLines(value, width = 24, maxLines = 2) {
   if (line) lines.push(line);
   const visible = lines.slice(0, maxLines).map(item => item.length > width ? item.slice(0, width - 1) + '…' : item);
   if (lines.length > maxLines) visible[maxLines - 1] = visible[maxLines - 1].slice(0, width - 1) + '…';
-  return visible.length ? visible : ['Без названия'];
+  return visible.length ? visible : [t('common.untitled')];
 }
 
 /* The longest established path forms a readable two-row chain; other records
@@ -113,8 +109,8 @@ function graphOrder(records, links) {
 export function renderGraph(container, project, { selectedId = null, query = '', kind = 'all', onSelect = noop } = {}) {
   const all = recordsOf(project);
   const visible = all.filter(record => matches(record, query, kind));
-  if (!visible.length) return empty(container, all.length ? 'Нет подходящих записей' : 'Граф начинается с первого материала',
-    all.length ? 'Измените запрос или выберите все типы записей.' : 'Добавьте материал, версию, испытание или решение, затем свяжите их.');
+  if (!visible.length) return empty(container, all.length ? t('graph.noMatches') : t('graph.emptyTitle'),
+    all.length ? t('graph.changeFilters') : t('graph.emptyText'));
   container.replaceChildren();
   const ids = new Set(visible.map(record => record.id));
   const links = linksOf(project).filter(link => ids.has(link.from) && ids.has(link.to));
@@ -137,15 +133,15 @@ export function renderGraph(container, project, { selectedId = null, query = '',
   const previousViewport = graphViewports.get(viewportKey);
   const toolbar = el('div', 'wv-graph-toolbar');
   const legend = el('div', 'wv-graph-legend');
-  legend.append(el('span', 'wv-established-key', 'Подтверждённая связь'));
-  if (links.some(link => link.status === 'suggested')) legend.append(el('span', 'wv-suggested-key', 'Предложение — не подтверждено'));
+  legend.append(el('span', 'wv-established-key', t('relation.accepted')));
+  if (links.some(link => link.status === 'suggested')) legend.append(el('span', 'wv-suggested-key', t('relation.suggested')));
   toolbar.append(legend);
   const controls = el('div', 'wv-zoom-controls');
   const zoomStatus = el('span', 'wv-zoom-status'); zoomStatus.setAttribute('aria-live', 'polite');
   const scroller = el('div', 'wv-graph-scroll'); scroller.tabIndex = 0;
-  scroller.setAttribute('aria-label', 'Граф связей. Прокручивайте область для перемещения. Выберите запись для подробностей.');
-  const diagram = svg('svg', { viewBox: `0 0 ${width} ${height}`, class: 'wv-graph-svg', role: 'group', 'aria-label': `Граф: ${visible.length} записей, ${links.length} связей` });
-  diagram.append(svg('title', {}, `Связи проекта «${project?.name || 'Без названия'}»`));
+  scroller.setAttribute('aria-label', t('graph.region'));
+  const diagram = svg('svg', { viewBox: `0 0 ${width} ${height}`, class: 'wv-graph-svg', role: 'group', 'aria-label': t('graph.counts', { records: visible.length, links: links.length }) });
+  diagram.append(svg('title', {}, t('graph.title', { name: project?.name || t('common.untitled') })));
   const graphId = ++graphSerial;
   const defs = svg('defs');
   for (const mode of ['accepted', 'suggested', 'active']) {
@@ -170,30 +166,30 @@ export function renderGraph(container, project, { selectedId = null, query = '',
       pathData = `M ${x1} ${y1} V ${routeY} H ${x2} V ${y2}`; lx = (x1 + x2) / 2; ly = routeY - 8;
     }
     const edge = svg('g', { class: `wv-edge${suggested ? ' is-suggested' : ''}${active ? ' is-active' : ''}${selectedId && !active ? ' is-muted' : ''}` });
-    edge.append(svg('title', {}, `${link.from} → ${link.to}: ${link.label || 'Связь'}${suggested ? '. Предложение, ещё не подтверждено' : ''}`));
+    edge.append(svg('title', {}, `${link.from} → ${link.to}: ${link.label || t('relation.generic')}${suggested ? `. ${t('relation.suggested')}` : ''}`));
     edge.append(svg('path', { d: pathData, 'marker-end': `url(#wv-arrow-${graphId}-${active ? 'active' : suggested ? 'suggested' : 'accepted'})` }));
     /* Short horizontal gaps carry arrows only. Full relation labels remain in
        the textual connection list, rather than overlapping node titles. */
     if (a.row !== b.row || Math.abs(a.col - b.col) > 1) {
-      const label = String(link.label || 'Связь');
+      const label = String(link.label || t('relation.generic'));
       edge.append(svg('text', { x: lx, y: ly, 'text-anchor': 'middle', class: 'wv-edge-label' }, label.length > 34 ? label.slice(0, 33) + '…' : label));
     }
     diagram.append(edge);
   }
   ordered.forEach(record => {
     const { x, y } = positions.get(record.id);
-    const node = svg('g', { transform: `translate(${x} ${y})`, class: `wv-node wv-node-${record.kind}${record.id === selectedId ? ' is-selected' : ''}${neighbors.has(record.id) && record.id !== selectedId ? ' is-neighbor' : ''}${selectedId && !neighbors.has(record.id) ? ' is-muted' : ''}`, tabindex: 0, role: 'button', 'aria-pressed': String(record.id === selectedId), 'aria-label': `${record.id}. ${TYPE[record.kind] || 'Запись'}. ${record.title}` });
+    const node = svg('g', { transform: `translate(${x} ${y})`, class: `wv-node wv-node-${record.kind}${record.id === selectedId ? ' is-selected' : ''}${neighbors.has(record.id) && record.id !== selectedId ? ' is-neighbor' : ''}${selectedId && !neighbors.has(record.id) ? ' is-muted' : ''}`, tabindex: 0, role: 'button', 'aria-pressed': String(record.id === selectedId), 'aria-label': `${record.id}. ${recordType(record.kind)}. ${record.title}` });
     node.append(svg('title', {}, `${record.id} · ${record.title}`));
     node.append(svg('rect', { width: nodeWidth, height: nodeHeight, rx: 12, class: 'wv-node-bg' }));
     const visibleId = String(record.id).length > 17 ? String(record.id).slice(0, 14) + '…' : String(record.id);
     const idText = svg('text', { x: 15, y: 25, class: 'wv-node-id' }, visibleId);
     idText.append(svg('title', {}, String(record.id)));
     node.append(idText);
-    node.append(svg('text', { x: nodeWidth - 15, y: 25, class: 'wv-node-kind', 'text-anchor': 'end' }, TYPE[record.kind] || 'Запись'));
+    node.append(svg('text', { x: nodeWidth - 15, y: 25, class: 'wv-node-kind', 'text-anchor': 'end' }, recordType(record.kind)));
     const title = svg('text', { x: 15, y: 53, class: 'wv-node-title' });
     shortLines(record.title, 20).forEach((line, index) => title.append(svg('tspan', { x: 15, dy: index ? 18 : 0 }, line)));
     node.append(title);
-    const extra = record.kind === 'test' && Number(record.trials) > 0 ? `${record.successes} / ${record.trials} ${record.unit || 'попыток'}` : record.revision || record.sourceType || '';
+    const extra = record.kind === 'test' && Number(record.trials) > 0 ? `${formatNumber(record.successes)} / ${formatNumber(record.trials)} ${record.unit || t('tests.attempts')}` : record.revision || record.sourceType || '';
     if (extra) node.append(svg('text', { x: 15, y: 95, class: 'wv-node-detail' }, String(extra).slice(0, 28)));
     node.addEventListener('click', () => onSelect(record.id));
     node.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(record.id); } });
@@ -211,25 +207,25 @@ export function renderGraph(container, project, { selectedId = null, query = '',
     diagram.style.width = `${Math.round(width * zoom)}px`;
     diagram.style.height = `${Math.round(height * zoom)}px`;
     diagram.style.setProperty('--wv-label-scale', String(1 / Math.min(1, zoom)));
-    zoomStatus.textContent = `${Math.round(zoom * 100)}%`;
+    zoomStatus.textContent = formatPercent(zoom);
     zoomOut.disabled = zoom <= 0.801; zoomIn.disabled = zoom >= 1.799;
     if (center) scroller.scrollLeft = Math.max(0, relativeCenter * width * zoom - scroller.clientWidth / 2);
     rememberViewport();
   }
-  const zoomOut = button('', 'wv-zoom-button', () => setZoom(zoom - 0.2)); zoomOut.setAttribute('aria-label', 'Уменьшить граф');
-  const zoomIn = button('', 'wv-zoom-button', () => setZoom(zoom + 0.2)); zoomIn.setAttribute('aria-label', 'Увеличить граф');
+  const zoomOut = button('', 'wv-zoom-button', () => setZoom(zoom - 0.2)); zoomOut.setAttribute('aria-label', t('common.zoomOut'));
+  const zoomIn = button('', 'wv-zoom-button', () => setZoom(zoom + 0.2)); zoomIn.setAttribute('aria-label', t('common.zoomIn'));
   for (const [control, plus] of [[zoomOut, false], [zoomIn, true]]) {
     const icon = svg('svg', { viewBox: '0 0 20 20', 'aria-hidden': 'true', class: 'wv-zoom-icon' });
     icon.append(svg('line', { x1: 4, y1: 10, x2: 16, y2: 10 }));
     if (plus) icon.append(svg('line', { x1: 10, y1: 4, x2: 10, y2: 16 }));
     control.append(icon);
   }
-  const fit = button('Вписать', 'wv-fit-button', () => { setZoom(Math.min(1, scroller.clientWidth / width), false); scroller.scrollLeft = 0; scroller.scrollTop = 0; rememberViewport(); });
+  const fit = button(t('common.fit'), 'wv-fit-button', () => { setZoom(Math.min(1, scroller.clientWidth / width), false); scroller.scrollLeft = 0; scroller.scrollTop = 0; rememberViewport(); });
   controls.append(zoomOut, zoomStatus, zoomIn, fit); toolbar.append(controls);
   scroller.append(diagram); wrap.append(toolbar, scroller);
-  wrap.append(el('p', 'wv-graph-help', 'Выберите запись — её связи выделятся. Масштаб меняется кнопками; область графа можно прокручивать. Минимальный масштаб сохраняет читаемость подписей.'));
+  wrap.append(el('p', 'wv-graph-help', t('graph.help')));
   const list = el('details', 'wv-graph-list');
-  list.append(el('summary', '', `Записи и связи списком · ${visible.length}`));
+  list.append(el('summary', '', t('graph.listCount', { count: visible.length })));
   const listBody = el('div', 'wv-graph-list-body');
   ordered.forEach(record => {
     const row = el('div', `wv-graph-list-row${record.id === selectedId ? ' is-selected' : ''}`);
@@ -237,8 +233,8 @@ export function renderGraph(container, project, { selectedId = null, query = '',
     select.setAttribute('aria-pressed', String(record.id === selectedId));
     select.append(el('span', 'wv-record-id', record.id), el('span', '', record.title)); row.append(select);
     const outgoing = links.filter(link => link.from === record.id);
-    outgoing.forEach(link => { const relation = el('p', 'wv-relation'); relation.append(el('span', '', `→ ${link.to} · ${link.label || 'Связь'}`)); if (link.status === 'suggested') relation.append(el('span', 'wv-unconfirmed', 'Предложено, не подтверждено')); row.append(relation); });
-    if (!outgoing.length) row.append(el('p', 'wv-relation', 'Нет исходящих связей'));
+    outgoing.forEach(link => { const relation = el('p', 'wv-relation'); relation.append(el('span', '', `→ ${link.to} · ${link.label || t('relation.generic')}`)); if (link.status === 'suggested') relation.append(el('span', 'wv-unconfirmed', t('relation.suggested'))); row.append(relation); });
+    if (!outgoing.length) row.append(el('p', 'wv-relation', t('relation.noneOutgoing')));
     listBody.append(row);
   });
   list.append(listBody);
@@ -259,50 +255,60 @@ export function renderTestChart(container, project, { onSelect = noop } = {}) {
   const tests = allTests.filter(record => record.successes !== null && record.successes !== '' && Number.isInteger(Number(record.trials)) && Number(record.trials) > 0 && Number.isInteger(Number(record.successes)) && Number(record.successes) >= 0 && Number(record.successes) <= Number(record.trials));
   const countedIds = new Set(tests.map(record => record.id));
   const measuredTests = allTests.filter(record => !countedIds.has(record.id) && record.measuredValue !== null && record.measuredValue !== undefined && record.measuredValue !== '' && Number.isFinite(Number(record.measuredValue)));
-  if (!tests.length && !measuredTests.length) return empty(container, 'Пока нет измерений испытаний', 'Добавьте испытание с измеренным значением и единицей или с количеством успешных и общих попыток. Укажите условия и критерий оценки.');
+  if (!allTests.length) return empty(container, t('tests.emptyTitle'), t('tests.emptyText'));
   container.replaceChildren();
   const chart = el('div', 'wv-test-chart');
-  chart.append(el('p', 'wv-chart-note', project?.dataKind === 'synthetic' ? 'Учебные измерения: демонстрируют сравнение версий, не являются результатами пилотного исследования.' : 'Результаты взяты из записей испытаний. Доли показаны только для записей с количеством попыток; отдельные измерения сохраняют свои единицы. Сравнивайте только одинаковые условия и критерии.'));
+  chart.append(el('p', 'wv-chart-note', (project?.dataKind === 'synthetic' || project?.educationalOrigin) ? t('tests.educational') : t('tests.context')));
   const ticks = el('div', 'wv-bar-ticks'); ticks.setAttribute('aria-hidden', 'true');
-  [0, 25, 50, 75, 100].forEach(value => ticks.append(el('span', '', `${value}%`))); if (tests.length) chart.append(ticks);
+  [0, 25, 50, 75, 100].forEach(value => ticks.append(el('span', '', formatPercent(value / 100)))); if (tests.length) chart.append(ticks);
   tests.forEach(record => {
     const percent = Number(record.successes) / Number(record.trials) * 100;
     const row = button('', 'wv-test-row', () => onSelect(record.id));
-    row.setAttribute('aria-label', `${record.id}: ${record.title}. Успешно ${record.successes} из ${record.trials}. Открыть испытание.`);
+    row.setAttribute('aria-label', t('tests.open', { title: record.title, successes: record.successes, trials: record.trials }));
     const head = el('span', 'wv-test-row-head');
     const title = el('span', 'wv-test-title'); title.append(el('span', 'wv-record-id', record.id), el('span', '', record.title));
-    head.append(title, el('strong', 'wv-test-value', `${record.successes} / ${record.trials}`)); row.append(head);
+    head.append(title, el('strong', 'wv-test-value', t('tests.ratio', { successes: record.successes, trials: record.trials }))); row.append(head);
     const track = el('span', 'wv-test-track'); track.setAttribute('aria-hidden', 'true');
     const fill = el('span', 'wv-test-fill'); fill.style.width = `${percent}%`; track.append(fill); row.append(track);
     const foot = el('span', 'wv-test-row-foot');
-    foot.append(el('span', '', `Успешных попыток · ${numberFormat.format(percent)}%`), el('span', '', record.unit ? `Единица: ${record.unit}` : 'Единица: попытка'));
+    foot.append(el('span', '', t('tests.successRatio', { percent: formatPercent(percent / 100) })), el('span', '', t('tests.unit', { unit: record.unit || t('tests.attempt') })));
     row.append(foot);
-    if (record.conditions) row.append(el('span', 'wv-test-context', `Условия: ${record.conditions}`));
-    if (record.criterion) row.append(el('span', 'wv-test-context', `Критерий: ${record.criterion}`));
+    if (record.conditions) row.append(el('span', 'wv-test-context', t('tests.conditions', { conditions: record.conditions })));
+    if (record.criterion) row.append(el('span', 'wv-test-context', t('tests.criterion', { criterion: record.criterion })));
     chart.append(row);
   });
-  if (tests.length) chart.append(disclosureTable(['Испытание', 'Успех / попытки', 'Доля', 'Единица', 'Условия и критерий'], tests.map(record => [
-    `${record.id} · ${record.title}`, `${record.successes} / ${record.trials}`, `${numberFormat.format(Number(record.successes) / Number(record.trials) * 100)}%`, record.unit || 'попытка', [record.conditions, record.criterion].filter(Boolean).join(' · ') || 'Не указаны',
-  ]), 'Исходные измерения испытаний. Процент рассчитан как успех / попытки.'));
+  if (tests.length) chart.append(disclosureTable([t('record.test'), t('tests.successHeader'), t('tests.ratioHeader'), t('tests.unitHeader'), t('tests.contextHeader')], tests.map(record => [
+    `${record.id} · ${record.title}`, t('tests.ratio', { successes: record.successes, trials: record.trials }), formatPercent(Number(record.successes) / Number(record.trials)), record.unit || t('tests.attempt'), [record.conditions, record.criterion].filter(Boolean).join(' · ') || t('common.unavailable'),
+  ]), t('tests.tableCaption')));
   if (measuredTests.length) {
     const measurementScroll = el('div', 'wv-table-scroll wv-measurement-scroll');
     const measurementTable = el('table', 'wv-table wv-measurement-table');
-    measurementTable.append(el('caption', '', 'Отдельные измерения. Единицы сохранены из записей; значения с разными единицами не объединяются в одну диаграмму. Выберите испытание, чтобы открыть подробности.'));
+    measurementTable.append(el('caption', '', t('tests.measurementsCaption')));
     const head = el('thead'); const headRow = el('tr');
-    ['Испытание', 'Значение', 'Единица', 'Условия', 'Критерий'].forEach(label => { const cell = el('th', '', label); cell.scope = 'col'; headRow.append(cell); });
+    [t('record.test'), t('tests.valueHeader'), t('tests.unitHeader'), t('tests.conditionsHeader'), t('tests.criterionHeader')].forEach(label => { const cell = el('th', '', label); cell.scope = 'col'; headRow.append(cell); });
     head.append(headRow); measurementTable.append(head);
     const body = el('tbody');
     measuredTests.forEach(record => {
       const row = el('tr'); const identity = el('th'); identity.scope = 'row';
       const select = button('', 'wv-measurement-select', () => onSelect(record.id));
       select.append(el('span', 'wv-record-id', record.id), el('span', '', record.title)); identity.append(select); row.append(identity);
-      [String(record.measuredValue), record.unit || 'Не указана', record.conditions || 'Не указаны', record.criterion || 'Не указан'].forEach(value => row.append(el('td', '', value)));
+      [formatNumber(record.measuredValue, { maximumFractionDigits: 12 }), record.unit || t('common.unavailable'), record.conditions || t('common.unavailable'), record.criterion || t('common.unavailable')].forEach(value => row.append(el('td', '', value)));
       body.append(row);
     });
     measurementTable.append(body); measurementScroll.append(measurementTable); chart.append(measurementScroll);
   }
-  const unmeasured = allTests.length - tests.length - measuredTests.length;
-  if (unmeasured) chart.append(el('p', 'wv-chart-note', `${unmeasured} записей без корректных измерений пока не показано. Откройте испытания и заполните результаты.`));
+  const measuredIds = new Set([...tests, ...measuredTests].map(record => record.id));
+  const qualitative = allTests.filter(record => !measuredIds.has(record.id));
+  if (qualitative.length) {
+    chart.append(el('h3', '', t('tests.qualitativeTitle')));
+    for (const record of qualitative) {
+      const row = button('', 'wv-test-row', () => onSelect(record.id));
+      row.append(el('strong', 'wv-test-title', record.title), el('span', 'wv-test-context', record.body || t('tests.qualitativeEmpty')));
+      if (record.conditions) row.append(el('span', 'wv-test-context', t('tests.conditions', { conditions: record.conditions })));
+      if (record.criterion) row.append(el('span', 'wv-test-context', t('tests.criterion', { criterion: record.criterion })));
+      chart.append(row);
+    }
+  }
   container.append(chart); return noop;
 }
 
@@ -315,56 +321,72 @@ function niceMaximum(value) {
 export function renderStudyChart(container, project) {
   const raw = Array.isArray(project?.studyRows) ? project.studyRows : [];
   const rows = raw.filter(row => row.baselineSeconds !== null && row.baselineSeconds !== '' && row.traceSeconds !== null && row.traceSeconds !== '' && Number.isFinite(Number(row.baselineSeconds)) && Number(row.baselineSeconds) >= 0 && Number.isFinite(Number(row.traceSeconds)) && Number(row.traceSeconds) >= 0);
-  if (!rows.length) return empty(container, 'Данные реального пилота ещё не предоставлены', 'Для каждого участника добавьте или импортируйте две длительности одной задачи: до TraceLab и с TraceLab, в секундах. Используйте обезличенные коды участников. После этого появятся парные измерения.');
+  if (!rows.length) return empty(container, t('study.emptyTitle'), t('study.emptyText'));
   container.replaceChildren();
   const chart = el('div', 'wv-study-chart');
-  chart.append(el('p', 'wv-chart-note', project?.dataKind === 'synthetic' ? 'Это учебные данные. Для оценки продукта используйте отдельный проект с реальными обезличенными измерениями.' : 'Парные измерения одной задачи. Линия соединяет два результата одного участника. Меньшее время означает более быстрое выполнение; само по себе оно не подтверждает качество решения.'));
-  const legend = el('div', 'wv-study-legend'); legend.append(el('span', 'wv-baseline-key', 'До TraceLab'), el('span', 'wv-trace-key', 'С TraceLab')); chart.append(legend);
+  chart.append(el('p', 'wv-chart-note', (project?.dataKind === 'synthetic' || project?.educationalOrigin) ? t('study.educational') : t('study.context')));
+  const legend = el('div', 'wv-study-legend'); legend.append(el('span', 'wv-baseline-key', t('study.baseline')), el('span', 'wv-trace-key', t('study.trace'))); chart.append(legend);
   const plot = el('div', 'wv-study-scroll');
   const left = 100, right = 42, top = 32, rowHeight = 51, bottom = 54, width = 750;
   const height = top + rows.length * rowHeight + bottom;
   const maximum = niceMaximum(Math.max(...rows.flatMap(row => [Number(row.baselineSeconds), Number(row.traceSeconds)])) * 1.05);
   const x = value => left + Number(value) / maximum * (width - left - right);
-  const diagram = svg('svg', { class: 'wv-study-svg', viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': `Время выполнения задачи в секундах, ${rows.length} участников. Полные значения доступны в таблице.` });
-  diagram.append(svg('title', {}, 'Сравнение времени выполнения до TraceLab и с TraceLab'));
+  const diagram = svg('svg', { class: 'wv-study-svg', viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': t('study.chartLabel', { count: rows.length }) });
+  diagram.append(svg('title', {}, t('study.chartTitle')));
   for (let index = 0; index <= 4; index++) {
     const value = maximum * index / 4; const position = x(value);
     diagram.append(svg('line', { x1: position, x2: position, y1: top - 10, y2: height - bottom + 5, class: 'wv-chart-grid' }));
-    diagram.append(svg('text', { x: position, y: height - bottom + 25, 'text-anchor': 'middle', class: 'wv-chart-axis' }, numberFormat.format(value)));
+    diagram.append(svg('text', { x: position, y: height - bottom + 25, 'text-anchor': 'middle', class: 'wv-chart-axis' }, formatNumber(value)));
   }
   rows.forEach((row, index) => {
     const y = top + index * rowHeight + rowHeight / 2;
-    diagram.append(svg('text', { x: left - 14, y: y + 4, 'text-anchor': 'end', class: 'wv-chart-participant' }, String(row.participantCode || row.id || `Участник ${index + 1}`).slice(0, 16)));
-    const pair = svg('g'); pair.append(svg('title', {}, `${row.participantCode || row.id}: до ${numberFormat.format(Number(row.baselineSeconds))} с, с TraceLab ${numberFormat.format(Number(row.traceSeconds))} с`));
+    diagram.append(svg('text', { x: left - 14, y: y + 4, 'text-anchor': 'end', class: 'wv-chart-participant' }, String(row.participantCode || row.id || t('study.participant', { count: index + 1 })).slice(0, 16)));
+    const pair = svg('g'); pair.append(svg('title', {}, t('study.pair', { code: row.participantCode || row.id, baseline: Number(row.baselineSeconds), trace: Number(row.traceSeconds) })));
     pair.append(svg('line', { x1: x(row.baselineSeconds), x2: x(row.traceSeconds), y1: y, y2: y, class: 'wv-study-pair' }));
     pair.append(svg('circle', { cx: x(row.baselineSeconds), cy: y, r: 5, class: 'wv-baseline-dot' }));
     pair.append(svg('circle', { cx: x(row.traceSeconds), cy: y, r: 5, class: 'wv-trace-dot' }));
     diagram.append(pair);
   });
-  diagram.append(svg('text', { x: (left + width - right) / 2, y: height - 7, 'text-anchor': 'middle', class: 'wv-chart-axis' }, 'Время выполнения, секунды'));
+  diagram.append(svg('text', { x: (left + width - right) / 2, y: height - 7, 'text-anchor': 'middle', class: 'wv-chart-axis' }, t('study.axis')));
   plot.append(diagram); chart.append(plot);
-  const table = disclosureTable(['Код участника', 'До TraceLab, с', 'С TraceLab, с', 'Разница, с'], rows.map(row => [row.participantCode || row.id, numberFormat.format(Number(row.baselineSeconds)), numberFormat.format(Number(row.traceSeconds)), numberFormat.format(Number(row.traceSeconds) - Number(row.baselineSeconds))]), 'Исходные парные измерения. Разница = с TraceLab − до TraceLab; отрицательная разница означает меньшее время.');
+  const table = disclosureTable([t('study.participantHeader'), t('study.baselineHeader'), t('study.traceHeader'), t('study.differenceHeader')], rows.map(row => [row.participantCode || row.id, formatNumber(Number(row.baselineSeconds)), formatNumber(Number(row.traceSeconds)), formatNumber(Number(row.traceSeconds) - Number(row.baselineSeconds))]), t('study.tableCaption'));
   table.open = true; chart.append(table);
-  if (rows.length !== raw.length) chart.append(el('p', 'wv-chart-note', `${raw.length - rows.length} строк с отсутствующими или некорректными длительностями пропущено.`));
+  if (rows.length !== raw.length) chart.append(el('p', 'wv-chart-note', t('study.skipped', { count: raw.length - rows.length })));
   container.append(chart); return noop;
 }
 
-export function renderTimeline(container, project, { selectedId = null, query = '', kind = 'all', onSelect = noop } = {}) {
-  const all = recordsOf(project); const records = sorted(all.filter(record => matches(record, query, kind)));
-  if (!records.length) return empty(container, all.length ? 'В этой выборке нет событий' : 'История проекта пока пуста', all.length ? 'Измените поисковый запрос или тип записи.' : 'Добавьте первый материал. Дальнейшие версии, испытания и решения появятся здесь по времени.');
+export function timelineGroups(records, { order = 'newest', now = new Date() } = {}) {
+  const groups = new Map();
+  for (const record of sorted(records, order)) {
+    const key = formatDayKey(record.createdAt);
+    if (!groups.has(key)) groups.set(key, { key, label: formatDayLabel(record.createdAt, now), records: [] });
+    groups.get(key).records.push(record);
+  }
+  return [...groups.values()];
+}
+
+export function renderTimeline(container, project, { selectedId = null, query = '', kind = 'all', onSelect = noop, order = 'newest', now = new Date() } = {}) {
+  const all = recordsOf(project); const records = all.filter(record => matches(record, query, kind));
+  if (!records.length) return empty(container, all.length ? t('timeline.noMatches') : t('timeline.emptyTitle'), all.length ? t('graph.changeFilters') : t('timeline.emptyText'));
   container.replaceChildren();
-  const timeline = el('ol', 'wv-timeline');
-  records.forEach(record => {
+  for (const group of timelineGroups(records, { order, now })) {
+    const section = el('section', 'wv-timeline-group');
+    section.dataset.day = group.key;
+    section.append(el('h3', 'wv-timeline-group-title', group.label));
+    const timeline = el('ol', 'wv-timeline');
+    group.records.forEach(record => {
     const item = el('li', `wv-timeline-item${record.id === selectedId ? ' is-selected' : ''}`);
-    const select = button('', 'wv-timeline-button', () => onSelect(record.id)); select.setAttribute('aria-pressed', String(record.id === selectedId));
+    const select = button('', 'wv-timeline-button', () => onSelect(record.id)); select.setAttribute('aria-pressed', String(record.id === selectedId));select.dataset.recordId=record.id;
     const time = el('time', 'wv-timeline-date', formatDate(record.createdAt));
     if (!Number.isNaN(Date.parse(record.createdAt))) time.dateTime = record.createdAt;
     const main = el('span', 'wv-timeline-main');
-    const meta = el('span', 'wv-timeline-meta'); meta.append(el('span', 'wv-record-id', record.id), el('span', '', TYPE[record.kind] || 'Запись'));
+    const meta = el('span', 'wv-timeline-meta');const identifier=el('span', 'wv-record-id', record.id.length>16?record.id.slice(0,8):record.id);identifier.title=record.id;meta.append(identifier, el('span', '', recordType(record.kind)));
     main.append(meta, el('strong', 'wv-timeline-title', record.title));
     if (record.body) main.append(el('span', 'wv-timeline-body', record.body));
     if (record.author) main.append(el('span', 'wv-timeline-author', record.author));
     select.append(time, main); item.append(select); timeline.append(item);
   });
-  container.append(timeline); return noop;
+    section.append(timeline); container.append(section);
+  }
+  return noop;
 }

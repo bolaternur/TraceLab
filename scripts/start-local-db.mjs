@@ -1,8 +1,11 @@
-import "dotenv/config";
+import { config } from "dotenv";
 import net from "node:net";
 import path from "node:path";
 import { existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+
+config({ path: '.env.local', quiet: true });
+config({ path: '.env', quiet: true });
 
 const url = new URL(process.env.DATABASE_URL ?? "postgresql://localhost:5432/app_db");
 const host = url.hostname;

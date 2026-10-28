@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { cookies } from "next/headers";
 import "./globals.css";
 import "./fieldnotes.css";
+import "./unified-ui.css";
 import localFont from "next/font/local";
 import { brand } from "@/lib/brand";
 import { isLocale } from "@/lib/i18n";
@@ -26,7 +27,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#F4F1E9",
+  themeColor: "#0b0b0e",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",

@@ -8,11 +8,11 @@ const button = (key, href, kind = 'secondary') => `<a class="a-button ${kind}" h
 const views = [['tabGraph', 'graph'], ['timeline', 'timeline'], ['tests', 'tests'], ['history', 'history'], ['research', 'study']];
 const shortcuts = () => `<nav class="a-shortcuts">${views.map(([key, view]) => `<a href="/workspace/?view=${view}">${t(key)}${arrow}</a>`).join('')}</nav>`;
 const faq = () => `<div class="a-faq">${['Storage', 'Backup', 'Authorship', 'Demo', '3d'].map((key, index) => `<details ${index === 0 ? 'open' : ''}><summary>${t(`faq${key}Q`)}</summary><p>${t(`faq${key}A`)}</p></details>`).join('')}</div>`;
-const capabilities = () => `<div class="a-capabilities">${['Graph', 'Timeline', 'Evidence', 'Authorship'].map((key, index) => `<article class="a-feature"><span class="a-feature-index">0${index + 1}</span><h3>${t(`feature${key}Title`)}</h3><p>${t(`feature${key}Text`)}</p></article>`).join('')}</div>`;
+const capabilities = () => `<div class="a-capabilities">${['Graph', 'Timeline', 'Evidence', 'Authorship'].map(key => `<article class="a-feature"><h3>${t(`feature${key}Title`)}</h3><p>${t(`feature${key}Text`)}</p></article>`).join('')}</div>`;
 const demo = () => `<section class="a-demo a-container" id="demo" aria-labelledby="demo-heading">
   <div class="a-section-head"><div><p class="a-eyebrow">${t('demoLabel')}</p><h2 id="demo-heading">${t('demoTitle')}</h2></div><p>${t('demoText')}</p></div>
   <div class="a-demo-surface" data-demo>
-    <div class="a-demo-topline"><span>TraceLab / 01—03</span><span class="a-tag">${t('demoLabel')}</span></div>
+    <div class="a-demo-topline"><span class="a-tag">${t('demoLabel')}</span></div>
     <div class="a-tabs" role="tablist" aria-label="Демонстрация TraceLab">
       ${[['graph','tabGraph'],['timeline','tabTimeline'],['materials','tabMaterials']].map(([view,key], i) => `<button type="button" id="demo-tab-${view}" role="tab" data-tab="${view}" aria-controls="demo-panel-${view}" aria-selected="${i === 0}" tabindex="${i === 0 ? 0 : -1}">${t(key)}</button>`).join('')}
     </div>
@@ -21,7 +21,7 @@ const demo = () => `<section class="a-demo a-container" id="demo" aria-labelledb
         <div role="tabpanel" id="demo-panel-graph" aria-labelledby="demo-tab-graph">
           <div class="a-graph">
             <svg viewBox="0 0 600 340" preserveAspectRatio="none" aria-hidden="true"><defs><marker id="edge-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0 0L6 3L0 6" fill="#888890"/></marker></defs><path d="M108 190 Q176 78 300 78" fill="none" stroke="#72727a" stroke-width="1.4" marker-end="url(#edge-arrow)"/><path d="M300 78 Q424 78 492 190" fill="none" stroke="#72727a" stroke-width="1.4" marker-end="url(#edge-arrow)"/><text x="125" y="64" text-anchor="middle" stroke="none" fill="#a6a6b0" font-size="10" data-i18n="graphObservationTest">${escape(copy.ru.graphObservationTest)}</text><text x="475" y="64" text-anchor="middle" stroke="none" fill="#a6a6b0" font-size="10" data-i18n="graphTestDecision">${escape(copy.ru.graphTestDecision)}</text></svg>
-            ${[['prototype','18%','56%','01'],['test','50%','23%','02'],['decision','82%','56%','03']].map(([id,x,y,no]) => `<button type="button" class="a-node" style="left:${x};top:${y}" data-record="${id}" aria-pressed="${id === 'prototype'}"><small>${no}</small><strong>${t(`${id}Title`)}</strong></button>`).join('')}
+            ${[['prototype','18%','56%'],['test','50%','23%'],['decision','82%','56%']].map(([id,x,y]) => `<button type="button" class="a-node" style="left:${x};top:${y}" data-record="${id}" aria-pressed="${id === 'prototype'}"><strong>${t(`${id}Title`)}</strong></button>`).join('')}
           </div><button class="a-button text" type="button" data-reset>${t('resetGraph')}</button>
         </div>
         <div role="tabpanel" id="demo-panel-timeline" aria-labelledby="demo-tab-timeline" hidden>
@@ -35,10 +35,10 @@ const demo = () => `<section class="a-demo a-container" id="demo" aria-labelledb
   ${shortcuts()}
   <p class="a-note">${t('projectStorageNote')}</p>
 </section>`;
-const home = `<section class="a-hero a-container"><p class="a-eyebrow">TraceLab / Engineering evidence</p><h1>${t('heroTitle')}</h1><p>${t('heroText')}</p><div class="a-actions">${button('openWorkspace','/workspace/?view=graph','primary')}${button('exploreDemo','#demo')}${button('navFeatures','/features/','text')}</div></section>
+const home = `<section class="a-hero a-container"><h1>${t('heroTitle')}</h1><p>${t('heroText')}</p><div class="a-actions">${button('openWorkspace','/workspace/?view=graph','primary')}${button('exploreDemo','#demo')}${button('navFeatures','/features/','text')}</div></section>
 ${demo()}
 <section class="a-container a-section" id="features"><div class="a-section-head"><h2>${t('capabilitiesTitle')}</h2><p>${t('capabilitiesText')}</p></div>${capabilities()}</section>
-<section class="a-container a-section" id="process"><div class="a-section-head"><h2>${t('processTitle')}</h2></div><ol class="a-process">${[1,2,3,4].map(n => `<li><span class="a-feature-index">0${n}</span><h3>${t(`step${n}Title`)}</h3><p>${t(`step${n}Text`)}</p></li>`).join('')}</ol></section>
+<section class="a-container a-section" id="process"><div class="a-section-head"><h2>${t('processTitle')}</h2></div><ol class="a-process">${[1,2,3,4].map(n => `<li><h3>${t(`step${n}Title`)}</h3><p>${t(`step${n}Text`)}</p></li>`).join('')}</ol></section>
 <section class="a-container a-section" id="faq"><div class="a-section-head"><h2>${t('faqTitle')}</h2></div>${faq()}</section>
 <section class="a-hero a-container a-closing"><h2>${t('finalTitle')}</h2><p>${t('finalText')}</p><div class="a-actions">${button('openWorkspace','/workspace/?view=graph','primary')}${button('materials','/materials/','text')}</div></section>`;
 const intro = (title, text) => `<section class="a-page-hero a-container"><p class="a-eyebrow">TraceLab</p><h1>${t(title)}</h1><p>${t(text)}</p></section>`;
