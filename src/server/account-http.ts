@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { after, NextResponse } from "next/server";
-import { ZodError } from "zod";
+import { z, ZodError } from "zod";
 import { createSession, destroySession, getCurrentUser } from "./auth";
 import { AccountError, accountHash, accountOrigin, accountRateIdentity, localMailPreviewAllowed, newAccountToken, readAccountJson, type AccountAction } from "./account-contract";
 import { authenticateAccount, registerAccount, requestAccountEmail, resetAccountPassword, verifyAccountEmail, type AccountContext } from "./account-service";
@@ -65,7 +65,21 @@ export async function accountSession() {
 
 export async function accountMailPreview(request: Request) {
   if (!localMailPreviewAllowed(request.url, request.headers)) return accountResponse({ ok: false, code: "not_found" }, 404);
-  const key = (await cookies()).get("pt_mailbox")?.value;
-  if (!key || !/^[A-Za-z0-9_-]{43}$/.test(key)) return accountResponse({ messages: [] });
-  return accountResponse({ messages: await listLocalAccountMail(accountHash(key)), localOnly: true });
+  try {
+    let filter: { email: string; purpose: "verify_email" | "reset_password" } | undefined;
+    if (request.method === "POST") {
+      accountOrigin(request.url, request.headers);
+      filter = z.object({
+        email: z.string().trim().toLowerCase().email().max(254),
+        purpose: z.enum(["verify_email", "reset_password"]),
+      }).strict().parse(await readAccountJson(request, 4096));
+    }
+    const key = (await cookies()).get("pt_mailbox")?.value;
+    if (!key || !/^[A-Za-z0-9_-]{43}$/.test(key)) return accountResponse({ messages: [], localOnly: true });
+    return accountResponse({ messages: await listLocalAccountMail(accountHash(key), filter), localOnly: true });
+  } catch (error) {
+    if (error instanceof AccountError) return accountResponse({ ok: false, code: error.code }, error.status);
+    if (error instanceof ZodError) return accountResponse({ ok: false, code: "invalid_fields" }, 400);
+    return accountResponse({ ok: false, code: "service_unavailable" }, 503);
+  }
 }

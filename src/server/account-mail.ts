@@ -1,10 +1,10 @@
 import type { PoolClient } from "pg";
 import { pool } from "@/db";
 import { decryptSecret, encryptSecret } from "@/server/storage";
-import { AccountError, type AccountLocale } from "./account-contract";
+import { AccountError, accountHash, type AccountLocale } from "./account-contract";
 import { createResendMailTransport, resendConfigured } from "./account-mail-resend";
 
-type MailPurpose = "verify_email" | "reset_password";
+export type MailPurpose = "verify_email" | "reset_password";
 export type AccountMail = { to: string; subject: string; text: string; actionUrl: string; locale: AccountLocale; purpose: MailPurpose };
 /** Local and prepared production providers share the same bounded delivery contract. */
 export interface AccountMailTransport {
@@ -72,12 +72,38 @@ export async function flushAccountMail(limit = 8) {
   return { processed: result.rowCount ?? 0, sent, failed, exhausted };
 }
 
-export async function listLocalAccountMail(previewKeyHash: string) {
-  const result = await pool.query<{ id: string; payload_ciphertext: string; created_at: Date }>(
-    "SELECT id,payload_ciphertext,created_at FROM account_mail_outbox WHERE transport='local' AND status='preview' AND preview_key_hash=$1 AND created_at>now()-interval '1 day' ORDER BY created_at DESC LIMIT 15", [previewKeyHash],
+export async function listLocalAccountMail(previewKeyHash: string, filter?: { email: string; purpose: MailPurpose }) {
+  const result = await pool.query<{ id: string; user_id: string; payload_ciphertext: string; created_at: Date }>(
+    `SELECT id,user_id,payload_ciphertext,created_at FROM account_mail_outbox
+     WHERE transport='local' AND status='preview' AND preview_key_hash=$1
+     AND created_at>now()-interval '1 day' ORDER BY created_at DESC,id DESC LIMIT 50`, [previewKeyHash],
   );
-  return result.rows.map(row => {
-    const message = JSON.parse(decryptSecret(row.payload_ciphertext)) as AccountMail;
-    return { id: row.id, subject: message.subject, text: message.text, actionUrl: message.actionUrl, createdAt: row.created_at };
+  const candidates = result.rows.flatMap(row => {
+    try {
+      const message = JSON.parse(decryptSecret(row.payload_ciphertext)) as AccountMail;
+      if (!message || typeof message.to !== "string" || typeof message.subject !== "string"
+        || typeof message.actionUrl !== "string" || !["verify_email", "reset_password"].includes(message.purpose)) return [];
+      if (filter && (message.to.trim().toLowerCase() !== filter.email || message.purpose !== filter.purpose)) return [];
+      const url = new URL(message.actionUrl);
+      const token = new URLSearchParams(url.hash.slice(1)).get("token");
+      const mode = message.purpose === "verify_email" ? "verify" : "reset";
+      if (!["http:", "https:"].includes(url.protocol) || url.pathname !== "/auth" || url.searchParams.get("mode") !== mode
+        || !token || !/^[A-Za-z0-9_-]{43}$/.test(token)) return [];
+      return [{ row, message, tokenHash: accountHash(token) }];
+    } catch {
+      // A damaged local preview must not disclose its encrypted contents or hide other valid messages.
+      return [];
+    }
   });
+  if (!candidates.length) return [];
+  const active = await pool.query<{ token_hash: string; user_id: string; purpose: MailPurpose }>(
+    `SELECT token_hash,user_id,purpose FROM account_tokens
+     WHERE token_hash=ANY($1::text[]) AND consumed_at IS NULL AND expires_at>now()`,
+    [candidates.map(candidate => candidate.tokenHash)],
+  );
+  const liveTokens = new Set(active.rows.map(token => `${token.user_id}:${token.purpose}:${token.token_hash}`));
+  return candidates.filter(({ row, message, tokenHash }) => liveTokens.has(`${row.user_id}:${message.purpose}:${tokenHash}`))
+    .slice(0, 15).map(({ row, message }) => ({
+      id: row.id, subject: message.subject, actionUrl: message.actionUrl, purpose: message.purpose, createdAt: row.created_at,
+    }));
 }

@@ -38,9 +38,9 @@ describe.skipIf(!enabled)("account lifecycle against PostgreSQL", () => {
     if (originalTransport === undefined) delete process.env.MAIL_TRANSPORT; else process.env.MAIL_TRANSPORT = originalTransport;
     await pool?.end();
   });
-  async function create(label: string, next = "/workspace/") {
+  async function create(label: string, next = "/workspace/", context = ctx) {
     const email = `account-test-${runId}-${label}@example.test`;
-    await service.registerAccount({ email, password, displayName: "Account test", locale: "ru", next }, ctx);
+    await service.registerAccount({ email, password, displayName: "Account test", locale: "ru", next }, context);
     const user = (await pool.query<{ id: string }>("SELECT id FROM users WHERE email=$1", [email])).rows[0];
     ids.push(user.id);
     return { email, id: user.id };
@@ -136,5 +136,32 @@ describe.skipIf(!enabled)("account lifecycle against PostgreSQL", () => {
     const raw = { email: `account-test-${runId}-rate@example.test` };
     for (let index = 0; index < 5; index++) await service.requestAccountEmail(raw, "reset_password", ctx);
     await expect(service.requestAccountEmail(raw, "reset_password", ctx)).rejects.toMatchObject({ code: "rate_limited", status: 429 });
+  });
+
+  it("shows only the requested browser's matching live links and omits replaced, consumed and expired tokens", async () => {
+    const otherContext = { ...ctx, previewKeyHash: accountHash(`other-mailbox-${runId}`) };
+    const own = await create("preview-own");
+    const other = await create("preview-other", "/workspace/", otherContext);
+    const filter = { email: own.email, purpose: "verify_email" as const };
+    const original = await mail.listLocalAccountMail(ctx.previewKeyHash, filter);
+    expect(original).toHaveLength(1);
+    expect(original[0]).toMatchObject({ purpose: "verify_email" });
+    expect(original[0]).not.toHaveProperty("text"); expect(original[0]).not.toHaveProperty("to");
+    expect((await mail.listLocalAccountMail(ctx.previewKeyHash)).some(message => message.id === original[0].id)).toBe(true);
+    expect(await mail.listLocalAccountMail(ctx.previewKeyHash, { email: other.email, purpose: "verify_email" })).toEqual([]);
+    expect(await mail.listLocalAccountMail(otherContext.previewKeyHash, filter)).toEqual([]);
+    expect(await mail.listLocalAccountMail(ctx.previewKeyHash, { email: own.email, purpose: "reset_password" })).toEqual([]);
+
+    await service.requestAccountEmail({ email: own.email }, "verify_email", ctx);
+    const replacement = await mail.listLocalAccountMail(ctx.previewKeyHash, filter);
+    expect(replacement).toHaveLength(1); expect(replacement[0].id).not.toBe(original[0].id);
+    const token = new URLSearchParams(new URL(replacement[0].actionUrl).hash.slice(1)).get("token")!;
+    await service.verifyAccountEmail({ token }, ctx);
+    expect(await mail.listLocalAccountMail(ctx.previewKeyHash, filter)).toEqual([]);
+
+    await service.requestAccountEmail({ email: own.email }, "reset_password", ctx);
+    expect(await mail.listLocalAccountMail(ctx.previewKeyHash, { email: own.email, purpose: "reset_password" })).toHaveLength(1);
+    await pool.query("UPDATE account_tokens SET expires_at=now()-interval '1 second' WHERE user_id=$1 AND purpose='reset_password'", [own.id]);
+    expect(await mail.listLocalAccountMail(ctx.previewKeyHash, { email: own.email, purpose: "reset_password" })).toEqual([]);
   });
 });
