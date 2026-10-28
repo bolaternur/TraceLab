@@ -83,7 +83,7 @@ async function assertLocalTarget(build, reference, fromPath) {
 test('local and Pages builds produce complete requested routes rather than redirect stubs', () => {
   for (const build of builds) for (const [route, html] of build.html) {
     assert.match(html, /<!doctype html>/i, `${build.base}/${route}: HTML document`);
-    assert.match(html, /<title>[^<]+TraceLab[^<]*<\/title>/i, `${build.base}/${route}: product title`);
+    assert.match(html, /<title>[^<]+Iznera[^<]*<\/title>/i, `${build.base}/${route}: product title`);
     assert.match(html, /<main\b[^>]*\bid=["']main["']/i, `${build.base}/${route}: main landmark`);
     assert.equal([...html.matchAll(/<h1\b/gi)].length, 1, `${build.base}/${route}: one main heading`);
     assert.doesNotMatch(html, /http-equiv=["']refresh["']/i, `${build.base}/${route}: must not be a legacy redirect`);
@@ -96,6 +96,19 @@ test('homepage retains the requested Russian hero and exposes RU, EN and KK sele
     const heading = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1] ?? '';
     assert.equal(visibleText(heading), 'История робота. Логика каждого решения.');
     for (const locale of ['ru', 'en', 'kk']) assert.match(html, new RegExp(`<button\\b[^>]*\\bdata-locale=["']${locale}["']`, 'i'));
+  }
+});
+
+test('every published route uses Iznera branding and the supplied wordmark', async () => {
+  for (const build of builds) {
+    for (const [route, html] of build.html) {
+      assert.doesNotMatch(visibleText(html), /TraceLab/i, `${route}: old product name is absent from visible content`);
+      assert.ok(attributes(html, 'src').includes(`${build.base}/assets/iznera-logo.png`), `${route}: supplied wordmark is present`);
+      assert.ok(attributes(html, 'href').includes(`${build.base}/assets/iznera-mark.svg`), `${route}: new favicon is present`);
+    }
+    for (const asset of ['iznera-logo.png', 'iznera-mark.svg']) {
+      assert.ok((await stat(path.join(build.directory, 'assets', asset))).size > 0, `${asset}: copied into publication`);
+    }
   }
 });
 

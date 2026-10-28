@@ -1,4 +1,4 @@
-# TraceLab implementation matrix
+# Iznera implementation matrix
 
 Baseline date: **2026-10-26**, before the current unified-app implementation. Scope: all sections 1–35 of the owner's full ZIP prompt. See [baseline and source register](IMPLEMENTATION_BASELINE_2026-10-26.md) for exact source paths, complete ten-document summary, conflicts, migration contract and gates.
 

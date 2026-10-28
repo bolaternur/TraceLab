@@ -1,4 +1,4 @@
-# TraceLab — проверка реализации, 27 октября 2026
+# Iznera — проверка реализации, 27 октября 2026
 
 Рабочая копия: C:/Users/User/projects/TraceLab-web. Журнал доказательств не является сертификатом готовности. [Матрица](IMPLEMENTATION_MATRIX.md) · [исходный аудит](IMPLEMENTATION_BASELINE_2026-10-26.md).
 

@@ -1,6 +1,6 @@
-# TraceLab
+# Iznera
 
-TraceLab connects sources, engineering tests, decisions and student-authored explanations. All features in the active application are free; capacity and safety limits apply equally to every team.
+Iznera connects sources, engineering tests, decisions and student-authored explanations. All features in the active application are free; capacity and safety limits apply equally to every team.
 
 **Development implementation, not a verified public beta.** Fictional demonstration records are never research results. The complete 2026-10-26 requirements, implementation evidence and unresolved gates are tracked in [docs/IMPLEMENTATION_MATRIX.md](docs/IMPLEMENTATION_MATRIX.md).
 

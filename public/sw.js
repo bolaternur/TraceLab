@@ -1,7 +1,7 @@
 /* Cache only the public offline capture shell. Next manages its own build assets;
    development chunk URLs are reused and must never be served cache-first here. */
-const CACHE = "trace-public-v6";
-const SHELL = ["/offline-capture.html", "/offline-capture.css", "/offline-capture.js", "/workspace-outbox.js", "/manifest.webmanifest"];
+const CACHE = "iznera-public-v7";
+const SHELL = ["/offline-capture.html", "/offline-capture.css", "/offline-capture.js", "/workspace-outbox.js", "/manifest.webmanifest", "/brand/iznera-logo.png", "/brand/iznera-mark.svg", "/assets/iznera-logo.png", "/assets/iznera-mark.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL).catch(() => undefined)).then(() => self.skipWaiting()));

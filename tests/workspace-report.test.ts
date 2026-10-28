@@ -75,7 +75,7 @@ describe("report policy and deterministic documents",()=>{
       expect(rendered.bytes.subarray(0,5).toString()).toBe("%PDF-");expect(rendered.pages).toBeGreaterThan(1);
       expect(rendered.bytes.toString("latin1").match(/\/Type \/Page\b/g)?.length).toBe(rendered.pages);
       expect(rendered.bytes.toString("latin1")).toContain("/Subtype /Image");
-      expect(rendered.bytes.toString("latin1")).toContain("tracelab-manifest.json");expect(rendered.bytes.length).toBeGreaterThan(10_000);
+      expect(rendered.bytes.toString("latin1")).toContain("iznera-manifest.json");expect(rendered.bytes.length).toBeGreaterThan(10_000);
       if(process.env.REPORT_REVIEW_DIR){await mkdir(process.env.REPORT_REVIEW_DIR,{recursive:true});await writeFile(path.join(process.env.REPORT_REVIEW_DIR,`report-${paper}.pdf`),rendered.bytes);}
     }
     for(const locale of ["ru","en","kk"] as const){expect(Object.keys(reportCopy[locale])).toEqual(Object.keys(reportCopy.en));expect(Object.values(reportCopy[locale]).every(Boolean)).toBe(true);}

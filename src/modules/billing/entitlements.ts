@@ -1,5 +1,5 @@
 /** Compatibility for archived plan labels. All active features are free. Limits protect capacity, not payment. */
-const freeAccess = { name: "TraceLab — free", price: "$0", maxTeams: 20, storageGb: 2, maxSeasons: Infinity, features: ["Capture & offline", "Team evidence", "Tests, decisions, timeline", "Deterministic exports"] } as const;
+const freeAccess = { name: "Iznera — free", price: "$0", maxTeams: 20, storageGb: 2, maxSeasons: Infinity, features: ["Capture & offline", "Team evidence", "Tests, decisions, timeline", "Deterministic exports"] } as const;
 export const PLANS = {
   free: freeAccess,
   club: freeAccess,

@@ -196,7 +196,7 @@ export async function downloadWorkspaceReport(user:WorkspaceUser,id:string,stora
   if(!bytes||reportHash(bytes)!==row.hash)throw new WorkspaceError("report_file_unavailable",503,"Файл недоступен или его целостность нарушена.");
   // Membership may be revoked while storage is being read.
   await workspaceTransaction(user,client=>projectRow(client,user,row.project_id));
-  return {bytes,mimeType:row.manifest.output.mimeType,filename:`tracelab-${row.id}.${row.manifest.format}`,manifest:row.manifest};
+  return {bytes,mimeType:row.manifest.output.mimeType,filename:`iznera-${row.id}.${row.manifest.format}`,manifest:row.manifest};
 }
 
 export async function cancelWorkspaceReport(user:WorkspaceUser,id:string){

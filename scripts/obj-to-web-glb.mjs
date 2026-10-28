@@ -281,7 +281,7 @@ for (let mat = 0; mat < materialNames.length; mat += 1) {
 }
 
 const gltf = {
-  asset: { version: "2.0", generator: "TraceLab streaming OBJ optimizer" },
+  asset: { version: "2.0", generator: "Iznera streaming OBJ optimizer" },
   scene: 0,
   scenes: [{ nodes: [0] }],
   nodes: [{ mesh: 0, name: path.basename(inputPath, path.extname(inputPath)) }],

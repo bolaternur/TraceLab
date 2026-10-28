@@ -28,7 +28,7 @@ describe.skipIf(!enabled)("account lifecycle against PostgreSQL", () => {
     process.env.MAIL_TRANSPORT = "local";
     ({ pool } = await import("@/db"));
     const database = await pool.query<{ name: string }>("SELECT current_database() AS name");
-    if (!/^tracelab_unified_(dev_20261026|test(?:_.*)?)$/.test(database.rows[0].name)) throw new Error("Use the dedicated TraceLab development or test database.");
+    if (!/^tracelab_unified_(dev_20261026|test(?:_.*)?)$/.test(database.rows[0].name)) throw new Error("Use the dedicated Iznera development or test database.");
     service = await import("@/server/account-service");
     mail = await import("@/server/account-mail");
     auth = await import("@/server/auth");

@@ -322,7 +322,7 @@ test('native team_data import preserves identifiers, counts, numeric strings, da
   const fixture = nativeFixture();
   store.importProject(JSON.stringify(fixture));
   const project = store.getProject();
-  assert.equal(project.name, 'Импорт из TraceLab');
+  assert.equal(project.name, 'Импорт из Iznera');
   assert.equal(project.dataKind, 'personal');
   assert.deepEqual(project.studyRows, []);
   assert.deepEqual(project.importManifest, fixture.manifest);

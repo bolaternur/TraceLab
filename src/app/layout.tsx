@@ -19,9 +19,9 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   applicationName: brand.productName,
   icons: {
-    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
-    shortcut: "/icon.svg",
-    apple: "/icon.svg",
+    icon: [{ url: "/brand/iznera-mark.svg", type: "image/svg+xml" }, { url: "/brand/iznera-icon-192.png", type: "image/png", sizes: "192x192" }],
+    shortcut: "/brand/iznera-mark.svg",
+    apple: "/brand/iznera-apple-touch.png",
   },
   appleWebApp: { capable: true, title: brand.productName, statusBarStyle: "default" },
 };

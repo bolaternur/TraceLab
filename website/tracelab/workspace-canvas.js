@@ -1,4 +1,4 @@
-/* TraceLab's local workbench: positions and camera are UI state, not evidence. */
+/* Iznera's local workbench: positions and camera are UI state, not evidence. */
 const NS = 'http://www.w3.org/2000/svg';
 import { t, recordType, getWorkspaceLocale, formatNumber, formatPercent } from './workspace-i18n.js';
 const NODE_WIDTH = 250;

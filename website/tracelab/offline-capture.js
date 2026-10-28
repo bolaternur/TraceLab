@@ -51,7 +51,7 @@ addEventListener('focus',()=>void refreshContext().catch(()=>{}));
 $('#export').addEventListener('click',async()=>{
   if(!context)return;const rows=await box.list(context.userId),drafts=rows.filter(row=>row.type!=='photo').map(({body,...row})=>row);
   const photos=rows.filter(row=>row.type==='photo').map(row=>({id:row.id,metadata:row.metadata,sizeBytes:row.blob.size,filesIncluded:false}));
-  download(new Blob([JSON.stringify({format:'tracelab-offline-drafts-v2',drafts,photos},null,2)],{type:'application/json'}),'tracelab-offline-drafts.json');
+  download(new Blob([JSON.stringify({format:'tracelab-offline-drafts-v2',drafts,photos},null,2)],{type:'application/json'}),'iznera-offline-drafts.json');
 });
 try{await refreshContext();}catch{$('#status').textContent=t('storage');}
 if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});

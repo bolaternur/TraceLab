@@ -1,4 +1,4 @@
-# TraceLab Spatial Workbench — Phase F Motion & Interaction Polish Handoff
+# Iznera Spatial Workbench — Phase F Motion & Interaction Polish Handoff
 
 Date: 2026-09-04
 
@@ -10,7 +10,7 @@ Phase F does not add new product capabilities or alter backend/domain semantics.
 
 ### Shared motion policy
 
-A single typed policy now defines TraceLab motion timing and easing:
+A single typed policy now defines Iznera motion timing and easing:
 
 - micro: 130 ms
 - selection: 140 ms

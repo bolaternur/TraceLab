@@ -884,7 +884,7 @@ export async function updateOrganization(formData: FormData) {
   const patch: Partial<typeof organizations.$inferInsert> = {};
   if (input.retentionDays !== undefined) patch.retentionDays = input.retentionDays ? Number(input.retentionDays) : null;
   if (input.plan) {
-    throw new Error("TraceLab is free. Historical billing records cannot change access.");
+    throw new Error("Iznera is free. Historical billing records cannot change access.");
   }
   await db.update(organizations).set(patch).where(eq(organizations.id, ctx.team.organizationId));
   await audit({ organizationId: ctx.team.organizationId, actorUserId: ctx.user.id, action: "organization.updated", metadata: input });

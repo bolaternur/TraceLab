@@ -8,7 +8,7 @@ import type { AccountLocale } from "./account-copy";
 import "./account.css";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "TraceLab · Account", robots: { index: false, follow: false }, referrer: "no-referrer" as const };
+export const metadata = { title: "Iznera · Account", robots: { index: false, follow: false }, referrer: "no-referrer" as const };
 export default async function AuthPage({ searchParams }: { searchParams: Promise<{ mode?: string; invite?: string; next?: string; locale?: string }> }) {
   const [params, jar, requestHeaders, user] = await Promise.all([searchParams, cookies(), headers(), getCurrentUser()]);
   const next = params.invite ? `/join/${encodeURIComponent(params.invite)}` : safeInternalPath(params.next, "/workspace/");

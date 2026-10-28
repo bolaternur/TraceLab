@@ -11,9 +11,9 @@ export interface AccountMailTransport {
   send(message: AccountMail, idempotencyKey: string): Promise<{ providerMessageId: string }>;
 }
 const mailCopy = {
-  en: { verify: "Confirm your TraceLab email", reset: "Reset your TraceLab password", verifyText: "Confirm this email address to use your TraceLab account.", resetText: "Use this link to choose a new password. Your existing sessions will be signed out.", ignore: "If you did not request this, ignore this email. This link can be used only once." },
-  ru: { verify: "Подтвердите почту TraceLab", reset: "Сброс пароля TraceLab", verifyText: "Подтвердите этот адрес почты, чтобы пользоваться аккаунтом TraceLab.", resetText: "Перейдите по ссылке, чтобы задать новый пароль. Все текущие сессии будут завершены.", ignore: "Если вы не отправляли запрос, проигнорируйте письмо. Ссылку можно использовать только один раз." },
-  kk: { verify: "TraceLab поштаңызды растаңыз", reset: "TraceLab құпиясөзін қалпына келтіру", verifyText: "TraceLab аккаунтын пайдалану үшін осы пошта мекенжайын растаңыз.", resetText: "Жаңа құпиясөз орнату үшін сілтемені ашыңыз. Барлық ағымдағы сеанстар аяқталады.", ignore: "Бұл сұрауды жібермесеңіз, хатты елемеңіз. Сілтемені тек бір рет қолдануға болады." },
+  en: { verify: "Confirm your Iznera email", reset: "Reset your Iznera password", verifyText: "Confirm this email address to use your Iznera account.", resetText: "Use this link to choose a new password. Your existing sessions will be signed out.", ignore: "If you did not request this, ignore this email. This link can be used only once." },
+  ru: { verify: "Подтвердите почту Iznera", reset: "Сброс пароля Iznera", verifyText: "Подтвердите этот адрес почты, чтобы пользоваться аккаунтом Iznera.", resetText: "Перейдите по ссылке, чтобы задать новый пароль. Все текущие сессии будут завершены.", ignore: "Если вы не отправляли запрос, проигнорируйте письмо. Ссылку можно использовать только один раз." },
+  kk: { verify: "Iznera поштаңызды растаңыз", reset: "Iznera құпиясөзін қалпына келтіру", verifyText: "Iznera аккаунтын пайдалану үшін осы пошта мекенжайын растаңыз.", resetText: "Жаңа құпиясөз орнату үшін сілтемені ашыңыз. Барлық ағымдағы сеанстар аяқталады.", ignore: "Бұл сұрауды жібермесеңіз, хатты елемеңіз. Сілтемені тек бір рет қолдануға болады." },
 } satisfies Record<AccountLocale, Record<string, string>>;
 
 export function buildAccountMail(to: string, locale: AccountLocale, purpose: MailPurpose, token: string, origin: string): AccountMail {

@@ -20,7 +20,7 @@ Implemented on 2026-10-27; reusable team codes added on 2026-10-28. The active w
 5. Joining adds only the student member role. The participant enters the same team/project as other accounts. Names, text and measurements remain attributed to their real authors; shared access does not permit overwriting another author's explanation.
 6. The lead can revoke a code in **Project → Team settings → Invitations**. A revoked, expired or exhausted code rejects new joins. Revocation does not remove existing members; revoke a member's access separately when necessary. At most five shared codes may be active per team; revoke an unused one before issuing another.
 
-Codes apply only to the TraceLab instance whose website was used. A different team's code cannot grant access to the selected team. Localhost belongs to the current computer; teams on other computers need the deployed HTTPS site and configured verification email. See [pilot launch](PILOT_LAUNCH.md).
+Codes apply only to the Iznera instance whose website was used. A different team's code cannot grant access to the selected team. Localhost belongs to the current computer; teams on other computers need the deployed HTTPS site and configured verification email. See [pilot launch](PILOT_LAUNCH.md).
 
 `workspace-invite-contract.ts`, `workspace-service.ts` and additive migration `0013_workspace_team_codes.sql` implement this workflow. `tests/team-join-ui.test.ts` checks accepted formatting, rejected ambiguous characters and semantic RU/EN/KK errors; backend invitation and real-database tests verify membership and code boundaries separately.
 

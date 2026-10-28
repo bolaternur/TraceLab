@@ -20,7 +20,7 @@ export default async function ModelPage({params}:{params:Promise<{modelId:string
   const labels=words[language] ?? words.en;
   return <main id="main" className="wm-model-page" lang={language in words?language:"en"}>
     <a href={"/workspace/?"+new URLSearchParams({view:"models",team:model.teamId,project:model.projectId})} className="wm-model-back">← {labels.back}</a>
-    <header><span>TraceLab · {model.model?.versionLabel}</span><h1>{model.name}</h1><p>{model.caption}</p></header>
+    <header><span>Iznera · {model.model?.versionLabel}</span><h1>{model.name}</h1><p>{model.caption}</p></header>
     <WorkspaceModelViewer src={model.url} title={model.name} labels={labels}/>
     <p className="wm-model-private">{labels.private}</p>
   </main>;

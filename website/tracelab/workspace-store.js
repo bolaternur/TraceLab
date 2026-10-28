@@ -1,5 +1,5 @@
 /**
- * Browser-only workspace for the static TraceLab site.
+ * Browser-only workspace for the static Iznera site.
  * This is separate from the authenticated application and its database.
  * Exported snapshots are immutable; all writes are validated before committing.
  */
@@ -93,7 +93,7 @@ function normalizeAnnotation(input) {
 function normalizeManifest(input) {
   object(input, 'Манифест импорта');
   if (input.product !== 'TraceLab' || !['team_data', 'personal_contribution'].includes(input.type)) {
-    fail('Манифест импорта: поддерживаются выгрузки TraceLab team_data и personal_contribution.');
+    fail('Манифест импорта: поддерживаются выгрузки Iznera team_data и personal_contribution.');
   }
   const result = { product: 'TraceLab', type: input.type, generatedAt: timestamp(input.generatedAt) };
   for (const key of ['sourceEntityIds', 'studentContentIds', 'generatedContentIds']) {
@@ -247,8 +247,8 @@ function normalizeStudyRow(input) {
   return {
     id: identifier(own(input, 'id') ? input.id : undefined, 'Идентификатор измерения'),
     participantCode: string(own(input, 'participantCode') ? input.participantCode : undefined, 'Код участника', 80, true),
-    baselineSeconds: number(own(input, 'baselineSeconds') ? input.baselineSeconds : undefined, 'Время без TraceLab, секунды'),
-    traceSeconds: number(own(input, 'traceSeconds') ? input.traceSeconds : undefined, 'Время с TraceLab, секунды'),
+    baselineSeconds: number(own(input, 'baselineSeconds') ? input.baselineSeconds : undefined, 'Время без Iznera, секунды'),
+    traceSeconds: number(own(input, 'traceSeconds') ? input.traceSeconds : undefined, 'Время с Iznera, секунды'),
   };
 }
 
@@ -378,7 +378,7 @@ function demoProject() {
     { id: 'SRC-02', kind: 'source', title: 'Наблюдение: деталь выскальзывает', body: 'Учебная карточка фотонаблюдения после первого испытания. Реальный снимок не предоставлен; карточка показывает место такого материала в истории.', author: authorA, createdAt: '2026-09-12T10:15:00.000Z', sourceType: 'Фото / наблюдение' },
     { id: 'DEC-01', kind: 'decision', title: 'Изменить контактную поверхность', body: 'Добавить мягкие накладки и увеличить площадь контакта.', rationale: 'Основание — четыре срыва в TEST-01. Сначала изменяем поверхность: увеличение усилия может повредить деталь и требует отдельного испытания. Это учебное объяснение автора.', author: authorB, createdAt: '2026-09-12T11:35:00.000Z' },
     { id: 'ITER-02', kind: 'iteration', title: 'Захват v02: мягкие накладки', body: 'В учебной модели gripper-v02.step увеличили площадь контакта и добавили накладки по решению DEC-01.', author: authorA, createdAt: '2026-09-14T06:40:00.000Z', revision: 'v02' },
-    { id: 'TEST-02', kind: 'test', title: 'Повторное испытание: 9 из 10', body: 'Повторили подъём той же детали с той же высотой. Значения вымышлены и не измеряют пользу TraceLab.', author: authorA, createdAt: '2026-09-14T07:10:00.000Z', trials: 10, successes: 9, unit: 'успешные попытки', conditions: 'Деталь 180 г; подъём на 20 см; 10 попыток.', criterion: 'Деталь удерживается в течение всего подъёма.' },
+    { id: 'TEST-02', kind: 'test', title: 'Повторное испытание: 9 из 10', body: 'Повторили подъём той же детали с той же высотой. Значения вымышлены и не измеряют пользу Iznera.', author: authorA, createdAt: '2026-09-14T07:10:00.000Z', trials: 10, successes: 9, unit: 'успешные попытки', conditions: 'Деталь 180 г; подъём на 20 см; 10 попыток.', criterion: 'Деталь удерживается в течение всего подъёма.' },
     { id: 'DEC-02', kind: 'decision', title: 'Сохранить v02 для следующей проверки', body: 'В учебном сценарии оставили новую поверхность и запланировали испытание с другой массой.', rationale: 'TEST-02 показывает 9 из 10 успешных попыток в указанных условиях. Этого недостаточно, чтобы утверждать надёжность на других деталях или причинный эффект продукта.', author: authorB, createdAt: '2026-09-14T07:30:00.000Z' },
   ];
   const pairs = [
@@ -392,7 +392,7 @@ function demoProject() {
   ];
   return normalizeProject({
     id: DEMO_ID, name: 'Захват · учебный пример',
-    description: 'Вымышленный инженерный сценарий: участники, даты и измерения синтетические. Это пример связей материалов, испытаний и решений, а не результаты исследования TraceLab.',
+    description: 'Вымышленный инженерный сценарий: участники, даты и измерения синтетические. Это пример связей материалов, испытаний и решений, а не результаты исследования Iznera.',
     dataKind: 'synthetic', records,
     links: pairs.map(([from, to, label], index) => ({ id: `LINK-${String(index + 1).padStart(2, '0')}`, from, to, label, status: 'accepted', origin: 'educational' })),
     studyRows: [],
@@ -555,14 +555,14 @@ function nativeProject(input) {
   const attachedAnnotationIds = new Set(records.flatMap(record => record.annotationHistory.map(note => note.id)));
   const unattached = annotations.filter(note => !attachedAnnotationIds.has(note.id)).length;
   const importWarnings = [
-    'Данные импортированы из JSON TraceLab. Авторство, статусы и значения сохранены; достоверность измерений этим импортом не проверяется.',
+    'Данные импортированы из JSON Iznera. Авторство, статусы и значения сохранены; достоверность измерений этим импортом не проверяется.',
     'В исходном JSON нет названий проектов, имён участников и бинарных файлов CAD или фото. Идентификаторы сохранены, недостающие материалы не созданы.',
   ];
   if (skippedLinks) importWarnings.push(`Не отображены связи с отсутствующими узлами: ${skippedLinks}. В эту выгрузку соответствующие сущности не вошли.`);
   if (unattached) importWarnings.push(`Заметки к отсутствующим сущностям: ${unattached}. Их текст и происхождение сохранены в истории заметок JSON.`);
   return normalizeProject({
-    id: 'NATIVE-IMPORT', name: 'Импорт из TraceLab', dataKind: 'personal',
-    description: 'Локальная копия данных из выгрузки TraceLab. Сохраняет исходные идентификаторы, даты, авторские заметки и статусы связей. Это не подтверждение результатов пилота.',
+    id: 'NATIVE-IMPORT', name: 'Импорт из Iznera', dataKind: 'personal',
+    description: 'Локальная копия данных из выгрузки Iznera. Сохраняет исходные идентификаторы, даты, авторские заметки и статусы связей. Это не подтверждение результатов пилота.',
     records, links, studyRows: [], importManifest, importWarnings, annotationHistory: annotations,
   });
 }
@@ -616,7 +616,7 @@ export function createWorkspaceStore(options = {}) {
 
   function notify() {
     for (const listener of [...listeners]) {
-      try { listener(state); } catch (error) { globalThis.console?.error?.('TraceLab: ошибка обновления интерфейса.', error); }
+      try { listener(state); } catch (error) { globalThis.console?.error?.('Iznera: ошибка обновления интерфейса.', error); }
     }
   }
 

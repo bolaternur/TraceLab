@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Embed TraceLab's existing offline-first capture pipeline into the Spatial Workbench as a fast, contextual capture overlay while preserving `/app/capture` as the full canonical route and preserving all server-authoritative evidence behavior.
+**Goal:** Embed Iznera's existing offline-first capture pipeline into the Spatial Workbench as a fast, contextual capture overlay while preserving `/app/capture` as the full canonical route and preserving all server-authoritative evidence behavior.
 
 **Architecture:** Keep `persistCapture()` and `/api/sync` authoritative. Extract presentation-independent capture metadata/state into pure modules, refactor the current `CaptureSheet` into a reusable composer with `route` and `overlay` variants, and mount it from a Workbench `CaptureLauncher`. Overlay saves continue to enter IndexedDB first; successful sync triggers `router.refresh()` so the server-normalized Workbench snapshot updates, then a transient client-only highlight points to the affected workboard.
 
-**Tech Stack:** Next.js 16.2.6, React 19.2.6, TypeScript 5.9.x, IndexedDB outbox, Motion 12.35.0, Zustand, existing TraceLab server actions and `/api/sync`.
+**Tech Stack:** Next.js 16.2.6, React 19.2.6, TypeScript 5.9.x, IndexedDB outbox, Motion 12.35.0, Zustand, existing Iznera server actions and `/api/sync`.
 
 **Spec:** `/mnt/data/TraceLab_SPATIAL_WORKBENCH_DESIGN_SPEC.md` sections 5, 17, 18, 24.
 

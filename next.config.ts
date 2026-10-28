@@ -28,7 +28,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  outputFileTracingIncludes: { "/api/workspace/report": ["./assets/report-fonts/**/*"] },
+  outputFileTracingIncludes: { "/api/workspace/report": ["./assets/report-fonts/**/*", "./public/brand/iznera-logo.png"] },
   async redirects() {
     const views: Record<string,string>={graph:'graph',timeline:'timeline',tests:'tests',decisions:'history',models:'models',gallery:'gallery',study:'study'};
     return [

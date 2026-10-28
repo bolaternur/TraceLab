@@ -18,6 +18,6 @@ http.createServer(async (req, res) => {
     res.end(req.method === 'HEAD' ? undefined : body);
   } catch {
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-    res.end('TraceLab: page not found');
+    res.end('Iznera: page not found');
   }
-}).listen(port, '127.0.0.1', () => console.log(`TraceLab: http://localhost:${port} (local only)`));
+}).listen(port, '127.0.0.1', () => console.log(`Iznera: http://localhost:${port} (local only)`));

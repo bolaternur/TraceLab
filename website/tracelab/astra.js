@@ -54,7 +54,7 @@ function applyLocale(next, persist = false) {
   document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = tr(el.dataset.i18n); });
   document.querySelectorAll('[data-i18n-label]').forEach(el => { el.setAttribute('aria-label',tr(el.dataset.i18nLabel)); });
   document.querySelectorAll('[data-locale]').forEach(el => el.setAttribute('aria-pressed',String(el.dataset.locale === locale)));
-  document.title = `${tr(document.body.dataset.titleKey)} — TraceLab`;
+  document.title = `${tr(document.body.dataset.titleKey)} — Iznera`;
   document.querySelector('meta[name="description"]')?.setAttribute('content',tr(document.body.dataset.descriptionKey));
   setMenu(document.querySelector('.a-header')?.classList.contains('is-open') || false);
   renderRecords();

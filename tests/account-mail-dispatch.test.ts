@@ -10,7 +10,7 @@ const request = (token = secret) => new Request("https://pilot.example.org/api/a
 beforeEach(() => {
   vi.stubEnv("CRON_SECRET", secret);
   vi.stubEnv("MAIL_TRANSPORT", "resend"); vi.stubEnv("MAIL_ENABLE_EXTERNAL_DELIVERY", "true");
-  vi.stubEnv("RESEND_API_KEY", "fixture-provider-key"); vi.stubEnv("MAIL_FROM", "TraceLab <accounts@example.org>");
+  vi.stubEnv("RESEND_API_KEY", "fixture-provider-key"); vi.stubEnv("MAIL_FROM", "Iznera <accounts@example.org>");
   vi.stubEnv("SECRETS_ENCRYPTION_KEY", "fixture-encryption-key-with-at-least-32-chars");
   flush.mockReset();
 });

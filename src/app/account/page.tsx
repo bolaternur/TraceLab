@@ -7,7 +7,7 @@ import "../auth/account.css";
 import "./settings.css";
 
 export const dynamic="force-dynamic";
-export const metadata={title:"TraceLab · Account settings",robots:{index:false,follow:false},referrer:"no-referrer" as const};
+export const metadata={title:"Iznera · Account settings",robots:{index:false,follow:false},referrer:"no-referrer" as const};
 export default async function AccountPage(){
   let initial;
   try{initial=await getAccountSettings(await accountSettingsIdentity());}

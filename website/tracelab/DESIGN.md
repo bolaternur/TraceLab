@@ -1,5 +1,5 @@
 ---
-name: TraceLab / Powder adaptation
+name: Iznera / Powder adaptation
 description: The selected Powder landscape and dark work surfaces, adapted for an engineering-history presentation.
 colors:
   page: "#080909"
@@ -160,13 +160,13 @@ components:
     height: "156px"
 ---
 
-# Design System: TraceLab / Powder adaptation
+# Design System: Iznera / Powder adaptation
 
 ## Overview
 
 **Creative North Star: "The selected Powder landscape and engineering work surface"**
 
-This is a scoped adaptation of the user's selected Powder template. Its warm dusk landscape, centered hero, spacious sections and near-black surfaces remain the visual authority. Local Inter and the existing TraceLab icon preserve that continuity.
+This is a scoped adaptation of the user's selected Powder template. Its warm dusk landscape, centered hero, spacious sections and near-black surfaces remain the visual authority. Local Inter preserves interface continuity. The user-approved mechanical Iznera wordmark appears on a light backing so its red and metallic letters remain readable on the dark shell.
 
 The engineering example sits in a restrained graphite viewport. Muted metadata, tabular measurements and explicit evidence states give the presentation its working character. The local workspace extends this system into a full-viewport workbench with compact project controls, movable linked records and measured diagrams. This record describes the shipped presentation and local workspace in `build.mjs`, `tracelab.css`, `tracelab.js`, `workspace-surface.mjs`, `workspace.css`, `workspace-views.css`, `workspace-shell.css`, `workspace-canvas.css` and `workspace-canvas.js`; it does not define a replacement identity or the server application's visual system.
 
@@ -290,7 +290,7 @@ Movable HTML nodes retain an ID, type, readable title and compact detail. Each u
 The docked inspector groups record details with thin divisions and text-led related-record actions. Its header exposes a close action; closing restores the view's space. Content uses workbench-inspector padding on desktop and 18px in the compact drawer. Missing authorship, explanation or supporting tests receive explicit text. Annotation history sits in a disclosure, preserving the compact working view. Embedded walkthrough inspectors retain their rounded inset treatment.
 
 ### Test and research diagrams
-Tests use horizontal evidence-green bars with a printed value, context and units. Each test row can select its record. Research measurements use neutral baseline dots and evidence-green TraceLab dots joined by a line; a legend, participant codes, numeric axis and disclosed table keep comparisons readable. Empty views provide a written next action. These encodings describe entered data rather than supplying research claims.
+Tests use horizontal evidence-green bars with a printed value, context and units. Each test row can select its record. Research measurements use neutral baseline dots and evidence-green Iznera dots joined by a line; a legend, participant codes, numeric axis and disclosed table keep comparisons readable. Empty views provide a written next action. These encodings describe entered data rather than supplying research claims.
 
 **The Evidence Encoding Rule.** Accompany diagram color with labels, printed values and a text or table path; distinguish suggested relations through both dashed strokes and explicit status.
 
@@ -302,7 +302,7 @@ Replay advances every three seconds and can be stopped; changing the stage or in
 ## Do's and Don'ts
 
 ### Do:
-- **Do** preserve local Inter, the existing TraceLab icon, the selected dusk landscape and its transparent contours.
+- **Do** preserve local Inter, the supplied Iznera wordmark, the selected dusk landscape and its transparent contours.
 - **Do** keep engineering measurements tabular and distinguish evidence, authorship and missing information.
 - **Do** preserve visible content, keyboard focus and reduced-motion behavior.
 - **Do** use the established pills, surface radii and spacious container rhythm when extending this presentation.

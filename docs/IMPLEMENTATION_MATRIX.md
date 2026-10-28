@@ -1,4 +1,4 @@
-# TraceLab implementation matrix
+# Iznera implementation matrix
 
 Baseline date: **2026-10-26**; current implementation checkpoint: **2026-10-27**. Before-status and evidence are retained alongside the current status. Scope: all sections 1–35 of the owner's full ZIP prompt. See [baseline and source register](IMPLEMENTATION_BASELINE_2026-10-26.md) for exact source paths, complete ten-document summary, conflicts, migration contract and gates.
 

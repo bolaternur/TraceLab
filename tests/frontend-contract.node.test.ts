@@ -154,7 +154,7 @@ test("Capture page frames capture as a first-class workshop action", async () =>
   assert.ok(!page.includes('title="Quick Capture"'));
 });
 
-test("shared source badges use the TraceLab source icon language", async () => {
+test("shared source badges use the Iznera source icon language", async () => {
   const ui = await readFile(new URL("../src/components/ui.tsx", import.meta.url), "utf8");
   assert.ok(ui.includes("getSourcePresentation"));
   assert.ok(ui.includes("<TraceIcon"));
@@ -201,9 +201,11 @@ test("public landing teaches the evidence category instead of showing a generic 
   assert.ok(!page.includes("grid-paper"));
 });
 
-test("public chrome uses the name-independent TraceLab mark", async () => {
+test("public chrome uses the supplied Iznera brand logo", async () => {
   const chrome = await readFile(new URL("../src/components/public-chrome.tsx", import.meta.url), "utf8");
-  assert.ok(chrome.includes("TraceMark"));
+  const logo = await readFile(new URL("../src/components/brand-logo.tsx", import.meta.url), "utf8");
+  assert.ok(chrome.includes("BrandLogo"));
+  assert.ok(logo.includes("/brand/iznera-logo.png"));
   assert.ok(!chrome.includes('fill="#2457D6"'));
 });
 
@@ -454,7 +456,7 @@ test("coarse workbench relationships use a quiet custom Trace edge instead of ge
   const canvas = await readFile(new URL("../src/components/workbench/spatial-canvas.tsx", import.meta.url), "utf8");
   const edge = await readFile(new URL("../src/components/workbench/trace-edge.tsx", import.meta.url), "utf8");
   assert.ok(canvas.includes("EDGE_TYPES"), "custom workbench edge types must be stable outside render");
-  assert.ok(canvas.includes('type: "trace"'), "macro relations must use the TraceLab edge primitive");
+  assert.ok(canvas.includes('type: "trace"'), "macro relations must use the Iznera edge primitive");
   assert.ok(edge.includes("getSmoothStepPath"), "Trace edge must preserve readable orthogonal-ish spatial routing");
   assert.ok(edge.includes("selectedId"), "Trace edge should strengthen only when its related workboard is selected");
   assert.ok(!canvas.includes("animated: true"), "workbench relationships must not run perpetual workflow animations");
@@ -874,13 +876,13 @@ test("Spatial Home opens with a restrained overview framing and hero-first mobil
   assert.ok(mobile.includes('const MOBILE_ORDER: WorkboardKind[] = ["active-iteration", "needs-context"'), "mobile should lead with the current engineering loop");
 });
 
-test("TraceLab competition branding is coherent across runtime metadata", async () => {
+test("Iznera competition branding is coherent across runtime metadata", async () => {
   const brand = await readFile(new URL("../src/lib/brand.ts", import.meta.url), "utf8");
   const pkg = await readFile(new URL("../package.json", import.meta.url), "utf8");
   const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
-  assert.ok(brand.includes('productName: "TraceLab"'));
-  assert.ok(pkg.includes('"name": "tracelab-student-engineering-evidence"'));
-  assert.ok(readme.startsWith("# TraceLab"));
+  assert.ok(brand.includes('productName: "Iznera"'));
+  assert.ok(pkg.includes('"name": "iznera-student-engineering-evidence"'));
+  assert.ok(readme.startsWith("# Iznera"));
   assert.ok(!pkg.includes("nextjs-postgresql-template"));
 });
 

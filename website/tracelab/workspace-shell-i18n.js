@@ -8,9 +8,9 @@ const entries = {
     "Жұмыс орны"
   ],
   "shell.home": [
-    "TraceLab — главная",
-    "TraceLab home",
-    "TraceLab — басты бет"
+    "Iznera — главная",
+    "Iznera home",
+    "Iznera — басты бет"
   ],
   "project.label": [
     "Проект",
@@ -298,14 +298,14 @@ const entries = {
     "P-01"
   ],
   "study.before": [
-    "До TraceLab, секунд",
-    "Before TraceLab, seconds",
-    "TraceLab-қа дейін, секунд"
+    "До Iznera, секунд",
+    "Before Iznera, seconds",
+    "Iznera-қа дейін, секунд"
   ],
   "study.with": [
-    "С TraceLab, секунд",
-    "With TraceLab, seconds",
-    "TraceLab-пен, секунд"
+    "С Iznera, секунд",
+    "With Iznera, seconds",
+    "Iznera-пен, секунд"
   ],
   "study.save": [
     "Сохранить замер",
@@ -833,9 +833,9 @@ const entries = {
     "Кіру"
   ],
   "report.synthetic": [
-    "Учебные данные: участники, даты и измерения вымышлены. Это не результаты исследования TraceLab.",
-    "Learning data: participants, dates and measurements are synthetic. These are not TraceLab research results.",
-    "Оқу деректері: қатысушылар, күндер және өлшемдер ойдан алынған. Бұл TraceLab зерттеу нәтижелері емес."
+    "Учебные данные: участники, даты и измерения вымышлены. Это не результаты исследования Iznera.",
+    "Learning data: participants, dates and measurements are synthetic. These are not Iznera research results.",
+    "Оқу деректері: қатысушылар, күндер және өлшемдер ойдан алынған. Бұл Iznera зерттеу нәтижелері емес."
   ],
   "report.copy": [
     "Проект создан на основе учебного примера. Исходные участники, даты и измерения вымышлены. Пользовательские изменения не проверены.",
@@ -913,9 +913,9 @@ const entries = {
     "Дейін, с"
   ],
   "report.with": [
-    "С TraceLab, с",
-    "With TraceLab, s",
-    "TraceLab-пен, с"
+    "С Iznera, с",
+    "With Iznera, s",
+    "Iznera-пен, с"
   ],
   "report.noMeasurements": [
     "Замеры не добавлены.",

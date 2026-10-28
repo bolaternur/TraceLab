@@ -1,6 +1,7 @@
 "use client";
 import { useRef,useState,type FormEvent } from "react";
 import Link from "next/link";
+import { BrandLogo } from "@/components/brand-logo";
 import { useRouter } from "next/navigation";
 import type { AccountSettings } from "@/server/account-settings-contract";
 import { settingsCopy } from "./account-settings-copy";
@@ -46,7 +47,7 @@ export function AccountSettingsForm({initial}:{initial:AccountSettings}){
     const latest=await request("/api/account/sessions");if(latest){setData(latest);setMessage("done");}
   });}
   return <main id="main" className="account-page settings-page" lang={locale}><div className="settings-container">
-    <header className="settings-header"><Link href="/" prefetch={false} className="account-brand">TraceLab</Link><a href="/workspace/">← {copy.back}</a></header>
+    <header className="settings-header"><Link href="/" prefetch={false} className="account-brand" aria-label="Iznera"><BrandLogo /></Link><a href="/workspace/">← {copy.back}</a></header>
     <h1>{copy.title}</h1><p className="account-intro">{copy.intro}</p>
     {message?<div className={"account-message"+(["error","invalid","expired"].includes(message)?" is-error":"")} role="status">{copy[message]}{message==="expired"?<p><a href="/auth?next=%2Faccount">{copy.signin} →</a></p>:null}</div>:null}
     <section className="settings-panel" aria-labelledby="profile-heading"><h2 id="profile-heading">{copy.profile}</h2>

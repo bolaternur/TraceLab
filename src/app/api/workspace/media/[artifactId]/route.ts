@@ -13,7 +13,7 @@ export async function GET(request:Request,context:Context){
     const attachment=!media.mimeType.startsWith("image/") && media.mimeType!=="model/gltf-binary";
     const extension=media.mimeType==="application/pdf"?"pdf":media.mimeType==="text/csv"?"csv":media.mimeType==="model/gltf-binary"?"glb":media.mimeType==="image/webp"?"webp":"png";
     return new Response(new Uint8Array(media.bytes),{headers:{...mediaHeaders,"Content-Type":media.mimeType,"Content-Length":String(media.bytes.length),
-      "Content-Disposition":`${attachment?"attachment":"inline"}; filename="tracelab-${artifactId}.${extension}"`,
+      "Content-Disposition":`${attachment?"attachment":"inline"}; filename="iznera-${artifactId}.${extension}"`,
       "Content-Security-Policy":"default-src 'none'; sandbox"}});
   }catch(error){return mediaFailure(error);}
 }

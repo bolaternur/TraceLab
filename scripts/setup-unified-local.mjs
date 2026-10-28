@@ -45,7 +45,7 @@ try {
     'APP_URL=http://localhost:3000', 'DEV_AUTH_BYPASS=false', 'ENABLE_DEV_SIMULATOR=false',
     `DATABASE_URL=${url}`, `DATABASE_MIGRATION_URL=${migrationUrl}`,
     `SECRETS_ENCRYPTION_KEY=${randomBytes(32).toString('hex')}`, `CRON_SECRET=${randomBytes(32).toString('hex')}`,
-    'MAIL_TRANSPORT=local', 'MAIL_PREVIEW_ENABLED=true', 'MAIL_FROM=TraceLab <local@tracelab.test>', 'MAIL_ENABLE_EXTERNAL_DELIVERY=false', 'AI_PROVIDER=disabled',
+    'MAIL_TRANSPORT=local', 'MAIL_PREVIEW_ENABLED=true', 'MAIL_FROM=Iznera <local@iznera.test>', 'MAIL_ENABLE_EXTERNAL_DELIVERY=false', 'AI_PROVIDER=disabled',
     'STORAGE_PROVIDER=local', '',
   ].join('\n'), { flag: 'wx', mode: 0o600 });
   console.log(`Created isolated database ${database} and a runtime role without owner/superuser privileges. Configuration saved in .env.local; no secrets printed.`);

@@ -25,7 +25,7 @@ if (isLocal) {
     const executable = path.join(base, "postgresql-17.11", "pgsql", "bin", "pg_ctl.exe");
     const data = path.join(base, "data");
     if (process.platform !== "win32" || port !== 5432 || !existsSync(executable) || !existsSync(path.join(data, "PG_VERSION"))) {
-      console.error("Start PostgreSQL for DATABASE_URL before running TraceLab. No existing database was changed.");
+      console.error("Start PostgreSQL for DATABASE_URL before running Iznera. No existing database was changed.");
       process.exit(1);
     }
     const result = spawnSync(executable, ["start", "-D", data, "-l", path.join(base, "postgresql.log"), "-w"], { windowsHide: true, stdio: "inherit", timeout: 30000 });

@@ -34,9 +34,9 @@ Legacy users are deliberately not trusted automatically. They must request and c
 4. Configure the production server with these names:
 
 ```dotenv
-APP_URL=https://your-tracelab-domain.example
+APP_URL=https://your-iznera-domain.example
 MAIL_TRANSPORT=resend
-MAIL_FROM=TraceLab <accounts@your-verified-domain.example>
+MAIL_FROM=Iznera <accounts@your-verified-domain.example>
 RESEND_API_KEY=<the server-side sending key>
 MAIL_ENABLE_EXTERNAL_DELIVERY=true
 MAIL_PREVIEW_ENABLED=false

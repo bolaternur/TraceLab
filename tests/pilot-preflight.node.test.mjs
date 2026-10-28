@@ -8,7 +8,7 @@ const configured = () => ({
   DATABASE_URL: 'postgresql://tracelab_runtime:private-database-password@db.example.org:5432/tracelab',
   SECRETS_ENCRYPTION_KEY: 'fixture-random-encryption-key-with-40-characters', CRON_SECRET: 'fixture-random-worker-secret-with-40-characters',
   MAIL_TRANSPORT: 'resend', MAIL_ENABLE_EXTERNAL_DELIVERY: 'true', MAIL_PREVIEW_ENABLED: 'false',
-  MAIL_FROM: 'TraceLab <accounts@pilot.example.org>', RESEND_API_KEY: 'private-provider-key',
+  MAIL_FROM: 'Iznera <accounts@pilot.example.org>', RESEND_API_KEY: 'private-provider-key',
   STORAGE_PROVIDER: 'supabase', SUPABASE_URL: 'https://project.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'private-storage-key', SUPABASE_STORAGE_BUCKET: 'tracelab-private',
   AI_PROVIDER: 'disabled',
 });

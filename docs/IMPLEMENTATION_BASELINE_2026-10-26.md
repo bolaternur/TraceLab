@@ -1,4 +1,4 @@
-# TraceLab: implementation baseline — 2026-10-26
+# Iznera: implementation baseline — 2026-10-26
 
 This is the **pre-implementation baseline**, not a completion report. The active work is tracked in [IMPLEMENTATION_MATRIX.md](IMPLEMENTATION_MATRIX.md). A source file, adapter, environment variable or passing unit test does not establish a working connected product. Later implementation must add dated runtime evidence before changing a requirement to “работает”.
 
@@ -33,7 +33,7 @@ Directly inspected for this baseline: `website/serve.mjs`, both package manifest
 | `05_GTM_Business_Model.md` | Kazakhstan-first pilot, direct observation and coach distribution; no automatic outreach. Original paid organization tiers are superseded by the owner's universally-free requirement, while infrastructure costs/limits remain real. |
 | `06_Validation_Metrics_Risks.md` | Interview/paired-measurement protocols, linked decisions, distributed contribution, retrieval and closeout metrics; reject raw counts as productivity. Capture failure, absent retrieval, surveillance drift and policy ambiguity are explicit pivot signals. |
 | `07_Build_Roadmap_Backlog.md` | Foundation/tenancy before rich features; GitHub then memory/output; negative DB tests, offline/versioning/security/E2E. Eight public-beta gates need real evidence. Long-term inventory/chat/scouting/CRM/native apps are outside scope. |
-| `08_Brand_Naming_Messaging.md` | Engineering memory and student authorship, source-linked motion and honest claims. TraceLab is not brand-cleared; owner retains the working name pending review. Latest approved Astra visual direction supersedes earlier style prescriptions. |
+| `08_Brand_Naming_Messaging.md` | Engineering memory and student authorship, source-linked motion and honest claims. Owner selected Iznera on 2026-10-28; no trademark/domain clearance is claimed. Latest approved Astra visual direction supersedes earlier style prescriptions. |
 | `09_Source_Register.md` | Thirty dated research entries and refresh triggers. Some copied URLs contain line-break/space damage; verify the official destination before policy use. Refresh season rules, competition/vendor facts, naming and legal sources; do not silently carry old limits forward. |
 
 ## Before-state: two products, not one verified platform
@@ -71,7 +71,7 @@ A1 reports **38 website tests passed, zero failed/skipped**, successful route/do
 | Old 15-page/15-MB FTC limits and September policy examples | Historical examples only. Fetch current official season rules, human review, encode version. Unknown/stale risky actions stay blocked/review. | TL-21-02, TL-22-02 |
 | Old RLS deferred / application-only allowance | P now explicitly requires Postgres RLS plus application checks and runtime non-bypass role. | TL-08-03 |
 | Existing synthetic copy shown as “personal” | Preserve educational origin permanently; personal copy is not real observation. | TL-02-03, TL-05-03 |
-| Name conflict warnings vs owner name | Keep TraceLab until owner confirms a screened alternative; do not purchase or rename autonomously. | TL-32-03 |
+| Name conflict warnings vs owner name | Historical naming hold superseded by the owner's Iznera selection on 2026-10-28. Trademark/domain clearance and provider/repository renaming remain separate actions. | TL-32-03 |
 | Award ambition | Quality is the target; no guaranteed award or official certification claim. | TL-35-03 |
 
 ## Safe migration contract for existing browser data

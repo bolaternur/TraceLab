@@ -12,7 +12,7 @@ describe.skipIf(!enabled)("own-account settings against PostgreSQL",()=>{
   const ids=tokens.map(accountHash),identity={userId:people[0],sessionHash:ids[0]};
   beforeAll(async()=>{
     const database=(await owner.query<{name:string}>("SELECT current_database() AS name")).rows[0].name;
-    if(!/^tracelab_unified_(dev_20261026|test(?:_.*)?)$/.test(database))throw new Error("Use the isolated TraceLab DB for account settings tests.");
+    if(!/^tracelab_unified_(dev_20261026|test(?:_.*)?)$/.test(database))throw new Error("Use the isolated Iznera DB for account settings tests.");
     service=await import("@/server/account-settings-service");
     for(const [index,id]of people.entries()){
       await owner.query("INSERT INTO users(id,email,password_hash,display_name,locale) VALUES($1,$2,'synthetic-no-login','Settings fixture','en')",[id,`settings-${id}@example.test`]);

@@ -1,4 +1,4 @@
-/* TraceLab workspace views. Imported text is always rendered with textContent. */
+/* Iznera workspace views. Imported text is always rendered with textContent. */
 const NS = 'http://www.w3.org/2000/svg';
 import { t, recordType, getWorkspaceLocale, formatDate, formatNumber, formatPercent, formatDayKey, formatDayLabel } from './workspace-i18n.js';
 let graphSerial = 0;

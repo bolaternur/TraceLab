@@ -34,7 +34,7 @@ const en = {
   "section.team": "Team",
   "hero.title": "Build. Test. Decide. Remember.",
   "hero.subtitle":
-    "Keep building in the tools your team already uses. TraceLab connects code, CAD, tests and photos into a living, source-linked history of how your engineering actually happened.",
+    "Keep building in the tools your team already uses. Iznera connects code, CAD, tests and photos into a living, source-linked history of how your engineering actually happened.",
   "hero.cta": "Start a private team",
   "hero.secondary": "See how it works",
   "auth.signin": "Sign in",
@@ -109,7 +109,7 @@ const ru: Record<TranslationKey, string> = {
   "section.team": "Команда",
   "hero.title": "Строй. Тестируй. Решай. Помни.",
   "hero.subtitle":
-    "Продолжайте работать в привычных инструментах. TraceLab связывает код, CAD, тесты и фотографии в живую историю того, как на самом деле шла инженерная работа.",
+    "Продолжайте работать в привычных инструментах. Iznera связывает код, CAD, тесты и фотографии в живую историю того, как на самом деле шла инженерная работа.",
   "hero.cta": "Создать приватную команду",
   "hero.secondary": "Как это работает",
   "auth.signin": "Войти",
@@ -182,7 +182,7 @@ const kk: Record<TranslationKey, string> = {
   "section.team": "Команда",
   "hero.title": "Құр. Сына. Шеш. Есте сақта.",
   "hero.subtitle":
-    "Командаңыз қолданатын құралдарда жұмысты жалғастырыңыз. TraceLab код, CAD, сынақтар мен фотоларды инженерлік жұмыстың шынайы тарихына біріктіреді.",
+    "Командаңыз қолданатын құралдарда жұмысты жалғастырыңыз. Iznera код, CAD, сынақтар мен фотоларды инженерлік жұмыстың шынайы тарихына біріктіреді.",
   "hero.cta": "Жабық команда құру",
   "hero.secondary": "Қалай жұмыс істейді",
   "auth.signin": "Кіру",
