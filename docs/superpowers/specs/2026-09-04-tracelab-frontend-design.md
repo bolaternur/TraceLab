@@ -1,12 +1,12 @@
-# TraceLab Frontend Pre-Build Specification — v2
+# Iznera Frontend Pre-Build Specification — v2
 
 > Consolidated revision: original pre-build specification + 2026 resource acquisition plan.
 > Date: 2026-09-04
-> Major v2 updates: Base UI-first implementation, no new Vaul, internal TraceLab registry, license guardrails, exact resource acquisition list, real-evidence data pack, stricter component QA.
+> Major v2 updates: Base UI-first implementation, no new Vaul, internal Iznera registry, license guardrails, exact resource acquisition list, real-evidence data pack, stricter component QA.
 
 ---
 
-# TraceLab / Student Engineering Evidence Platform
+# Iznera / Student Engineering Evidence Platform
 ## Frontend Pre-Build Specification & Research Pack
 
 **Date:** 2026-09-04  
@@ -278,7 +278,7 @@ Recommended primitive foundation:
 - Native HTML first for simple server-rendered controls.
 - Shared visual variants independent from primitive implementation.
 
-Avoid a “one library owns the whole UI” mindset. Base UI handles interaction/accessibility; TraceLab owns visual identity and domain semantics.
+Avoid a “one library owns the whole UI” mindset. Base UI handles interaction/accessibility; Iznera owns visual identity and domain semantics.
 
 ## 3.4 Motion
 
@@ -1342,7 +1342,7 @@ Useful for:
 - offline expectations;
 - understanding competitor breadth.
 
-Do **not** use it as the product UI model: its dashboard/Kanban/notebook/team-management center is specifically what TraceLab must differentiate from.
+Do **not** use it as the product UI model: its dashboard/Kanban/notebook/team-management center is specifically what Iznera must differentiate from.
 
 It is AGPL-3.0 and its README explicitly frames commercial use as prohibited, so do not copy code into a commercial product without proper legal analysis.
 
@@ -1439,7 +1439,7 @@ Community discussion is not authoritative, but it supports two useful conclusion
 1. Teams that expect heavy customization tend to prefer the shadcn ownership model because the source lives inside the app rather than behind a strongly opinionated theme API.
 2. There is a real tradeoff: owning component code means maintaining it. Therefore the correct solution is not “copy random shadcn blocks forever”; it is to create a **small internal component system with strict ownership and Storybook coverage**.
 
-For TraceLab, that tradeoff is worth it because distinct visual identity is a product requirement, not decoration.
+For Iznera, that tradeoff is worth it because distinct visual identity is a product requirement, not decoration.
 
 ---
 
@@ -1672,7 +1672,7 @@ The most valuable additional inputs from the team would be:
 7. screenshots/Figma frames of any interface direction you absolutely want to preserve;
 8. any curated `SKILL.md` for Material 3, Motion, accessibility, or a design system if you already trust it.
 
-If a generic M3 skill conflicts with the TraceLab design contract, the TraceLab design contract wins.
+If a generic M3 skill conflicts with the Iznera design contract, the Iznera design contract wins.
 
 ---
 
@@ -1731,7 +1731,7 @@ Do not combine all of this in one giant AI-generated rewrite.
 
 # 22. Final design direction in one paragraph
 
-**TraceLab should feel like Material 3 Expressive was reinterpreted for a robotics engineering lab, then disciplined with Linear-grade desktop hierarchy, given Teenage Engineering-style technical character, Attio-like object clarity and Tandem-like evidence relationships.** The app is light-first and warm, with Trace Blue for action, Signal Lime used sparingly, real engineering media, Instrument Sans for human UI and IBM Plex Mono for technical lineage. Its signature surface is the Engineering Timeline; its signature interaction is Add the Why; its signature visual motif is the Trace Line; and its strongest trust feature is that authorship, provenance, policy and offline state are always legible.
+**Iznera should feel like Material 3 Expressive was reinterpreted for a robotics engineering lab, then disciplined with Linear-grade desktop hierarchy, given Teenage Engineering-style technical character, Attio-like object clarity and Tandem-like evidence relationships.** The app is light-first and warm, with Trace Blue for action, Signal Lime used sparingly, real engineering media, Instrument Sans for human UI and IBM Plex Mono for technical lineage. Its signature surface is the Engineering Timeline; its signature interaction is Add the Why; its signature visual motif is the Trace Line; and its strongest trust feature is that authorship, provenance, policy and offline state are always legible.
 
 ---
 
@@ -1775,7 +1775,7 @@ Product/UX references:
 
 When implementation begins, the agent should receive this instruction before any code changes:
 
-> Preserve the existing TraceLab domain/server/offline behavior. Treat DESIGN.md and this frontend pre-build specification as the visual/interaction contract. Do not redesign the product into a generic SaaS dashboard, project manager, notebook editor or AI chat. Build foundations and domain components first, then implement the Today → Add the Why → evidence link → Timeline vertical slice. Keep Server Components as default, use narrow client islands, make provenance/policy/offline state explicit, and verify each stage with Storybook/a11y/visual tests before moving to the next screen.
+> Preserve the existing Iznera domain/server/offline behavior. Treat DESIGN.md and this frontend pre-build specification as the visual/interaction contract. Do not redesign the product into a generic SaaS dashboard, project manager, notebook editor or AI chat. Build foundations and domain components first, then implement the Today → Add the Why → evidence link → Timeline vertical slice. Keep Server Components as default, use narrow client islands, make provenance/policy/offline state explicit, and verify each stage with Storybook/a11y/visual tests before moving to the next screen.
 
 
 
@@ -1783,11 +1783,11 @@ When implementation begins, the agent should receive this instruction before any
 
 # APPENDIX — FRONTEND RESOURCE ACQUISITION PACK
 
-# TraceLab — Frontend Resource Acquisition Pack
+# Iznera — Frontend Resource Acquisition Pack
 
 > **Status:** pre-development acquisition guide
 > **Date:** 2026-09-04
-> **Purpose:** exact resources to collect before the TraceLab frontend rebuild
+> **Purpose:** exact resources to collect before the Iznera frontend rebuild
 > **Source of truth:** `DESIGN.md` + Product PRD + existing `student-engineering-evidence-platform` repo
 > **Design direction:** Living Evidence Lab
 
@@ -1799,14 +1799,14 @@ Do **not** collect a giant folder of random dashboards or visual-effect librarie
 
 The strongest build strategy is:
 
-1. keep the existing TraceLab domain/backend/offline/policy implementation,
+1. keep the existing Iznera domain/backend/offline/policy implementation,
 2. replace the presentation architecture,
 3. use Material 3 Expressive as a **design language**, not as a runtime component kit,
 4. use shadcn + Base UI as owned accessible primitives,
 5. use a small number of MIT-licensed component/reference repositories for solved interaction mechanics,
-6. build TraceLab-specific domain components ourselves,
+6. build Iznera-specific domain components ourselves,
 7. make Timeline + 30-second Why + provenance the visual identity,
-8. create an internal TraceLab shadcn registry after primitives stabilize.
+8. create an internal Iznera shadcn registry after primitives stabilize.
 
 The resource pack below is intentionally selective. More code is not better; the goal is the highest signal-to-noise ratio.
 
@@ -1816,7 +1816,7 @@ The resource pack below is intentionally selective. More code is not better; the
 
 ## P0 — already supplied
 
-### A. TraceLab current repository
+### A. Iznera current repository
 Already supplied:
 
 `student-engineering-evidence-platform.zip`
@@ -1882,7 +1882,7 @@ Why:
 
 The important part is **not** the dashboard styling. The important part is solved component mechanics.
 
-Target components for TraceLab:
+Target components for Iznera:
 - `timeline`
 - `file-upload`
 - `filters`
@@ -1933,7 +1933,7 @@ Target mechanics:
 - Code Block / source metadata presentation,
 - potentially table helpers.
 
-TraceLab use:
+Iznera use:
 - CapturePhoto,
 - evidence attachments,
 - local redaction/crop before upload,
@@ -1967,7 +1967,7 @@ It combines:
 - infinite scroll,
 - URL-synchronized filter state.
 
-TraceLab use:
+Iznera use:
 - Evidence Inbox advanced filtering,
 - Timeline filters,
 - Tests / Decisions dense views,
@@ -2002,7 +2002,7 @@ I want the whole `skills/` directory, especially skills covering:
 - UI-library choice,
 - prototyping / polish.
 
-TraceLab use:
+Iznera use:
 - enforce motion quality,
 - stop AI-default animation mistakes,
 - polish Capture save,
@@ -2073,7 +2073,7 @@ Priority: **6.5/10**, or **9/10 if Stitch is part of the workflow**.
 
 # 2. MORE IMPORTANT THAN ANOTHER REPOSITORY: REAL ENGINEERING DATA PACK
 
-If the goal is the **best possible** frontend rather than a polished fake demo, real TraceLab content is more valuable than a 6th UI repo.
+If the goal is the **best possible** frontend rather than a polished fake demo, real Iznera content is more valuable than a 6th UI repo.
 
 Please send any subset you can provide.
 
@@ -2202,7 +2202,7 @@ Shadcn now defaults to Base UI for new projects; Base UI gives us behavior witho
 ### shadcn CLI
 Use current `shadcn` CLI and owned source components.
 
-We will use semantic TraceLab tokens rather than raw default shadcn styling.
+We will use semantic Iznera tokens rather than raw default shadcn styling.
 
 ### Motion
 Package:
@@ -2234,7 +2234,7 @@ Role:
 - edge-crossing reduction.
 
 License note:
-ELK.js currently declares `EPL-2.0 OR GPL-3.0-or-later`. Treat it as a dependency and keep license notices/compliance in the dependency inventory; do not paste its source into TraceLab.
+ELK.js currently declares `EPL-2.0 OR GPL-3.0-or-later`. Treat it as a dependency and keep license notices/compliance in the dependency inventory; do not paste its source into Iznera.
 
 ### Phosphor
 Package:
@@ -2243,7 +2243,7 @@ Package:
 Role:
 - default icon family.
 
-We will create TraceLab custom evidence symbols separately on a compatible consistent grid/style.
+We will create Iznera custom evidence symbols separately on a compatible consistent grid/style.
 
 ### nuqs
 Package:
@@ -2297,7 +2297,7 @@ Use Material 3 Expressive as a **design reference / design language**.
 Do not base the implementation on Material Web components.
 
 Reason:
-Material Web is in maintenance mode; TraceLab needs custom visual identity and long-lived component ownership.
+Material Web is in maintenance mode; Iznera needs custom visual identity and long-lived component ownership.
 
 ## 4.2 Vaul — NO NEW DEPENDENCY
 
@@ -2333,7 +2333,7 @@ Motion must explain:
 
 ## 4.5 Generic dashboard templates — NO as design source
 
-A dashboard starter may solve wiring or table mechanics, but it must not dictate TraceLab's information architecture.
+A dashboard starter may solve wiring or table mechanics, but it must not dictate Iznera's information architecture.
 
 Today is not:
 - KPI tiles,
@@ -2348,7 +2348,7 @@ Today is not:
 
 | Resource | Classification | What to use | What not to do |
 |---|---|---|---|
-| TraceLab current ZIP | Keep product engine | domain/offline/policy/data/routes | preserve old generic presentation |
+| Iznera current ZIP | Keep product engine | domain/offline/policy/data/routes | preserve old generic presentation |
 | shadcn + Base UI | Take code / foundation | primitives + behavior | ship default shadcn look |
 | Cal Dev Starter | Take patterns / selective code after license check | Next16/RSC/Tailwind4/component structure | copy scheduling UI |
 | ReUI | Selective code | timeline/filter/upload/tree mechanics | import dashboard identity wholesale |
@@ -2385,7 +2385,7 @@ Commit SHA:
 Source path:
 License:
 What was adapted:
-TraceLab destination:
+Iznera destination:
 Date:
 ```
 
@@ -2452,7 +2452,7 @@ Why this matters:
 - tokens/components become portable,
 - future competition adapters stay visually coherent,
 - component QA happens once,
-- later contributors can install the exact TraceLab pattern instead of improvising.
+- later contributors can install the exact Iznera pattern instead of improvising.
 
 `@tracelab/base` should contain or configure:
 - CSS variables / semantic tokens,
@@ -2506,7 +2506,7 @@ Base implementation:
 
 ## 8.2 Domain layer
 
-Must remain custom TraceLab code:
+Must remain custom Iznera code:
 
 ```text
 EvidenceCard
@@ -2561,9 +2561,9 @@ Use mechanics from:
 - ReUI File Upload,
 - Kibo Dropzone/Image Crop,
 - native camera/file APIs,
-- current TraceLab IndexedDB outbox.
+- current Iznera IndexedDB outbox.
 
-TraceLab-specific layer:
+Iznera-specific layer:
 - CaptureLauncher,
 - quick source context,
 - `Saved on device` / `Waiting to sync` / `Synced` states,
@@ -2587,7 +2587,7 @@ Possible mechanics from:
 - nuqs filters,
 - TanStack Virtual later if needed.
 
-But signature TraceLab `EngineeringTimeline` is custom.
+But signature Iznera `EngineeringTimeline` is custom.
 It must represent causality/iterations, not a generic activity feed.
 
 ## Evidence Graph
@@ -2634,7 +2634,7 @@ Use:
 ## Export
 Reference:
 - Papermark / document products visually,
-- but build policy/provenance selection around TraceLab's own data model.
+- but build policy/provenance selection around Iznera's own data model.
 
 ---
 
@@ -2657,7 +2657,7 @@ Do not take:
 - mobile-first decorative density on desktop,
 - Material icons as mandatory identity.
 
-TraceLab rule:
+Iznera rule:
 
 > Expressive where the human action matters; disciplined where engineering evidence is dense.
 
@@ -2680,7 +2680,7 @@ Primary runtime library:
 Agent judgment:
 Emil Kowalski design-engineering skills.
 
-TraceLab timing budget:
+Iznera timing budget:
 
 ```text
 micro feedback         100–160ms
@@ -3002,7 +3002,7 @@ And, if available:
    └── rationales.txt/json
 ```
 
-Once these are supplied, there is no reason to do another broad resource search before starting implementation. New libraries should be introduced only when a concrete TraceLab component exposes a gap.
+Once these are supplied, there is no reason to do another broad resource search before starting implementation. New libraries should be introduced only when a concrete Iznera component exposes a gap.
 
 ---
 
@@ -3012,7 +3012,7 @@ The frontend should not be a collage of ReUI + shadcn + Material + Linear.
 
 Those resources solve *mechanics*.
 
-TraceLab's actual identity comes from:
+Iznera's actual identity comes from:
 
 ```text
 REAL WORK

@@ -1,0 +1,73 @@
+import { setWorkspaceLocale, getWorkspaceLocale } from './workspace-i18n.js';
+import { clearOfflineContext } from './workspace-outbox.js';
+import {openReportDialog} from './workspace-report.js';
+
+const messages={
+  ru:{language:'Язык',team:'Команда',invite:'Пригласить участника',signout:'Выйти',email:'Почта участника (необязательно)',createInvite:'Создать приглашение',inviteNote:'Ссылка даёт доступ к материалам этой команды. Передайте её только нужному участнику. Письмо автоматически не отправляется.',inviteReady:'Приглашение создано',copy:'Скопировать ссылку',copied:'Ссылка скопирована',close:'Закрыть',importTitle:'Проверка перед переносом',importNote:'Будет создан отдельный проект в выбранной команде. Исходный проект и его авторские данные останутся без изменений.',confirmImport:'Перенести в команду',records:'Записи',links:'Связи',measurements:'Замеры',localProjects:'Перенести проект этого браузера',chooseLocal:'Выберите локальный проект',preview:'Предварительный просмотр',emptyLocal:'Локальных проектов для переноса нет.',sync:'Обновить из команды',pending:'Выполняется…',readonly:'Режим просмотра',help:'Рабочие записи сохраняются в базе команды. Учебная область /demo/workspace хранит данные только в браузере. Импорт всегда создаёт отдельный проект.',failed:'Не удалось выполнить действие. Проверьте соединение.'},
+  en:{language:'Language',team:'Team',invite:'Invite a member',signout:'Sign out',email:'Member email (optional)',createInvite:'Create invitation',inviteNote:'This link grants access to this team’s evidence. Share it only with the intended member. No email is sent automatically.',inviteReady:'Invitation created',copy:'Copy link',copied:'Link copied',close:'Close',importTitle:'Review before importing',importNote:'A separate project will be created in the selected team. The original project and authorship will be preserved.',confirmImport:'Import into team',records:'Records',links:'Links',measurements:'Measurements',localProjects:'Import a project from this browser',chooseLocal:'Choose a local project',preview:'Preview',emptyLocal:'There are no local projects to import.',sync:'Refresh from team',pending:'Working…',readonly:'Read-only access',help:'Workspace records are saved in your team database. The /demo/workspace area stores data only in this browser. Each import creates a separate project.',failed:'The action failed. Check your connection.'},
+  kk:{language:'Тіл',team:'Команда',invite:'Қатысушыны шақыру',signout:'Шығу',email:'Қатысушының поштасы (міндетті емес)',createInvite:'Шақыру жасау',inviteNote:'Сілтеме осы команданың материалдарына рұқсат береді. Оны тек тиісті қатысушыға беріңіз. Хат автоматты түрде жіберілмейді.',inviteReady:'Шақыру жасалды',copy:'Сілтемені көшіру',copied:'Сілтеме көшірілді',close:'Жабу',importTitle:'Көшіру алдындағы тексеру',importNote:'Таңдалған командада бөлек жоба жасалады. Бастапқы жоба мен авторлық деректер сақталады.',confirmImport:'Командаға көшіру',records:'Жазбалар',links:'Байланыстар',measurements:'Өлшемдер',localProjects:'Осы браузердегі жобаны көшіру',chooseLocal:'Жергілікті жобаны таңдаңыз',preview:'Алдын ала қарау',emptyLocal:'Көшірілетін жергілікті жобалар жоқ.',sync:'Командадан жаңарту',pending:'Орындалуда…',readonly:'Тек қарау режимі',help:'Жұмыс жазбалары команданың дерекқорында сақталады. /demo/workspace оқу аймағы деректерді тек браузерде сақтайды. Әр импорт бөлек жоба жасайды.',failed:'Әрекет орындалмады. Байланысты тексеріңіз.'},
+};
+const text=key=>messages[getWorkspaceLocale()][key];
+Object.assign(messages.ru,{chat:'Чат команды',chatShort:'Чат'});Object.assign(messages.en,{chat:'Team chat',chatShort:'Chat'});Object.assign(messages.kk,{chat:'Команда чаты',chatShort:'Чат'});
+Object.assign(messages.ru,{gallery:'Галерея',models:'3D-модели',report:'Отчёт PDF / HTML',capture:'Быстрая запись · офлайн'});
+Object.assign(messages.en,{gallery:'Gallery',models:'3D models',report:'PDF / HTML report',capture:'Quick capture · offline'});
+Object.assign(messages.kk,{gallery:'Галерея',models:'3D модельдер',report:'PDF / HTML есебі',capture:'Жылдам жазба · офлайн'});
+Object.assign(messages.ru,{sources:'Источники'});Object.assign(messages.en,{sources:'Sources'});Object.assign(messages.kk,{sources:'Дереккөздер'});
+Object.assign(messages.ru,{inbox:'Входящие',account:'Мой аккаунт',teamSettings:'Настройки команды'});Object.assign(messages.en,{inbox:'Inbox',account:'My account',teamSettings:'Team settings'});Object.assign(messages.kk,{inbox:'Кіріс',account:'Менің аккаунтым',teamSettings:'Команда баптаулары'});
+Object.assign(messages.ru,{joinTeam:'Вступить в команду по коду',teamCode:'Код команды'});Object.assign(messages.en,{joinTeam:'Join a team with a code',teamCode:'Team code'});Object.assign(messages.kk,{joinTeam:'Кодпен командаға қосылу',teamCode:'Команда коды'});
+function element(tag,content,props={}){const node=document.createElement(tag);if(content)node.textContent=content;Object.assign(node,props);return node;}
+function button(key,action){const node=element('button',text(key),{type:'button',className:'ws-tool-button'});node.dataset.productKey=key;node.addEventListener('click',action);return node;}
+function modal(title){const dialog=element('dialog',null,{className:'ws-dialog'}),heading=element('div',null,{className:'ws-dialog-heading'});dialog.setAttribute('aria-label',title);heading.append(element('h2',title),button('close',()=>dialog.close()));dialog.append(heading);document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});return dialog;}
+function errorLine(){return element('p',null,{className:'ws-form-error'});}
+async function pending(control, action, error){control.disabled=true;const label=control.textContent;control.textContent=text('pending');try{await action();}catch(cause){error.textContent=cause.message||text('failed');error.setAttribute('role','alert');}finally{control.disabled=false;control.textContent=label;}}
+
+export async function previewServerImport(store,input,onDone){
+  const data=await store.previewImport(input);
+  const dialog=modal(text('importTitle'));
+  dialog.append(element('h3',data.projectName),element('p',text('importNote')));
+  const counts=data.counts||data;
+  for(const [key,value] of [['records',counts.records],['links',counts.links],['measurements',counts.studyRows]])dialog.append(element('p',`${text(key)}: ${value??0}`));
+  for(const warning of data.warnings||[])dialog.append(element('p',warning,{className:'ws-form-hint'}));
+  const error=errorLine(),confirm=button('confirmImport',()=>pending(confirm,async()=>{const id=await store.importProject(input,{previewId:data.previewId});await store.selectProject(id);dialog.close();onDone?.(id);},error));confirm.className='ws-app-primary';
+  dialog.append(error,confirm);dialog.showModal();
+}
+
+export function mountProductControls({store,localStore,serverMode,onLocale,onError,onImport}){
+  const sourcesTab=element('button',null,{type:'button',id:'ws-tab-sources',tabIndex:-1});sourcesTab.setAttribute('role','tab');sourcesTab.setAttribute('aria-selected','false');sourcesTab.setAttribute('aria-controls','ws-panel');sourcesTab.setAttribute('aria-label',text('sources'));sourcesTab.dataset.view='sources';sourcesTab.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v12a4 4 0 0 0 8 0V7M7 7h10M5 3h4M15 5v4"/></svg>';sourcesTab.append(element('span',text('sources')));document.querySelector('.ws-tabs').append(sourcesTab);
+  for(const [view,path,labels] of [['gallery','M3 4h18v16H3zM3 16l5-5 4 4 3-3 6 6M8 8h.01',{ru:'Галерея',en:'Gallery',kk:'Галерея'}],['models','m12 3 9 5v8l-9 5-9-5V8zM3 8l9 5 9-5M12 13v8',{ru:'3D-модели',en:'3D models',kk:'3D модельдер'}]]){const tab=element('button',null,{type:'button',id:`ws-tab-${view}`,tabIndex:-1});tab.setAttribute('role','tab');tab.setAttribute('aria-selected','false');tab.setAttribute('aria-controls','ws-panel');tab.setAttribute('aria-label',labels[getWorkspaceLocale()]);tab.dataset.view=view;tab.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${path}"/></svg>`;tab.append(element('span',labels[getWorkspaceLocale()]));document.querySelector('.ws-tabs').append(tab);}
+  // Keep visual and keyboard traversal order aligned.
+  document.querySelector('.ws-tabs').append(sourcesTab);
+  const inboxTab=element('button',null,{type:'button',id:'ws-tab-inbox',tabIndex:-1});inboxTab.setAttribute('role','tab');inboxTab.setAttribute('aria-selected','false');inboxTab.setAttribute('aria-controls','ws-panel');inboxTab.setAttribute('aria-label',text('inbox'));inboxTab.dataset.view='inbox';inboxTab.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zM4 13h5l1 3h4l1-3h5M8 8h8"/></svg>';inboxTab.append(element('span',text('inbox')));document.querySelector('.ws-tabs').append(inboxTab);
+  const chatTab=element('button',null,{type:'button',id:'ws-tab-chat',tabIndex:-1});chatTab.setAttribute('role','tab');chatTab.setAttribute('aria-selected','false');chatTab.setAttribute('aria-controls','ws-panel');chatTab.setAttribute('aria-label',text('chat'));chatTab.dataset.view='chat';chatTab.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H9l-5 4V4zM8 8h8M8 12h5"/></svg>';chatTab.append(element('span',text('chatShort')));document.querySelector('.ws-tabs').append(chatTab);
+  const actions=document.querySelector('.ws-appbar-actions');
+  const label=element('label',null,{className:'ws-language-select'}),select=element('select',null,{id:'ws-language'});
+  select.setAttribute('aria-label',text('language'));
+  for(const [value,name] of [['ru','RU'],['en','EN'],['kk','KK']])select.append(element('option',name,{value}));
+  select.value=getWorkspaceLocale();label.append(select);actions.prepend(label);
+  select.addEventListener('change',()=>{setWorkspaceLocale(select.value);document.documentElement.lang=select.value;document.cookie=`pt_lang=${select.value}; Path=/; Max-Age=31536000; SameSite=Lax`;try{localStorage.setItem('tracelab-locale',select.value);}catch{}for(const node of document.querySelectorAll('[data-product-key]'))node.textContent=text(node.dataset.productKey);for(const view of ['gallery','models','sources','inbox','chat']){const tab=document.querySelector(`#ws-tab-${view}`);tab.setAttribute('aria-label',text(view));tab.querySelector('span').textContent=text(view==='chat'?'chatShort':view);}select.setAttribute('aria-label',text('language'));onLocale();});
+  if(!serverMode)return;
+  const menu=document.querySelector('.ws-menu-popover');
+  const accountLink=element('a',text('account'),{href:'/account'});accountLink.dataset.productKey='account';menu.append(accountLink);
+  menu.append(button('teamSettings',async()=>{const dialog=modal(text('teamSettings')),body=element('div');dialog.append(body);dialog.showModal();try{const {mountWorkspaceTeam}=await import('./workspace-team.js');if(!dialog.isConnected)return;const dispose=mountWorkspaceTeam(body,{teamId:store.serverContext.team.id,onChanged:()=>store.refresh()});dialog.addEventListener('close',dispose,{once:true});}catch(error){body.textContent=text('failed');onError(error);}}));
+  const joinLink=element('a',text('joinTeam'),{href:'/join'});joinLink.dataset.productKey='joinTeam';menu.append(joinLink);
+  if(store.serverContext.role==='student_lead')menu.append(button('teamCode',async()=>{try{const {openWorkspaceTeamCode}=await import('./workspace-team.js');openWorkspaceTeamCode({teamId:store.serverContext.team.id});}catch(error){onError(error);}}));
+  menu.append(button('report',()=>openReportDialog(store).catch(onError)));
+  menu.append(button('sync',()=>store.refresh().catch(onError)));
+  const localProjects=localStore.getState().projects.filter(project=>project.dataKind!=='synthetic');
+  menu.append(button('localProjects',()=>{
+    const dialog=modal(text('localProjects'));
+    if(!localProjects.length){dialog.append(element('p',text('emptyLocal')));dialog.showModal();return;}
+    const label=element('label',text('chooseLocal')),select=element('select');label.append(select);
+    for(const project of localProjects)select.append(element('option',project.name,{value:project.id}));
+    const error=errorLine(),preview=button('preview',()=>pending(preview,async()=>{const project=localProjects.find(item=>item.id===select.value);await previewServerImport(store,JSON.stringify(project),onImport);dialog.close();},error));dialog.append(label,error,preview);dialog.showModal();
+  }));
+  if(['student_lead','coach'].includes(store.serverContext.role))menu.append(button('invite',()=>{
+    const dialog=modal(text('invite')),form=element('form'),label=element('label',text('email')),input=element('input',null,{type:'email',maxLength:254,autoComplete:'off'}),error=errorLine();label.append(input);
+    const submit=element('button',text('createInvite'),{type:'submit',className:'ws-app-primary'});form.append(element('p',text('inviteNote')),label,error,submit);dialog.append(form);
+    form.addEventListener('submit',event=>{event.preventDefault();pending(submit,async()=>{const invite=await store.createInvite({email:input.value.trim()||undefined,role:'member'});form.replaceChildren(element('h3',text('inviteReady')));const output=element('input',null,{readOnly:true,value:invite.inviteUrl});output.setAttribute('aria-label',text('inviteReady'));form.append(output,button('copy',async()=>{try{await navigator.clipboard.writeText(invite.inviteUrl);error.textContent=text('copied');}catch{output.select();}}),error);},error);});dialog.showModal();
+  }));
+  const captureLink=element('a',text('capture'),{href:'/offline-capture.html'});captureLink.dataset.productKey='capture';menu.append(captureLink);
+  menu.append(button('signout',async()=>{try{const response=await fetch('/api/account/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});if(!response.ok)throw new Error(text('failed'));await clearOfflineContext().catch(()=>{});navigator.serviceWorker?.controller?.postMessage('clear-private-data');location.assign('/auth');}catch(error){onError(error);}}));
+  if(store.serverContext.teams.length>1){const label=element('label',null,{className:'ws-team-select'}),select=element('select');select.setAttribute('aria-label',text('team'));for(const team of store.serverContext.teams)select.append(element('option',team.name,{value:team.id}));select.value=store.serverContext.team.id;label.append(select);document.querySelector('.ws-project-select').before(label);select.addEventListener('change',()=>store.selectTeam(select.value).catch(onError));}
+  const legacyNote=document.querySelector('#ws-help-dialog > p:last-child');if(legacyNote)legacyNote.textContent=text('help');
+}

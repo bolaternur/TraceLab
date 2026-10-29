@@ -65,13 +65,22 @@ describe("P0 server boundaries", () => {
 
   it("keeps public previews available when the optional development database is offline", () => {
     const auth = source("src/server/auth.ts");
-    expect(auth).toContain('msg: "dev_auth_bypass_unavailable"');
+    expect(auth).toContain('msg: "local_session_unavailable"');
+    expect(auth).not.toContain('process.env.DEV_AUTH_BYPASS');
+    expect(auth).toContain('if (!await isEmailVerified(row.user.id)) return null');
     expect(auth).toContain("return null");
   });
 
-  it("implements storage cleanup instead of acknowledging a no-op", () => {
+  it("rejects unverified legacy team cleanup instead of removing live evidence or reporting success", () => {
     const jobs = source("src/app/api/jobs/run/route.ts");
-    expect(jobs).toContain("storage.deletePrefix(teamId)");
-    expect(jobs).not.toContain("Local adapter: no-op");
+    const cleanup = jobs.split('if (kind === "storage.cleanup") {')[1]?.split('if (kind === "notify.tests_without_decisions")')[0];
+    expect(cleanup).toContain('throw new Error("Legacy team storage cleanup is disabled');
+    expect(cleanup).not.toContain("deletePrefix");
+    expect(cleanup).not.toContain("return;");
+    const deletion = source("src/server/actions.ts").split("export async function deleteTeam()")[1];
+    expect(deletion).toContain("await requireUser()");
+    expect(deletion).toContain("throw new Error(messages[");
+    expect(deletion).not.toContain("enqueueJob");
+    expect(deletion).not.toContain("db.delete(teams)");
   });
 });

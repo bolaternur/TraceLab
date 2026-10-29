@@ -83,7 +83,7 @@ async function assertLocalTarget(build, reference, fromPath) {
 test('local and Pages builds produce complete requested routes rather than redirect stubs', () => {
   for (const build of builds) for (const [route, html] of build.html) {
     assert.match(html, /<!doctype html>/i, `${build.base}/${route}: HTML document`);
-    assert.match(html, /<title>[^<]+TraceLab[^<]*<\/title>/i, `${build.base}/${route}: product title`);
+    assert.match(html, /<title>[^<]+Iznera[^<]*<\/title>/i, `${build.base}/${route}: product title`);
     assert.match(html, /<main\b[^>]*\bid=["']main["']/i, `${build.base}/${route}: main landmark`);
     assert.equal([...html.matchAll(/<h1\b/gi)].length, 1, `${build.base}/${route}: one main heading`);
     assert.doesNotMatch(html, /http-equiv=["']refresh["']/i, `${build.base}/${route}: must not be a legacy redirect`);
@@ -96,6 +96,41 @@ test('homepage retains the requested Russian hero and exposes RU, EN and KK sele
     const heading = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1] ?? '';
     assert.equal(visibleText(heading), 'История робота. Логика каждого решения.');
     for (const locale of ['ru', 'en', 'kk']) assert.match(html, new RegExp(`<button\\b[^>]*\\bdata-locale=["']${locale}["']`, 'i'));
+  }
+});
+
+test('every published route uses Iznera branding and the supplied wordmark', async () => {
+  for (const build of builds) {
+    for (const [route, html] of build.html) {
+      assert.doesNotMatch(visibleText(html), /TraceLab/i, `${route}: old product name is absent from visible content`);
+      assert.ok(attributes(html, 'src').includes(`${build.base}/assets/iznera-logo.png`), `${route}: supplied wordmark is present`);
+      assert.ok(attributes(html, 'href').includes(`${build.base}/assets/iznera-mark.svg`), `${route}: new favicon is present`);
+    }
+    for (const asset of ['iznera-logo.png', 'iznera-mark.svg']) {
+      assert.ok((await stat(path.join(build.directory, 'assets', asset))).size > 0, `${asset}: copied into publication`);
+    }
+  }
+});
+
+test('marketing pages omit ornamental brand labels and sequence counters while keeping evidence values', () => {
+  for (const build of builds) {
+    for (const [route, html] of build.html) {
+      if (route === 'workspace') continue;
+      const visible = visibleText(html);
+      assert.doesNotMatch(visible, /TraceLab\s*\/\s*Engineering evidence/i, `${route}: obsolete hero label`);
+      assert.doesNotMatch(visible, /TraceLab\s*\/\s*01\s*[—–-]\s*03/, `${route}: obsolete demo label`);
+      const ornamentalLabels = [...html.matchAll(/<(span|small)\b([^>]*)>([^<>]*)<\/\1>/gi)];
+      for (const [, , , label] of ornamentalLabels) {
+        assert.doesNotMatch(label.trim(), /^0[1-9]$/, `${route}: standalone decorative counter ${label}`);
+      }
+    }
+    for (const route of ['', 'demo']) {
+      const html = build.html.get(route);
+      assert.ok(visibleText(html).includes(copy.ru.testTitle), `${route}: test result title is retained`);
+      assert.ok(visibleText(html).includes('lab-photo-018'), `${route}: source identifier is retained`);
+      const initialDate = html.match(/<[^>]+\bdata-detail-date[^>]*>([\s\S]*?)<\/[^>]+>/i)?.[1] ?? '';
+      assert.match(visibleText(initialDate), /2026/, `${route}: the observation date is retained`);
+    }
   }
 });
 
@@ -154,7 +189,7 @@ test('graph and timeline actions keep visitors on their current local workspace 
       const parameters = new URL(href, 'https://tracelab-test.invalid').searchParams;
       assert.equal(parameters.has('record'), false, 'marketing actions must not select a visitor record');
       assert.equal(parameters.has('project'), false, 'marketing actions must not switch a visitor project');
-      assert.notEqual(parameters.get('view'), 'models', 'the static workspace has no models route');
+      if(parameters.has('view'))assert.ok(['graph','timeline','tests','history','study','gallery','models','sources','inbox','chat'].includes(parameters.get('view')), 'navigation must choose a supported workspace view');
     }
   }
 });
@@ -166,6 +201,42 @@ test('Astra assets exist and marketing pages load the new stylesheet and interac
       if (route === 'workspace') continue;
       assert.ok(attributes(html, 'href').some(value => value.split('?')[0] === `${build.base}/astra.css`), `${route}: new stylesheet is connected`);
       assert.ok(attributes(html, 'src').some(value => value.split('?')[0] === `${build.base}/astra.js`), `${route}: language and interaction module is connected`);
+    }
+  }
+});
+
+test('motion components publish local assets and complete destinations under localhost and Pages base paths',async()=>{
+  const files=['astra-dots.js','astra-dots.css','astra-navigation.js','astra-navigation.css','astra-effects.js','astra-effects.css','workspace-navigation.js','workspace-navigation.css'];
+  for(const build of builds){
+    for(const file of files){const source=await readFile(path.join(build.directory,file),'utf8');assert.ok(source.length>0,`${file}: asset is published`);if(file.endsWith('.js'))assert.doesNotMatch(source, /\b(?:from\s*|import\s*\()["']https?:/,'components execute locally without remote imports');}
+    for(const [route,html] of build.html){if(route==='workspace'){assert.doesNotMatch(html,/\bdata-dot-field(?:\s|>|=)/,'working views keep their own functional canvas');continue;}
+      for(const stylesheet of ['astra-navigation.css','astra-dots.css','astra-effects.css'])assert.ok(attributes(html,'href').some(reference=>reference.split('?')[0]===`${build.base}/${stylesheet}`),`${route}: ${stylesheet} is connected`);
+      const trigger=[...html.matchAll(/<button\b[^>]*>/g)].map(match=>match[0]).find(tag=>attributes(tag,'aria-controls')[0]==='astra-navigation');assert.ok(trigger,`${route}: menu trigger points to native dialog`);assert.equal(attributes(trigger,'aria-haspopup')[0],'dialog');
+      assert.match(html,/<dialog\b[^>]*id="astra-navigation"[^>]*aria-labelledby="astra-navigation-title"/,`${route}: menu is a named modal dialog`);
+      const hrefs=attributes(html,'href');for(const view of ['graph','timeline','tests','history','gallery','models','chat'])assert.ok(hrefs.includes(`${build.base}/workspace/?view=${view}`),`${route}: ${view} destination is available`);
+      assert.match(html,/class="a-dot-field"\s+data-dot-field\s+aria-hidden="true"/,`${route}: decoration stays out of the accessibility tree`);
+    }
+  }
+});
+
+test('workspace Astra theme is published last in the cascade without leaking into marketing routes', async () => {
+  for (const build of builds) {
+    const cssFile = path.join(build.directory, 'workspace-astra.css');
+    assert.ok((await stat(cssFile)).isFile(), `${build.base}: workspace theme asset is published`);
+    const html = build.html.get('workspace');
+    const stylesheets = [...html.matchAll(/<link\b[^>]*>/gi)]
+      .map(match => match[0])
+      .filter(tag => attributes(tag, 'rel')[0] === 'stylesheet')
+      .map(tag => attributes(tag, 'href')[0].split('?')[0]);
+    assert.equal(stylesheets.at(-1), `${build.base}/workspace-astra.css`, 'neutral workspace theme must override inherited green styles');
+    for (const file of ['workspace.css', 'workspace-views.css', 'workspace-canvas.css', 'workspace-shell.css']) {
+      assert.ok(stylesheets.includes(`${build.base}/${file}`), `${file}: keep existing workspace layout and interaction styles`);
+    }
+    const theme = await readFile(cssFile, 'utf8');
+    assert.match(theme, /\.workspace-page\b/, 'workspace palette must be scoped to the workspace');
+    for (const [route, page] of build.html) {
+      if (route === 'workspace') continue;
+      assert.equal(attributes(page, 'href').some(value => value.split('?')[0] === `${build.base}/workspace-astra.css`), false, `${route}: workspace-only theme must not replace marketing styles`);
     }
   }
 });
@@ -189,7 +260,8 @@ test('published route, image, stylesheet, script and font references resolve und
 });
 
 test('the real workspace preserves existing views, persistence, editing and export controls', async () => {
-  const source = await readFile(path.join(sourceDirectory, 'workspace.js'), 'utf8');
+  const moduleNames = ['workspace.js', 'workspace-store.js', 'workspace-canvas.js', 'workspace-views.js'];
+  const sources = new Map(await Promise.all(moduleNames.map(async filename => [filename, await readFile(path.join(sourceDirectory, filename), 'utf8')])));
   for (const build of builds) {
     const html = build.html.get('workspace');
     assert.match(html, /\bdata-workspace(?:\s|>|=)/);
@@ -197,10 +269,10 @@ test('the real workspace preserves existing views, persistence, editing and expo
     for (const id of ['ws-project', 'ws-view', 'ws-inspector', 'ws-add-record', 'ws-connect', 'ws-import', 'ws-export-json', 'ws-export-html', 'ws-storage']) {
       assert.match(html, new RegExp(`\\bid=["']${id}["']`));
     }
-    const builtSource = await readFile(path.join(build.directory, 'workspace.js'), 'utf8');
-    assert.equal(builtSource.replace(/(\.\/[^'"\s]+\.js)\?v=[a-f\d]+/g, '$1'), source, 'build must preserve workspace interactions apart from import cache versions');
-    const builtStore = await readFile(path.join(build.directory, 'workspace-store.js'), 'utf8');
-    assert.equal(builtStore, await readFile(path.join(sourceDirectory, 'workspace-store.js'), 'utf8'), 'published data store must be unchanged');
+    for (const filename of moduleNames) {
+      const published = await readFile(path.join(build.directory, filename), 'utf8');
+      assert.equal(published.replace(/(\.\/[^'"\s]+\.js)\?v=[a-f\d]+/g, '$1'), sources.get(filename), `${filename}: publishing the theme must preserve evidence, persistence and all five views apart from import cache versions`);
+    }
   }
 });
 

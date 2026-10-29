@@ -1,36 +1,12 @@
-# TraceLab — Build. Test. Decide. Remember.
+# Iznera
 
-TraceLab connects code, CAD, photos, tests and student reasoning into a traceable
-engineering history. It preserves evidence provenance and student authorship.
+Iznera connects sources, engineering tests, decisions and student-authored explanations. All features in the active application are free; capacity and safety limits apply equally to every team.
 
-**Current state: demonstration MVP, not production-ready.**
-See [PRODUCT_CAPABILITIES.md](PRODUCT_CAPABILITIES.md) for the capability matrix,
-known problems, test results and three-minute judge demonstration.
+**Development implementation, not a verified public beta.** Fictional demonstration records are never research results. The complete 2026-10-26 requirements, implementation evidence and unresolved gates are tracked in [docs/IMPLEMENTATION_MATRIX.md](docs/IMPLEMENTATION_MATRIX.md).
 
-## Implemented and partial capabilities
+## One application and one startup
 
-Real evidence records, annotations, iterations, tests, decisions and relations;
-password authentication and membership checks; Capture and IndexedDB outbox;
-graph, timeline, search, handoff and private 3D viewing.
-Models are imported with administrator scripts, not a browser upload flow.
-Exports are HTML/JSON with provenance; PDF is not implemented.
-GitHub supports push webhooks. Onshape needs OAuth credentials and a webhook,
-Discord needs a relay, and AI is disabled by default.
-
-Full localization, account verification/recovery, rate limiting, session management,
-object storage, complete pagination, PDF and browser E2E remain unfinished.
-Capture needs atomic writes; HTML exports currently take at most 500 source events.
-Demo numbers are not measured research results.
-
-The target product is universally free. Legacy pricing/server code remains until
-the coordinated removal and archival migration are approved.
-Draft migration 0004 is not registered or applied; see
-[the procedure](docs/FREE_MODE_MIGRATION.md).
-
-## Local setup
-
-Use Node 22+ and PostgreSQL. Copy .env.example to .env; configure DATABASE_URL
-and a random SECRETS_ENCRYPTION_KEY of at least 32 characters. Never commit secrets.
+The supported application is the root Next.js project. The Astra presentation, accounts, team onboarding, workspace and private APIs run on the same origin. `/workspace` uses PostgreSQL. `/demo/workspace` preserves the browser-local demonstration and its existing storage format. Older `/app` links redirect to the new workspace. The separate static build is a reference/demo build, not the production backend.
 
 ```sh
 npm ci
@@ -38,46 +14,48 @@ npm run db:migrate
 npm run dev
 ```
 
-Config-based Drizzle validation currently fails on this host; resolve it before
-migration execution. Do not use db:push as a production workaround.
-Only in an isolated demo database, run npm run db:seed. It creates fictional Orion
-records and demo users. Password demo1234: lead@trace.demo and coach@trace.demo.
-Do not seed a real workspace. DEV_AUTH_BYPASS must stay false in production.
+Open http://localhost:3000. `predev` prepares the static presentation assets; restart the command after editing `website/tracelab` files. The same preparation runs before `npm run build`. Production uses `npm run build` then `npm start` with a persistent Node process and private storage.
+
+## Local database and configuration
+
+Copy `.env.example` to **`.env.local`** and use your own values. Never commit `.env.local`. `DATABASE_URL` must use a restricted runtime role that neither owns the tables nor has `SUPERUSER`/`BYPASSRLS`. `DATABASE_MIGRATION_URL` is the separate migration owner. Do not run migrations with the runtime role or use `db:push` as a substitute for registered migrations.
+
+On this owner's computer the current checkout is `C:/Users/User/projects/TraceLab-web`, outside OneDrive. Its new isolated database is `tracelab_unified_dev_20261026`; previous databases and browser projects were not imported or replaced. Do not run `db:seed` against a personal/team database. Create an account, verify its email, then create an empty team and project.
+
+The optional `scripts/setup-unified-local.mjs --admin-env=<existing-local-env>` creates a **new** local database and restricted role, refusing to overwrite existing targets. It does not migrate the old application data. Migration history is checked with `node scripts/check-migrations.mjs`.
+
+## Email and files
+
+Development uses `MAIL_TRANSPORT=local` and `MAIL_PREVIEW_ENABLED=true`. Local account pages show a browser-scoped test mailbox; no external email is sent. Preview is denied in production and for remote requests. For a real deployment, follow [Resend setup](docs/account-mail-setup.md).
+
+Private media defaults to `STORAGE_PROVIDER=local` and `.data/storage`. A Supabase adapter is available with an explicitly **private** bucket; see [external-service setup](docs/EXTERNAL_SERVICES.md). Do not put a service-role key in client code. An ephemeral filesystem is not suitable for real team files.
+
+Before inviting real teams over the internet, follow [the pilot launch runbook](docs/PILOT_LAUNCH.md). `node scripts/pilot-preflight.mjs` checks production settings without sending mail or files; add `--check-db` for a read-only runtime-role/schema check. Passing configuration checks does not replace actual delivery, storage and two-account acceptance tests. GitHub Pages hosts only the static demonstration, not this shared application.
 
 ## Verification
 
 ```sh
-npm run lint
-npm run typecheck
+npm run typecheck -- --incremental false
 npm test
-npm run frontend:verify
-npm run i18n:audit
+npm run test:static
+node --test tests/pilot-preflight.node.test.mjs
+node --test website/tracelab/workspace-outbox.test.mjs website/tracelab/workspace-server.test.mjs
 npm run build
+node scripts/verify-production-origin.mjs
 ```
 
-Set DATABASE_URL in the process before Vitest to include database suites.
-For local settings: node --env-file=.env node_modules/vitest/vitest.mjs run.
-The default command otherwise excludes two files.
-i18n:audit currently fails on remaining literal JSX strings; it is a lower-bound
-inventory, not complete translation coverage. Full browser E2E is not implemented.
+Database integration suites require `.env.local` with the isolated database and explicit opt-in flags documented in their files. They create randomized fixtures and clean only their own fixtures. The old Orion-seeded integration suites are separate legacy tests; do not seed a real team merely to satisfy them. No unit-test count implies that every browser flow, live provider or pilot gate is verified.
 
-## Deployment
+`npm run test:db` enables the current unified DB suites together and refuses database names outside the dedicated `tracelab_unified_*` development/test family. CI uses this command on a fresh migrated database instead of schema push or fictional seed data.
 
-Use PostgreSQL, HTTPS, a Node runtime, a real encryption key and CRON_SECRET.
-Build with npm run build, serve with npm start. Keep DEV_AUTH_BYPASS=false.
-Current storage requires a durable private disk shared with the application;
-ephemeral/serverless filesystem deployment is not supported.
-S3/Supabase integration still needs implementation.
+## Data integrity and recovery
 
-Schedule POST /api/jobs/run with Authorization: Bearer CRON_SECRET.
-GET /api/health checks database connectivity only, not full readiness or worker health.
-Back up PostgreSQL and private storage together and rehearse an isolated restore
-before using real team data. Current production build success does not verify these services.
+Original source records and artifact metadata are immutable. Author edits append versions. Shared mutations check membership, revision and request identity; layout is stored separately. Team import requires a preview bound to the exact payload and team, then explicit confirmation, and creates a separate project. Browser originals remain available.
 
-## Architecture
+`node scripts/verify-local-backup.mjs` dumps the isolated local database, restores it into a unique temporary verification database, compares core table counts and retains the dump under ignored `.data/backups`. **Files require a separate backup** of `.data/storage` or the configured bucket. Store a complete database+files backup before a real deployment or migration.
 
-Next.js 16 App Router, React, PostgreSQL/Drizzle, Three.js and React Flow.
-src/server contains auth, actions, evidence, storage and policy gates;
-src/db defines the schema; drizzle contains migration history.
-Read AGENTS.md and installed Next.js docs before framework changes.
-See docs/SECURITY.md and [dependency review](docs/DEPENDENCY_REVIEW.md).
+## Scope and remaining gates
+
+See [PRODUCT_CAPABILITIES.md](PRODUCT_CAPABILITIES.md), the [implementation matrix](docs/IMPLEMENTATION_MATRIX.md) and [user guide](docs/USER_GUIDE.md). The development flows do not establish legal compliance, competition eligibility, long-term reliability or pilot outcomes. Public beta requires real team trials, current policy/privacy reviews, recovery/load/accessibility checks and actual provider configuration. No awards or research benefits are guaranteed.
+
+The earlier README and capability audit are retained in `docs/archive/` as historical evidence. They are not the current startup instructions. Legacy billing rows are retained for history; payment webhooks and plan changes cannot grant or remove feature access. Draft migration 0004 is not silently inserted into the applied history.

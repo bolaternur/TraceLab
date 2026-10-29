@@ -1,38 +1,16 @@
-// locale-wired
-import { UiText } from "@/components/locale-provider";
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
-import { db } from "@/db";
-import { teamInvites, teams } from "@/db/schema";
+import Link from "next/link";
+import { BrandLogo } from "@/components/brand-logo";
 import { getCurrentUser } from "@/server/auth";
 import { JoinForm } from "./join-form";
-import { inviteIsValid } from "@/lib/time";
+import "../../onboarding/team-setup.css";
 
 export const dynamic = "force-dynamic";
+export const metadata = {title:"Iznera · Join team",robots:{index:false,follow:false},referrer:"no-referrer" as const};
 
 export default async function JoinPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
   const user = await getCurrentUser();
   if (!user) redirect(`/auth?mode=signup&invite=${encodeURIComponent(code)}`);
-  const rows = await db.select({ inv: teamInvites, team: teams.name }).from(teamInvites).innerJoin(teams, eq(teams.id, teamInvites.teamId)).where(eq(teamInvites.code, code)).limit(1);
-  const row = rows[0];
-  const valid = row && inviteIsValid(row.inv);
-  return (
-    <main id="main" className="grid min-h-dvh bg-canvas place-items-center px-4">
-      <div className="card w-full max-w-sm p-6">
-        {valid ? (
-          <>
-            <h1 className="text-xl font-semibold"><UiText text="Join " />{row.team}</h1>
-            <p className="mt-1 text-sm text-text-2"><UiText text="You were invited as " /><span className="badge">{row.inv.role.replace("_", " ")}</span><UiText text=". Team evidence is private to members. " /></p>
-            <JoinForm code={code} />
-          </>
-        ) : (
-          <>
-            <h1 className="text-xl font-semibold"><UiText text="Invite not available" /></h1>
-            <p className="mt-2 text-sm text-text-2"><UiText text="This invite is invalid, expired, revoked or already used. Ask your team lead for a new one." /></p>
-          </>
-        )}
-      </div>
-    </main>
-  );
+  return <main id="main" className="tl-setup"><header><Link href="/" aria-label="Iznera"><BrandLogo /></Link></header><div className="tl-setup-content"><JoinForm code={code} locale={user.locale} /></div></main>;
 }

@@ -1,6 +1,7 @@
-/* TraceLab service worker: public offline fallback + immutable build assets only. */
-const CACHE = "trace-public-v2";
-const SHELL = ["/offline", "/manifest.webmanifest"];
+/* Cache only the public offline capture shell. Next manages its own build assets;
+   development chunk URLs are reused and must never be served cache-first here. */
+const CACHE = "iznera-public-v7";
+const SHELL = ["/offline-capture.html", "/offline-capture.css", "/offline-capture.js", "/workspace-outbox.js", "/manifest.webmanifest", "/brand/iznera-logo.png", "/brand/iznera-mark.svg", "/assets/iznera-logo.png", "/assets/iznera-mark.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL).catch(() => undefined)).then(() => self.skipWaiting()));
@@ -15,16 +16,19 @@ self.addEventListener("fetch", (event) => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
-  // Authenticated pages, auth flows and APIs may contain user/team data and are never cached.
-  if (url.pathname.startsWith("/app") || url.pathname.startsWith("/auth") || url.pathname.startsWith("/join") || url.pathname.startsWith("/api/")) return;
-  if (url.pathname.startsWith("/_next/static/")) {
-    event.respondWith(caches.open(CACHE).then(async (c) => (await c.match(req)) || fetch(req).then((r) => (c.put(req, r.clone()), r))));
+  if(SHELL.includes(url.pathname)){
+    event.respondWith(fetch(req).then(response=>{
+      if(response.ok){const copy=response.clone();event.waitUntil(caches.open(CACHE).then(cache=>cache.put(req,copy)).catch(()=>undefined));}
+      return response;
+    }).catch(async()=>await caches.match(req)||Response.error()));
     return;
   }
+  // Authenticated pages, auth flows and APIs may contain user/team data and are never cached.
+  if (url.pathname.startsWith("/app") || url.pathname.startsWith("/auth") || url.pathname.startsWith("/join") || url.pathname.startsWith("/api/")) return;
   if (req.mode === "navigate") {
     event.respondWith(
       fetch(req)
-        .catch(async () => (await caches.match("/offline")) || Response.error()),
+        .catch(async () => (await caches.match("/offline-capture.html")) || Response.error()),
     );
   }
 });

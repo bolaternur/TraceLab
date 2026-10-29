@@ -1,6 +1,6 @@
-/* TraceLab's local workbench: positions and camera are UI state, not evidence. */
+/* Iznera's local workbench: positions and camera are UI state, not evidence. */
 const NS = 'http://www.w3.org/2000/svg';
-const TYPES = { source: 'Материал', iteration: 'Версия', test: 'Испытание', decision: 'Решение' };
+import { t, recordType, getWorkspaceLocale, formatNumber, formatPercent } from './workspace-i18n.js';
 const NODE_WIDTH = 250;
 const NODE_HEIGHT = 156;
 const MIN_ZOOM = 0.25;
@@ -53,8 +53,8 @@ function button(label, name, action, title = label) {
   return control;
 }
 function matches(record, query, kind) {
-  const text = String(query || '').trim().toLocaleLowerCase();
-  return (kind === 'all' || !kind || record.kind === kind) && (!text || [record.id, record.title, record.body, record.author, record.rationale].some(value => String(value || '').toLocaleLowerCase().includes(text)));
+  const text = String(query || '').trim().toLocaleLowerCase(getWorkspaceLocale());
+  return (kind === 'all' || !kind || record.kind === kind) && (!text || [record.id, record.title, record.body, record.author, record.rationale].some(value => String(value || '').toLocaleLowerCase(getWorkspaceLocale()).includes(text)));
 }
 function defaultPositions(records) {
   const positions = {};
@@ -82,10 +82,11 @@ function readCamera(key) {
 export function renderCanvas(container, project, {
   selectedId = null, query = '', kind = 'all', onSelect = noop,
   onConnect = noop, onMove = noop, onRemoveLink = noop,
-  onResetLayout, onError = noop,
+  onResetLayout, onError = noop, onHideRecord = null, onRestoreRecord = null, canHideRecord = () => false,
 } = {}) {
   const records = Array.isArray(project?.records) ? project.records : [];
-  const visible = records.filter(record => matches(record, query, kind));
+  const hiddenIds = new Set(project?.hiddenRecordIds || []);
+  const visible = records.filter(record => !hiddenIds.has(record.id) && matches(record, query, kind));
   const recordsById = new Map(records.map(record => [record.id, record]));
   const visibleIds = new Set(visible.map(record => record.id));
   const links = (Array.isArray(project?.links) ? project.links : []).filter(link => link.status !== 'rejected' && visibleIds.has(link.from) && visibleIds.has(link.to));
@@ -119,9 +120,9 @@ export function renderCanvas(container, project, {
   surface.classList.toggle('is-locked', locked);
   surface.tabIndex = 0;
   surface.setAttribute('role', 'region');
-  surface.setAttribute('aria-label', 'Рабочий холст проекта. Записи можно перемещать, связывать и открывать.');
+  surface.setAttribute('aria-label', t('canvas.region'));
   const world = element('div', 'wc-world');
-  const edgeLayer = vector('svg', { class: 'wc-edges', 'aria-label': 'Связи записей' });
+  const edgeLayer = vector('svg', { class: 'wc-edges', 'aria-label': t('canvas.connections') });
   const definitions = vector('defs');
   for (const [name, color] of [['accepted', '#899b83'], ['suggested', '#c9b493'], ['active', '#d3e6b7']]) {
     const marker = vector('marker', { id: `wc-arrow-${instance}-${name}`, viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 8, markerHeight: 8, orient: 'auto', markerUnits: 'userSpaceOnUse' });
@@ -133,57 +134,71 @@ export function renderCanvas(container, project, {
   edgeLayer.append(pendingPath); world.append(edgeLayer); surface.append(world);
 
   const hint = element('div', 'wc-hint');
-  hint.append(element('span', 'wc-hint-title', 'Холст проекта'), element('span', 'wc-hint-copy', 'Двигайте записи и соединяйте порты. Колесо — перемещение, Ctrl + колесо — масштаб.'));
-  const counts = element('span', 'wc-count', `${visible.length} записей · ${links.length} связей`);
+  hint.append(element('span', 'wc-hint-title', t('canvas.title')), element('span', 'wc-hint-copy', t('canvas.hint')));
+  const counts = element('span', 'wc-count', t('graph.counts', { records: visible.length, links: links.length }));
   hint.append(counts); surface.append(hint);
   const status = element('p', 'wc-status'); status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite'); surface.append(status);
-  const controls = element('div', 'wc-controls'); controls.setAttribute('role', 'toolbar'); controls.setAttribute('aria-label', 'Управление холстом');
-  const zoomOut = button('', 'minus', () => zoomAt(camera.zoom / 1.2), 'Уменьшить масштаб');
-  const zoomStatus = button('100%', '', () => zoomAt(1), 'Масштаб 100 процентов'); zoomStatus.classList.add('wc-zoom-status');
-  const zoomIn = button('', 'plus', () => zoomAt(camera.zoom * 1.2), 'Увеличить масштаб');
-  const fitControl = button('Вписать', 'fit', () => fitVisible(), 'Вписать все видимые записи · F');
+  if (hiddenIds.size) {
+    const hiddenPanel = element('section', 'wc-overlay wc-hidden-panel'); hiddenPanel.hidden = true;
+    const heading = element('div', 'wc-overlay-header');
+    const toggle = button(t('canvas.hiddenCount', {count:hiddenIds.size}), '', () => { hiddenPanel.hidden = !hiddenPanel.hidden; toggle.setAttribute('aria-expanded', String(!hiddenPanel.hidden)); });
+    toggle.classList.add('wc-hidden-toggle'); toggle.setAttribute('aria-expanded', 'false');
+    heading.append(element('h3', '', t('canvas.hiddenTitle')), button('', 'close', () => {hiddenPanel.hidden=true;toggle.setAttribute('aria-expanded','false');toggle.focus();}, t('common.close')));
+    hiddenPanel.append(heading, element('p','wc-list-muted', t('canvas.hiddenHint')));
+    for (const record of records.filter(record => hiddenIds.has(record.id))) {
+      const row = element('div','wc-hidden-row'); row.append(element('span','',record.title));
+      if (onRestoreRecord && canHideRecord(record.id)) row.append(button(t('canvas.restoreRecord'), '', () => Promise.resolve(onRestoreRecord(record.id)).catch(onError)));
+      hiddenPanel.append(row);
+    }
+    surface.append(toggle,hiddenPanel);
+  }
+  const controls = element('div', 'wc-controls'); controls.setAttribute('role', 'toolbar'); controls.setAttribute('aria-label', t('canvas.controls'));
+  const zoomOut = button('', 'minus', () => zoomAt(camera.zoom / 1.2), t('common.zoomOut'));
+  const zoomStatus = button(formatPercent(1), '', () => zoomAt(1), t('common.zoomReset')); zoomStatus.classList.add('wc-zoom-status');
+  const zoomIn = button('', 'plus', () => zoomAt(camera.zoom * 1.2), t('common.zoomIn'));
+  const fitControl = button(t('common.fit'), 'fit', () => fitVisible(), t('canvas.fit'));
   const lockControl = button('', 'unlock', () => {
     locked = !locked; surface.classList.toggle('is-locked', locked); lockControl.replaceChildren(icon(locked ? 'lock' : 'unlock'));
-    lockControl.setAttribute('aria-pressed', String(locked)); lockControl.title = locked ? 'Разрешить перемещение записей' : 'Закрепить позиции записей';
-    lockControl.setAttribute('aria-label', lockControl.title); announce(locked ? 'Позиции закреплены. Холст можно двигать и масштабировать.' : 'Записи снова можно перемещать.');
-  }, 'Закрепить позиции записей');
-  if (locked) { lockControl.replaceChildren(icon('lock')); lockControl.title = 'Разрешить перемещение записей'; lockControl.setAttribute('aria-label', lockControl.title); }
+    lockControl.setAttribute('aria-pressed', String(locked)); lockControl.title = locked ? t('canvas.unlock') : t('canvas.lock');
+    lockControl.setAttribute('aria-label', lockControl.title); announce(locked ? t('canvas.locked') : t('canvas.unlocked'));
+  }, t('canvas.lock'));
+  if (locked) { lockControl.replaceChildren(icon('lock')); lockControl.title = t('canvas.unlock'); lockControl.setAttribute('aria-label', lockControl.title); }
   lockControl.setAttribute('aria-pressed', String(locked));
-  const layoutControl = button('', 'layout', resetLayout, 'Разложить записи по типам');
-  const listControl = button('', 'list', () => toggleOverlay(listPanel, listControl), 'Открыть записи и связи списком');
+  const layoutControl = button('', 'layout', resetLayout, t('canvas.layout'));
+  const listControl = button('', 'list', () => toggleOverlay(listPanel, listControl), t('canvas.openList'));
   const mapControl = button('', 'map', () => {
     minimap.hidden = !minimap.hidden; mapControl.setAttribute('aria-pressed', String(!minimap.hidden)); if (!minimap.hidden) drawMinimap();
-  }, 'Показать или скрыть мини-карту');
-  const helpControl = button('', 'help', () => toggleOverlay(helpPanel, helpControl), 'Открыть помощь по холсту');
+  }, t('canvas.toggleMap'));
+  const helpControl = button('', 'help', () => toggleOverlay(helpPanel, helpControl), t('canvas.openHelp'));
   controls.append(zoomOut, zoomStatus, zoomIn, fitControl, lockControl, layoutControl, listControl, mapControl, helpControl);
   surface.append(controls);
   const edgePanel = element('div', 'wc-edge-panel'); edgePanel.hidden = true; surface.append(edgePanel);
   const listPanel = element('section', 'wc-overlay wc-list-panel'); listPanel.hidden = previousControls.listOpen === undefined ? !mobile : !previousControls.listOpen;
-  listPanel.setAttribute('aria-label', 'Записи и связи списком');
-  const listHeader = element('div', 'wc-overlay-header'); listHeader.append(element('h3', '', 'Записи и связи'), button('', 'close', () => closeOverlay(listPanel, listControl), 'Закрыть список')); listPanel.append(listHeader);
+  listPanel.setAttribute('aria-label', t('canvas.list'));
+  const listHeader = element('div', 'wc-overlay-header'); listHeader.append(element('h3', '', t('canvas.list')), button('', 'close', () => closeOverlay(listPanel, listControl), t('canvas.closeList'))); listPanel.append(listHeader);
   const listBody = element('div', 'wc-list-body'); listPanel.append(listBody); surface.append(listPanel);
-  const helpPanel = element('section', 'wc-overlay wc-help-panel'); helpPanel.hidden = !previousControls.helpOpen; helpPanel.setAttribute('aria-label', 'Помощь по холсту');
-  const helpHeader = element('div', 'wc-overlay-header'); helpHeader.append(element('h3', '', 'Работа с холстом'), button('', 'close', () => closeOverlay(helpPanel, helpControl), 'Закрыть помощь')); helpPanel.append(helpHeader);
-  helpPanel.append(element('p', '', 'Перетащите запись за карточку. Потяните пустой холст, чтобы переместить всю область. Колесо перемещает холст, Ctrl или Cmd с колесом меняет масштаб в точке курсора. На экране с касанием масштаб меняется двумя пальцами.'));
-  helpPanel.append(element('p', '', 'Для связи потяните правый порт к левому порту другой записи. Можно нажать правый порт, затем нужную запись — это работает и с клавиатуры. В следующем шаге задайте смысл связи.'));
+  const helpPanel = element('section', 'wc-overlay wc-help-panel'); helpPanel.hidden = !previousControls.helpOpen; helpPanel.setAttribute('aria-label', t('canvas.help'));
+  const helpHeader = element('div', 'wc-overlay-header'); helpHeader.append(element('h3', '', t('canvas.help')), button('', 'close', () => closeOverlay(helpPanel, helpControl), t('canvas.closeHelp'))); helpPanel.append(helpHeader);
+  helpPanel.append(element('p', '', t('canvas.moveHelp')));
+  helpPanel.append(element('p', '', t('canvas.connectHelp')));
   const shortcuts = element('dl', 'wc-shortcuts');
-  [['Стрелки', 'Перемещение выбранной записи на 10 единиц'], ['Shift + стрелки', 'Перемещение на 50 единиц'], ['Enter', 'Открыть запись'], ['Пробел', 'Перемещать холст вместо записей'], ['F / 0', 'Вписать записи'], ['1', 'Масштаб 100%'], ['Esc', 'Отменить создание связи или закрыть список']].forEach(([key, description]) => { shortcuts.append(element('dt', '', key), element('dd', '', description)); });
+  [[t('canvas.arrows'), t('canvas.move10')], [t('canvas.shiftArrows'), t('canvas.move50')], ['Enter', t('canvas.openRecord')], [t('canvas.space'), t('canvas.pan')], ['F / 0', t('common.fit')], ['1', t('common.zoomReset')], ['Esc', t('canvas.cancel')]].forEach(([key, description]) => { shortcuts.append(element('dt', '', key), element('dd', '', description)); });
   helpPanel.append(shortcuts); surface.append(helpPanel);
-  const minimap = element('div', 'wc-minimap'); minimap.setAttribute('aria-label', 'Мини-карта проекта');
+  const minimap = element('div', 'wc-minimap'); minimap.setAttribute('aria-label', t('canvas.minimap'));
   minimap.hidden = previousControls.mapOpen === undefined ? typeof matchMedia === 'function' && matchMedia('(max-width: 420px)').matches : !previousControls.mapOpen;
   mapControl.setAttribute('aria-pressed', String(!minimap.hidden));
   const minimapSvg = vector('svg', { class: 'wc-minimap-svg', viewBox: '0 0 160 100', 'aria-hidden': 'true' });
-  const minimapLabel = element('span', 'wc-minimap-label', 'Обзор'); minimap.append(minimapSvg, minimapLabel); surface.append(minimap);
+  const minimapLabel = element('span', 'wc-minimap-label', t('canvas.overview')); minimap.append(minimapSvg, minimapLabel); surface.append(minimap);
   let minimapBounds = { minX: 0, minY: 0, width: 1, height: 1, scale: 1, offsetX: 0, offsetY: 0 };
 
   const neighbors = new Set(selectedId ? [selectedId] : []);
   links.forEach(link => { if (link.from === selectedId) neighbors.add(link.to); if (link.to === selectedId) neighbors.add(link.from); });
   links.forEach(link => {
     const group = vector('g', { class: `wc-edge${link.status === 'suggested' ? ' is-suggested' : ''}${link.from === selectedId || link.to === selectedId ? ' is-related' : ''}`, 'data-link-id': link.id });
-    const title = `${link.from} → ${link.to}: ${link.label || 'Связь'}${link.status === 'suggested' ? '. Предложено, не подтверждено' : ''}`;
+    const title = `${link.from} → ${link.to}: ${link.label || t('relation.generic')}${link.status === 'suggested' ? `. ${t('relation.suggested')}` : ''}`;
     const path = vector('path', { class: 'wc-edge-line', 'marker-end': `url(#wc-arrow-${instance}-${link.from === selectedId || link.to === selectedId ? 'active' : link.status === 'suggested' ? 'suggested' : 'accepted'})` });
     const target = vector('path', { class: 'wc-edge-target', tabindex: 0, role: 'button', 'aria-label': title, 'data-link-id': link.id });
-    const label = vector('text', { class: 'wc-edge-label', 'text-anchor': 'middle' }); label.textContent = String(link.label || 'Связь');
+    const label = vector('text', { class: 'wc-edge-label', 'text-anchor': 'middle' }); label.textContent = String(link.label || t('relation.generic'));
     group.append(vector('title', {}, title), path, target, label); edgeLayer.insertBefore(group, pendingPath);
     edgeElements.set(link.id, { group, path, target, label, link });
     target.addEventListener('click', event => { event.stopPropagation(); selectLink(link.id); });
@@ -194,32 +209,38 @@ export function renderCanvas(container, project, {
 
   visible.forEach((record, index) => {
     const node = element('article', `wc-node wc-node-${record.kind}${record.id === selectedId ? ' is-selected' : ''}${selectedId && !neighbors.has(record.id) ? ' is-muted' : ''}`);
-    node.dataset.recordId = record.id; node.tabIndex = 0; node.setAttribute('role', 'group'); node.setAttribute('aria-roledescription', 'Запись графа');
-    node.setAttribute('aria-label', `${TYPES[record.kind] || 'Запись'}: ${record.title}. ${record.id}. Enter — открыть, стрелки — переместить.`);
+    node.dataset.recordId = record.id; node.tabIndex = 0; node.setAttribute('role', 'group'); node.setAttribute('aria-roledescription', t('canvas.recordRole'));
+    node.setAttribute('aria-label', t('canvas.recordLabel', { type: recordType(record.kind), title: record.title }));
     if (record.id === selectedId) node.setAttribute('aria-current', 'true');
-    const header = element('div', 'wc-node-meta'); header.append(element('span', 'wc-node-kind', TYPES[record.kind] || 'Запись'), element('span', 'wc-node-id', record.id));
+    const header = element('div', 'wc-node-meta'); header.append(element('span', 'wc-node-kind', recordType(record.kind)), element('span', 'wc-node-id', record.id));
     const title = element('h3', 'wc-node-title', record.title); title.id = `wc-${instance}-record-${index}`; title.title = record.title;
     const detail = element('p', 'wc-node-detail');
-    if (record.kind === 'test' && Number(record.trials) > 0 && Number.isInteger(Number(record.successes))) detail.textContent = `${record.successes} / ${record.trials} успешных попыток`;
-    else if (record.kind === 'test' && record.measuredValue !== null && record.measuredValue !== undefined && record.measuredValue !== '') detail.textContent = `${record.measuredValue} ${record.unit || '— единица не указана'}`;
-    else detail.textContent = record.revision || record.sourceType || (record.kind === 'decision' ? record.rationale ? 'Объяснение сохранено' : 'Нет объяснения' : record.author || 'Автор не указан');
+    if (record.kind === 'test' && Number(record.trials) > 0 && Number.isInteger(Number(record.successes))) detail.textContent = t('canvas.testResult', { successes: Number(record.successes), trials: Number(record.trials) });
+    else if (record.kind === 'test' && record.measuredValue !== null && record.measuredValue !== undefined && record.measuredValue !== '') detail.textContent = `${formatNumber(Number(record.measuredValue), { maximumFractionDigits: 12 })} ${record.unit || t('common.unitMissing')}`;
+    else detail.textContent = record.revision || record.sourceType || (record.kind === 'decision' ? record.rationale ? t('canvas.whySaved') : t('canvas.whyMissing') : record.author || t('common.authorMissing'));
     node.append(header, title, detail);
+    if (onHideRecord && canHideRecord(record.id)) {
+      const hide = button('', 'trash', event => {event.stopPropagation();Promise.resolve(onHideRecord(record.id)).catch(onError);}, t('canvas.hideRecord', {title:record.title}));
+      hide.classList.add('wc-hide-record'); hide.dataset.recordId=record.id;
+      hide.addEventListener('pointerdown', event => event.stopPropagation());
+      node.classList.add('has-actions'); node.append(hide);
+    }
     ['in', 'out'].forEach(port => {
       const handle = element('button', `wc-port wc-port-${port}`); handle.type = 'button'; handle.dataset.recordId = record.id; handle.dataset.port = port;
-      handle.title = port === 'out' ? `Создать связь от записи «${record.title}»` : `Связать с записью «${record.title}»`;
+      handle.title = port === 'out' ? t('canvas.fromPort', { title: record.title }) : t('canvas.toPort', { title: record.title });
       handle.setAttribute('aria-label', handle.title); handle.append(element('span', 'wc-port-dot'));
       handle.addEventListener('click', event => {
         event.stopPropagation();
-        if (port === 'out') startConnection(record.id); else if (pendingFrom) finishConnection(record.id); else announce('Сначала выберите правый порт записи, от которой начинается связь.');
+        if (port === 'out') startConnection(record.id); else if (pendingFrom) finishConnection(record.id); else announce(t('canvas.chooseSource'));
       });
       node.append(handle);
     });
     node.addEventListener('keydown', event => {
-      if (event.target.closest('.wc-port')) return;
+      if (event.target.closest('.wc-port,.wc-hide-record')) return;
       if (event.key === 'Enter') { event.preventDefault(); pendingFrom ? finishConnection(record.id) : selectRecord(record.id); }
       if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
         event.preventDefault(); event.stopPropagation();
-        if (locked) { announce('Позиции закреплены. Нажмите кнопку замка, чтобы перемещать записи.'); return; }
+        if (locked) { announce(t('canvas.lockedHint')); return; }
         const distance = event.shiftKey ? 50 : 10;
         const position = positions[record.id];
         position.x = clamp(position.x + (event.key === 'ArrowLeft' ? -distance : event.key === 'ArrowRight' ? distance : 0), -100000, 100000);
@@ -230,19 +251,19 @@ export function renderCanvas(container, project, {
     world.append(node); nodeElements.set(record.id, node);
     const listRow = element('div', 'wc-list-row');
     const select = button('', '', () => { focusRecord(record.id); selectRecord(record.id); }); select.className = 'wc-record-button'; select.dataset.recordId = record.id;
-    select.append(element('span', 'wc-list-meta', `${TYPES[record.kind] || 'Запись'} · ${record.id}`), element('strong', '', record.title));
+    select.append(element('span', 'wc-list-meta', `${recordType(record.kind)} · ${record.id}`), element('strong', '', record.title));
     listRow.append(select);
     const outgoing = links.filter(link => link.from === record.id);
     outgoing.forEach(link => {
-      const relation = element('button', 'wc-list-link', `К ${recordsById.get(link.to)?.title || link.to} · ${link.label || 'Связь'}${link.status === 'suggested' ? ' · предложено' : ''}`);
+      const relation = element('button', 'wc-list-link', `${t('relation.to', { title: recordsById.get(link.to)?.title || link.to, label: link.label || t('relation.generic') })}${link.status === 'suggested' ? ` · ${t('relation.suggested')}` : ''}`);
       relation.type = 'button'; relation.dataset.linkId = link.id; relation.addEventListener('click', () => selectLink(link.id)); listRow.append(relation);
     });
-    if (!outgoing.length) listRow.append(element('p', 'wc-list-muted', 'Нет исходящих связей'));
+    if (!outgoing.length) listRow.append(element('p', 'wc-list-muted', t('relation.noneOutgoing')));
     listBody.append(listRow);
   });
   if (!visible.length) {
     const empty = element('div', 'wc-empty');
-    empty.append(element('h3', '', records.length ? 'Записи не найдены' : 'Здесь появится история проекта'), element('p', '', records.length ? 'Измените поиск или фильтр типа записи.' : 'Добавьте материал, версию, испытание или решение. Их можно будет перемещать и связывать прямо на холсте.'));
+    empty.append(element('h3', '', records.length ? t('graph.noMatches') : t('graph.emptyTitle')), element('p', '', hiddenIds.size && visible.length===0 ? t('canvas.hiddenHint') : records.length ? t('graph.changeFilters') : t('graph.emptyText')));
     surface.append(empty); minimap.hidden = true;
   }
   container.replaceChildren(surface);
@@ -296,7 +317,7 @@ export function renderCanvas(container, project, {
     return [p0, p3, ...roots.filter(t => t > 0 && t < 1).map(t => ((a * t + b) * t + c) * t + p0)];
   }
   function fitEdgeLabel(entry, available) {
-    const full = String(entry.link.label || 'Связь'), limit = Math.max(0, Math.floor(available));
+    const full = String(entry.link.label || t('relation.generic')), limit = Math.max(0, Math.floor(available));
     if (entry.labelLimit === limit && entry.labelFull === full) return;
     entry.labelLimit = limit; entry.labelFull = full;
     const measure = text => { entry.label.textContent = text; try { return entry.label.getComputedTextLength(); } catch { return text.length * 7; } };
@@ -322,7 +343,7 @@ export function renderCanvas(container, project, {
     surface.style.backgroundSize = `${24 * camera.zoom}px ${24 * camera.zoom}px`;
     surface.style.backgroundPosition = `${camera.x}px ${camera.y}px`;
     nodeElements.forEach((node, id) => { node.style.transform = `translate(${positions[id].x}px, ${positions[id].y}px)`; });
-    zoomStatus.firstElementChild.textContent = `${Math.round(camera.zoom * 100)}%`;
+    zoomStatus.firstElementChild.textContent = formatPercent(camera.zoom);
     zoomOut.disabled = camera.zoom <= MIN_ZOOM + 0.001; zoomIn.disabled = camera.zoom >= MAX_ZOOM - 0.001;
     drawEdges(); if (!minimap.hidden) drawMinimap();
   }
@@ -368,7 +389,7 @@ export function renderCanvas(container, project, {
   function startConnection(id) {
     pendingFrom = id; clearLink(); surface.classList.add('is-connecting');
     nodeElements.forEach((node, nodeId) => { node.classList.toggle('is-connection-source', nodeId === id); node.classList.toggle('is-connection-target', nodeId !== id); });
-    announce(`Связь от «${recordsById.get(id)?.title || id}». Выберите другую запись или её левый порт. Esc — отменить.`);
+    announce(t('canvas.startConnection', { title: recordsById.get(id)?.title || id }));
   }
   function updatePending(point) {
     if (!pendingFrom) return;
@@ -382,7 +403,7 @@ export function renderCanvas(container, project, {
   }
   function finishConnection(to) {
     if (!pendingFrom || !recordsById.has(to)) return;
-    if (pendingFrom === to) { announce('Выберите другую запись: связь с самой собой не создаётся.'); return; }
+    if (pendingFrom === to) { announce(t('canvas.selfConnection')); return; }
     const from = pendingFrom; cancelConnection(); rememberCamera();
     try { onConnect({ from, to }); } catch (error) { onError(error); }
   }
@@ -394,10 +415,10 @@ export function renderCanvas(container, project, {
     cancelConnection(); edgeElements.forEach(({ group }, key) => group.classList.toggle('is-selected', key === id));
     const source = recordsById.get(link.from); const target = recordsById.get(link.to);
     edgePanel.replaceChildren();
-    const heading = element('div', 'wc-edge-heading'); heading.append(element('strong', '', link.label || 'Связь'), button('', 'close', clearLink, 'Закрыть сведения о связи')); edgePanel.append(heading);
+    const heading = element('div', 'wc-edge-heading'); heading.append(element('strong', '', link.label || t('relation.generic')), button('', 'close', clearLink, t('relation.close'))); edgePanel.append(heading);
     edgePanel.append(element('p', '', `${source?.title || link.from} → ${target?.title || link.to}`));
-    edgePanel.append(element('span', 'wc-edge-status', link.status === 'suggested' ? 'Предложено, не подтверждено' : 'Подтверждённая связь'));
-    const remove = button('Удалить связь', 'trash', () => requestRemoveLink(id)); remove.classList.add('wc-remove-link'); edgePanel.append(remove); edgePanel.hidden = false;
+    edgePanel.append(element('span', 'wc-edge-status', link.status === 'suggested' ? t('relation.suggested') : t('relation.accepted')));
+    const remove = button(t('relation.remove'), 'trash', () => requestRemoveLink(id)); remove.classList.add('wc-remove-link'); edgePanel.append(remove); edgePanel.hidden = false;
   }
   function requestRemoveLink(id) {
     if (!links.some(link => link.id === id)) return;
@@ -425,7 +446,7 @@ export function renderCanvas(container, project, {
     minimap.hidden = next.mapOpen === undefined ? typeof matchMedia === 'function' && matchMedia('(max-width: 420px)').matches : !next.mapOpen;
     locked = Boolean(next.locked); surface.classList.toggle('is-locked', locked);
     lockControl.replaceChildren(icon(locked ? 'lock' : 'unlock')); lockControl.setAttribute('aria-pressed', String(locked));
-    lockControl.title = locked ? 'Разрешить перемещение записей' : 'Закрепить позиции записей'; lockControl.setAttribute('aria-label', lockControl.title);
+    lockControl.title = locked ? t('canvas.unlock') : t('canvas.lock'); lockControl.setAttribute('aria-label', lockControl.title);
     listControl.setAttribute('aria-expanded', String(!listPanel.hidden)); helpControl.setAttribute('aria-expanded', String(!helpPanel.hidden)); mapControl.setAttribute('aria-pressed', String(!minimap.hidden));
     rememberControls(); draw();
   }
@@ -445,7 +466,7 @@ export function renderCanvas(container, project, {
 
   function releaseCapture(event) { try { if (surface.hasPointerCapture(event.pointerId)) surface.releasePointerCapture(event.pointerId); } catch { /* The element can already have been removed by a callback. */ } }
   function pointerDown(event) {
-    if (event.target.closest('.wc-controls,.wc-overlay,.wc-edge-panel,.wc-minimap,.wc-hint,.wc-status')) return;
+    if (event.target.closest('.wc-controls,.wc-overlay,.wc-edge-panel,.wc-minimap,.wc-hint,.wc-status,.wc-hide-record,.wc-hidden-toggle')) return;
     if (event.button !== 0 && event.button !== 1) return;
     const point = localPoint(event); pointers.set(event.pointerId, point);
     if (event.pointerType === 'touch' && pointers.size === 2) {
@@ -510,7 +531,7 @@ export function renderCanvas(container, project, {
       if (current.moved) {
         const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('.wc-node');
         if (target && surface.contains(target)) finishConnection(target.dataset.recordId);
-        else { pendingPath.setAttribute('hidden', 'hidden'); announce('Выберите запись, к которой вести связь, или нажмите Esc.'); }
+        else { pendingPath.setAttribute('hidden', 'hidden'); announce(t('canvas.chooseTarget')); }
       }
     }
   }

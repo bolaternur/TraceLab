@@ -1,4 +1,4 @@
-# TraceLab Spatial Workbench — Phase C: Evidence Trace handoff
+# Iznera Spatial Workbench — Phase C: Evidence Trace handoff
 
 Date: 2026-09-04
 
@@ -71,7 +71,7 @@ Desktop now uses `@xyflow/react` with:
 
 `elkjs@0.9.3` was added as a dependency.
 
-Evidence Trace renders immediately with TraceLab's deterministic semantic fallback layout:
+Evidence Trace renders immediately with Iznera's deterministic semantic fallback layout:
 
 ```text
 source_event → iteration → test → decision
@@ -148,7 +148,7 @@ Existing query semantics remain:
 /app/graph?days=7|30|90
 ```
 
-The 30-object bound remains. If more objects match, TraceLab asks the user to narrow the trace instead of rendering visual spaghetti.
+The 30-object bound remains. If more objects match, Iznera asks the user to narrow the trace instead of rendering visual spaghetti.
 
 ## New files
 
@@ -222,7 +222,7 @@ npm run build
 
 Run those on your Arch machine where npm access works.
 
-## Upgrade your current local TraceLab without losing DB/auth config
+## Upgrade your current local Iznera without losing DB/auth config
 
 If your current working folder is:
 

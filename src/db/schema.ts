@@ -118,6 +118,7 @@ export const teamInvites = pgTable(
       .notNull()
       .references(() => teams.id, { onDelete: "cascade" }),
     code: text("code").notNull(),
+    kind: text("kind").notNull().default("individual"),
     role: text("role").notNull().default("student"),
     email: text("email"),
     maxUses: integer("max_uses").notNull().default(1),

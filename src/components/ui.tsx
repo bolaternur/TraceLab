@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { UiText } from "@/components/locale-provider";
 
 // ---------------------------------------------------------------------------
-// Source identity: TraceLab icon + label, never color alone.
+// Source identity: Iznera icon + label, never color alone.
 // ---------------------------------------------------------------------------
 export function SourceBadge({ provider, eventType }: { provider: string; eventType?: string }) {
   // Source metadata lives in the material details, not on every card.
