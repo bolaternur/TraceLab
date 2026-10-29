@@ -12,11 +12,13 @@ export interface WorkspaceProject {
   records: WorkspaceRecord[]; links: WorkspaceLink[]; studyRows: Array<Record<string, unknown>>;
   nodePositions?: Record<string, {x:number;y:number}>; importManifest?: unknown; importWarnings?: string[];
   annotationHistory?: unknown[]; serverRevision?: number;
+  hiddenRecordIds?: string[];
 }
 export interface WorkspaceState { schemaVersion: 1; activeProjectId: string; projects: WorkspaceProject[]; }
 export interface WorkspaceStore {
  getState():WorkspaceState; getProject():WorkspaceProject; createProject(fields:unknown):string; selectProject(id:string):void;
  addRecord(fields:unknown):string; updateRecord(id:string,fields:unknown):void; addLink(fields:unknown):string; removeLink(id:string):void;
+ hideRecord(id:string):void; restoreRecord(id:string):void;
  setNodePosition(id:string,position:unknown):void; resetNodePositions():void; addStudyRow(fields:unknown):string; addStudyRows(fields:unknown):string[];
  importProject(text:string):string; exportProject():string; readonly storageStatus:string; readonly storageMessage:string;
 }

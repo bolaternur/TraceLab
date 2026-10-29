@@ -10,8 +10,8 @@ describe.skipIf(!configured)("unified workspace — real PostgreSQL/RLS (needs i
   let getWorkspace: typeof import("@/server/workspace-service").getWorkspace;
   let workspaceTransaction: typeof import("@/server/workspace-service").workspaceTransaction;
   const owner=new Pool({connectionString:process.env.DATABASE_MIGRATION_URL});
-  const users:WorkspaceUser[]=Array.from({length:4},(_,index)=>({id:randomUUID(),displayName:"Workspace test "+index,locale:"en"}));
-  const [a,b,c,unverified]=users;
+  const users:WorkspaceUser[]=Array.from({length:5},(_,index)=>({id:randomUUID(),displayName:"Workspace test "+index,locale:"en"}));
+  const [a,b,c,unverified,coach]=users;
   const teams:string[]=[];
   let teamA:string,teamC:string,projectA:string,projectC:string;
   const request=(command:string,args:unknown[]=[],projectId?:string,expectedRevision?:number)=>({command,args,projectId,expectedRevision,requestId:randomUUID()});
@@ -37,6 +37,7 @@ describe.skipIf(!configured)("unified workspace — real PostgreSQL/RLS (needs i
     const invite=await executeWorkspaceCommand(a,{...request("createInvite",[{role:"member"}],projectA),teamId:teamA},{origin:"http://localhost:3000"});
     const token=new URL((invite.result as {inviteUrl:string}).inviteUrl).searchParams.get("invite");
     await executeWorkspaceCommand(b,request("joinInvite",[{token}]));
+    await owner.query("INSERT INTO team_memberships(team_id,user_id,role) VALUES($1,$2,'coach')",[teamA,coach.id]);
   });
   afterAll(async()=>{
     // Remove only this suite's random fixtures; no owner projects are selected.
@@ -137,6 +138,70 @@ describe.skipIf(!configured)("unified workspace — real PostgreSQL/RLS (needs i
     expect(imported.nodePositions?.["LOCAL-01"]).toEqual({x:14,y:27});
     const map=(await owner.query<{author_user_id:string|null;imported_by:string}>("SELECT author_user_id,imported_by FROM workspace_entity_map WHERE project_id=$1",[first.result])).rows[0];
     expect(map.author_user_id).toBeNull();expect(map.imported_by).toBe(a.id);
+  });
+  it("hides and restores graph records across teammates without removing source originals, versions, links or positions",async()=>{
+    const created=await revise(a,"addRecord",[{kind:"source",title:"Visibility fixture",body:"Original remains intact"}]);
+    const recordId=created.result as string;
+    await revise(a,"updateRecord",[recordId,{body:"A later authored explanation"}]);
+    const other=(await getWorkspace(a,{project:projectA})).projects.find(p=>p.id===projectA)!.records.find(r=>r.id!==recordId)!;
+    await revise(a,"addLink",[{from:recordId,to:other.id,label:"Visibility fixture link",status:"accepted"}]);
+    await revise(a,"setNodePosition",[recordId,{x:144,y:222}]);
+    const before=(await getWorkspace(a,{project:projectA})).projects.find(p=>p.id===projectA)!;
+    const mapping=(await owner.query<{entity_id:string}>("SELECT entity_id FROM workspace_entity_map WHERE project_id=$1 AND local_id=$2",[projectA,recordId])).rows[0];
+    const original=(await owner.query("SELECT * FROM source_events WHERE id=$1",[mapping.entity_id])).rows[0];
+    const versions=(await owner.query("SELECT * FROM annotations WHERE entity_id=$1 AND field='workspace_record' ORDER BY created_at,id",[mapping.entity_id])).rows;
+    const canonicalLinks=(await owner.query("SELECT id,invalidated_at FROM relations WHERE from_id=$1 OR to_id=$1 ORDER BY id",[mapping.entity_id])).rows;
+    const command=request("hideRecord",[recordId],projectA,before.serverRevision);
+    const hidden=await executeWorkspaceCommand(a,command);
+    const hiddenProject=hidden.projects.find(p=>p.id===projectA)!;
+    expect(hiddenProject.hiddenRecordIds).toContain(recordId);
+    expect(hiddenProject.serverRevision).toBe(before.serverRevision!+1);
+    expect(hiddenProject.records).toEqual(before.records);expect(hiddenProject.links).toEqual(before.links);expect(hiddenProject.nodePositions).toEqual(before.nodePositions);
+    expect((await getWorkspace(b,{project:projectA})).projects.find(p=>p.id===projectA)!.hiddenRecordIds).toContain(recordId);
+    const replay=await executeWorkspaceCommand(a,command);expect("replayed" in replay && replay.replayed).toBe(true);expect(replay.projects.find(p=>p.id===projectA)!.serverRevision).toBe(hiddenProject.serverRevision);
+    await expect(executeWorkspaceCommand(a,request("restoreRecord",[recordId],projectA,before.serverRevision))).rejects.toMatchObject({code:"revision_conflict"});
+    const restored=(await revise(a,"restoreRecord",[recordId])).projects.find(p=>p.id===projectA)!;
+    expect(restored.hiddenRecordIds??[]).not.toContain(recordId);expect(restored.serverRevision).toBe(hiddenProject.serverRevision!+1);
+    expect(restored.records).toEqual(before.records);expect(restored.links).toEqual(before.links);expect(restored.nodePositions).toEqual(before.nodePositions);
+    await expect(executeWorkspaceCommand(a,request("hideRecord",[recordId],projectA,restored.serverRevision),{afterCanonicalWrite:()=>{throw new Error("visibility rollback fixture");}})).rejects.toThrow("visibility rollback fixture");
+    const afterRollback=(await getWorkspace(a,{project:projectA})).projects.find(p=>p.id===projectA)!;
+    expect(afterRollback.hiddenRecordIds??[]).not.toContain(recordId);expect(afterRollback.serverRevision).toBe(restored.serverRevision);
+    expect((await owner.query("SELECT * FROM source_events WHERE id=$1",[mapping.entity_id])).rows[0]).toEqual(original);
+    expect((await owner.query("SELECT * FROM annotations WHERE entity_id=$1 AND field='workspace_record' ORDER BY created_at,id",[mapping.entity_id])).rows).toEqual(versions);
+    expect((await owner.query("SELECT id,invalidated_at FROM relations WHERE from_id=$1 OR to_id=$1 ORDER BY id",[mapping.entity_id])).rows).toEqual(canonicalLinks);
+  });
+  it("restricts visibility changes to the author/importer or team lead and keeps coach and foreign teams read-only",async()=>{
+    const own=(await revise(b,"addRecord",[{kind:"source",title:"Member visibility fixture",body:"Member-authored"}])).result as string;
+    const leadRecord=(await getWorkspace(a,{project:projectA})).projects.find(p=>p.id===projectA)!.records.find(record=>record.author===a.displayName)!;
+    for(const action of ["hideRecord","restoreRecord"]){
+      await expect(revise(b,action,[leadRecord.id])).rejects.toMatchObject({code:"forbidden"});
+      await expect(revise(coach,action,[own])).rejects.toMatchObject({code:"forbidden"});
+      await expect(executeWorkspaceCommand(c,request(action,[own],projectA,0))).rejects.toMatchObject({code:"forbidden"});
+    }
+    await revise(b,"hideRecord",[own]);
+    await revise(a,"restoreRecord",[own]);
+    await revise(a,"hideRecord",[own]);
+    const restored=await revise(b,"restoreRecord",[own]);expect(restored.projects.find(p=>p.id===projectA)!.hiddenRecordIds??[]).not.toContain(own);
+    await expect(revise(a,"hideRecord",[randomUUID()])).rejects.toMatchObject({code:"forbidden"});
+    const input=request("hideRecord",[own,"unexpected"],projectA,restored.projects.find(p=>p.id===projectA)!.serverRevision);
+    await expect(executeWorkspaceCommand(a,input)).rejects.toBeDefined();
+  });
+  it("allows an importing student to hide and restore an imported record without promoting its original author label",async()=>{
+    const text=JSON.stringify({schemaVersion:1,project:{id:"IMPORTED-VISIBILITY",name:"Visibility import fixture",description:"Synthetic imported fixture",dataKind:"personal",
+      records:[{id:"IMPORT-SOURCE",kind:"source",title:"Imported visibility source",body:"Original imported explanation",author:"External fixture author",createdAt:"2026-09-01T10:00:00Z"}],links:[],studyRows:[]}});
+    const preview=await executeWorkspaceCommand(b,request("previewImport",[text],projectA));
+    const previewId=(preview.result as {previewId:string}).previewId;
+    const imported=await executeWorkspaceCommand(b,request("importProject",[text,{previewId}],projectA));
+    const importedId=imported.activeProjectId!,project=imported.projects.find(item=>item.id===importedId)!;
+    const mapping=(await owner.query<{author_user_id:string|null;imported_by:string}>("SELECT author_user_id,imported_by FROM workspace_entity_map WHERE project_id=$1 AND local_id='IMPORT-SOURCE'",[importedId])).rows[0];
+    expect(mapping).toEqual({author_user_id:null,imported_by:b.id});
+    const hidden=await executeWorkspaceCommand(b,request("hideRecord",["IMPORT-SOURCE"],importedId,project.serverRevision));
+    expect(hidden.projects.find(item=>item.id===importedId)!.hiddenRecordIds).toContain("IMPORT-SOURCE");
+    const revision=hidden.projects.find(item=>item.id===importedId)!.serverRevision;
+    const restored=await executeWorkspaceCommand(b,request("restoreRecord",["IMPORT-SOURCE"],importedId,revision));
+    const after=restored.projects.find(item=>item.id===importedId)!;
+    expect(after.hiddenRecordIds??[]).not.toContain("IMPORT-SOURCE");expect(after.records).toEqual(project.records);
+    expect(after.records[0].originalAuthorLabel).toBe("External fixture author");expect(after.records[0].authorProvenance).toMatch(/unverified$/);
   });
   it("does not rewrite evidence snapshots when moving layout; membership revocation denies next read",async()=>{
     const state=await getWorkspace(a,{team:teamA,project:projectA}),project=state.projects.find(p=>p.id===projectA)!;

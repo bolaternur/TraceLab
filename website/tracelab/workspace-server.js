@@ -104,7 +104,7 @@ export async function createServerWorkspace({ request = globalThis.fetch.bind(gl
     previewImport: text => command('previewImport', [text]),
     importProject: (text, confirmation) => command('importProject', [text, confirmation]),
   };
-  for (const name of ['createProject', 'addRecord', 'updateRecord', 'addLink', 'removeLink', 'setNodePosition', 'resetNodePositions', 'addStudyRow', 'addStudyRows', 'createInvite', 'joinInvite']) {
+  for (const name of ['createProject', 'addRecord', 'updateRecord', 'addLink', 'removeLink', 'hideRecord', 'restoreRecord', 'setNodePosition', 'resetNodePositions', 'addStudyRow', 'addStudyRows', 'createInvite', 'joinInvite']) {
     api[name] = (...args) => command(name, args);
   }
   return api;

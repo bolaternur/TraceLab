@@ -33,7 +33,8 @@ async function usage(client:PoolClient,teamId:string) {
     FROM artifacts WHERE team_id=$1`,[teamId])).rows[0];
   const reserved=(await client.query<{total:string}>(`SELECT COALESCE(sum(reserved_bytes),0)::text AS total FROM workspace_uploads
     WHERE team_id=$1 AND status IN ('staging','cleanup_pending')`,[teamId])).rows[0];
-  return { usedBytes:Number(saved.total), reservedBytes:Number(reserved.total), quotaBytes:MEDIA_LIMITS.teamBytes };
+  const chat=(await client.query<{total:string}>(`SELECT COALESCE(sum(size_bytes),0)::text AS total FROM workspace_chat_attachments WHERE team_id=$1 AND status<>'failed'`,[teamId])).rows[0];
+  return { usedBytes:Number(saved.total)+Number(chat.total), reservedBytes:Number(reserved.total), quotaBytes:MEDIA_LIMITS.teamBytes };
 }
 const selectMedia=`SELECT a.*,e.title,e.summary,e.occurred_at,e.actor_user_id,e.project_id,u.display_name AS author_label,
   m.id AS model_id,m.name AS model_name,m.category,m.version_label,m.status AS model_status,

@@ -92,6 +92,13 @@
       "when": 1793134800000,
       "tag": "0013_workspace_team_codes",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793221200000,
+      "tag": "0014_workspace_chat",
+      "breakpoints": true
     }
   ]
 }

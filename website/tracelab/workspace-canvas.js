@@ -82,10 +82,11 @@ function readCamera(key) {
 export function renderCanvas(container, project, {
   selectedId = null, query = '', kind = 'all', onSelect = noop,
   onConnect = noop, onMove = noop, onRemoveLink = noop,
-  onResetLayout, onError = noop,
+  onResetLayout, onError = noop, onHideRecord = null, onRestoreRecord = null, canHideRecord = () => false,
 } = {}) {
   const records = Array.isArray(project?.records) ? project.records : [];
-  const visible = records.filter(record => matches(record, query, kind));
+  const hiddenIds = new Set(project?.hiddenRecordIds || []);
+  const visible = records.filter(record => !hiddenIds.has(record.id) && matches(record, query, kind));
   const recordsById = new Map(records.map(record => [record.id, record]));
   const visibleIds = new Set(visible.map(record => record.id));
   const links = (Array.isArray(project?.links) ? project.links : []).filter(link => link.status !== 'rejected' && visibleIds.has(link.from) && visibleIds.has(link.to));
@@ -137,6 +138,20 @@ export function renderCanvas(container, project, {
   const counts = element('span', 'wc-count', t('graph.counts', { records: visible.length, links: links.length }));
   hint.append(counts); surface.append(hint);
   const status = element('p', 'wc-status'); status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite'); surface.append(status);
+  if (hiddenIds.size) {
+    const hiddenPanel = element('section', 'wc-overlay wc-hidden-panel'); hiddenPanel.hidden = true;
+    const heading = element('div', 'wc-overlay-header');
+    const toggle = button(t('canvas.hiddenCount', {count:hiddenIds.size}), '', () => { hiddenPanel.hidden = !hiddenPanel.hidden; toggle.setAttribute('aria-expanded', String(!hiddenPanel.hidden)); });
+    toggle.classList.add('wc-hidden-toggle'); toggle.setAttribute('aria-expanded', 'false');
+    heading.append(element('h3', '', t('canvas.hiddenTitle')), button('', 'close', () => {hiddenPanel.hidden=true;toggle.setAttribute('aria-expanded','false');toggle.focus();}, t('common.close')));
+    hiddenPanel.append(heading, element('p','wc-list-muted', t('canvas.hiddenHint')));
+    for (const record of records.filter(record => hiddenIds.has(record.id))) {
+      const row = element('div','wc-hidden-row'); row.append(element('span','',record.title));
+      if (onRestoreRecord && canHideRecord(record.id)) row.append(button(t('canvas.restoreRecord'), '', () => Promise.resolve(onRestoreRecord(record.id)).catch(onError)));
+      hiddenPanel.append(row);
+    }
+    surface.append(toggle,hiddenPanel);
+  }
   const controls = element('div', 'wc-controls'); controls.setAttribute('role', 'toolbar'); controls.setAttribute('aria-label', t('canvas.controls'));
   const zoomOut = button('', 'minus', () => zoomAt(camera.zoom / 1.2), t('common.zoomOut'));
   const zoomStatus = button(formatPercent(1), '', () => zoomAt(1), t('common.zoomReset')); zoomStatus.classList.add('wc-zoom-status');
@@ -204,6 +219,12 @@ export function renderCanvas(container, project, {
     else if (record.kind === 'test' && record.measuredValue !== null && record.measuredValue !== undefined && record.measuredValue !== '') detail.textContent = `${formatNumber(Number(record.measuredValue), { maximumFractionDigits: 12 })} ${record.unit || t('common.unitMissing')}`;
     else detail.textContent = record.revision || record.sourceType || (record.kind === 'decision' ? record.rationale ? t('canvas.whySaved') : t('canvas.whyMissing') : record.author || t('common.authorMissing'));
     node.append(header, title, detail);
+    if (onHideRecord && canHideRecord(record.id)) {
+      const hide = button('', 'trash', event => {event.stopPropagation();Promise.resolve(onHideRecord(record.id)).catch(onError);}, t('canvas.hideRecord', {title:record.title}));
+      hide.classList.add('wc-hide-record'); hide.dataset.recordId=record.id;
+      hide.addEventListener('pointerdown', event => event.stopPropagation());
+      node.classList.add('has-actions'); node.append(hide);
+    }
     ['in', 'out'].forEach(port => {
       const handle = element('button', `wc-port wc-port-${port}`); handle.type = 'button'; handle.dataset.recordId = record.id; handle.dataset.port = port;
       handle.title = port === 'out' ? t('canvas.fromPort', { title: record.title }) : t('canvas.toPort', { title: record.title });
@@ -215,7 +236,7 @@ export function renderCanvas(container, project, {
       node.append(handle);
     });
     node.addEventListener('keydown', event => {
-      if (event.target.closest('.wc-port')) return;
+      if (event.target.closest('.wc-port,.wc-hide-record')) return;
       if (event.key === 'Enter') { event.preventDefault(); pendingFrom ? finishConnection(record.id) : selectRecord(record.id); }
       if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
         event.preventDefault(); event.stopPropagation();
@@ -242,7 +263,7 @@ export function renderCanvas(container, project, {
   });
   if (!visible.length) {
     const empty = element('div', 'wc-empty');
-    empty.append(element('h3', '', records.length ? t('graph.noMatches') : t('graph.emptyTitle')), element('p', '', records.length ? t('graph.changeFilters') : t('graph.emptyText')));
+    empty.append(element('h3', '', records.length ? t('graph.noMatches') : t('graph.emptyTitle')), element('p', '', hiddenIds.size && visible.length===0 ? t('canvas.hiddenHint') : records.length ? t('graph.changeFilters') : t('graph.emptyText')));
     surface.append(empty); minimap.hidden = true;
   }
   container.replaceChildren(surface);
@@ -445,7 +466,7 @@ export function renderCanvas(container, project, {
 
   function releaseCapture(event) { try { if (surface.hasPointerCapture(event.pointerId)) surface.releasePointerCapture(event.pointerId); } catch { /* The element can already have been removed by a callback. */ } }
   function pointerDown(event) {
-    if (event.target.closest('.wc-controls,.wc-overlay,.wc-edge-panel,.wc-minimap,.wc-hint,.wc-status')) return;
+    if (event.target.closest('.wc-controls,.wc-overlay,.wc-edge-panel,.wc-minimap,.wc-hint,.wc-status,.wc-hide-record,.wc-hidden-toggle')) return;
     if (event.button !== 0 && event.button !== 1) return;
     const point = localPoint(event); pointers.set(event.pointerId, point);
     if (event.pointerType === 'touch' && pointers.size === 2) {

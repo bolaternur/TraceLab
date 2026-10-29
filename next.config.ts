@@ -44,7 +44,7 @@ const nextConfig: NextConfig = {
     const assets = ["assets", "materials"];
     const files = ["astra.css", "astra.js", "astra-copy.js", "tracelab.css", "tracelab.js", "workspace.css", "workspace.js", "workspace-store.js", "workspace-views.css", "workspace-views.js", "workspace-shell.css", "workspace-canvas.css", "workspace-canvas.js", "workspace-astra.css", "workspace-server.js", "workspace-product-controls.js", "workspace-i18n.js", "product-entry.js", "workspace-measurements-template.csv"];
     return { beforeFiles: [
-      ...['workspace-team.js','workspace-team-copy.js','workspace-inbox.js','workspace-inbox-copy.js'].map(name=>({source:`/${name}`,destination:`/_presentation/${name}`})),
+      ...['workspace-team.js','workspace-team-copy.js','workspace-inbox.js','workspace-inbox-copy.js','workspace-chat.js','workspace-chat-copy.js','workspace-chat-model.js','workspace-chat-call.js','workspace-chat.css'].map(name=>({source:`/${name}`,destination:`/_presentation/${name}`})),
       {source:'/workspace-record-history.js',destination:'/_presentation/workspace-record-history.js'},
       ...["workspace-filters.js","workspace-sources.js","workspace-sources-copy.js"].map(name=>({source:`/${name}`,destination:`/_presentation/${name}`})),
       ...["workspace-media.js","workspace-media-copy.js","workspace-media-editor.js","workspace-media.css"].map(name=>({source:`/${name}`,destination:`/_presentation/${name}`})),

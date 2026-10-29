@@ -321,6 +321,11 @@ function normalizeProject(input) {
     allIds.add(item.id);
   }
   const recordIds = new Set(result.records.map(record => record.id));
+  if (own(input, 'hiddenRecordIds')) {
+    const hidden = limitedArray(input.hiddenRecordIds, 'Скрытые записи графа', LIMITS.records).map(id => identifier(id, 'Скрытая запись'));
+    if (new Set(hidden).size !== hidden.length || hidden.some(id => !recordIds.has(id))) fail('Список скрытых записей содержит повтор или отсутствующую запись.');
+    result.hiddenRecordIds = hidden;
+  }
   if (own(input, 'nodePositions')) result.nodePositions = normalizeNodePositions(input.nodePositions, recordIds);
   const endpoints = new Set();
   for (const link of result.links) {
@@ -740,6 +745,22 @@ export function createWorkspaceStore(options = {}) {
       const project = copy(getProject());
       if (!own(project, 'nodePositions')) return;
       delete project.nodePositions;
+      replaceProject(project);
+    },
+    hideRecord(id) {
+      identifier(id, 'Запись');
+      const project = mutableProject();
+      if (!project.records.some(record => record.id === id)) fail('Запись не найдена.');
+      if (project.hiddenRecordIds?.includes(id)) return;
+      project.hiddenRecordIds = [...(project.hiddenRecordIds || []), id];
+      replaceProject(project);
+    },
+    restoreRecord(id) {
+      identifier(id, 'Запись');
+      const project = mutableProject();
+      if (!project.records.some(record => record.id === id)) fail('Запись не найдена.');
+      if (!project.hiddenRecordIds?.includes(id)) return;
+      project.hiddenRecordIds = project.hiddenRecordIds.filter(hidden => hidden !== id);
       replaceProject(project);
     },
     addRecord(fields) {

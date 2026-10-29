@@ -14,7 +14,7 @@ const denied = () => new WorkspaceError("forbidden", 403, "Нет доступа
 const invalid = (message: string) => new WorkspaceError("invalid_fields", 422, message);
 const uuid = z.string().uuid();
 export const workspaceCommand = z.object({
-  command: z.enum(["createTeam","createInvite","joinInvite","selectTeam","createProject","addRecord","updateRecord","addLink","removeLink","setNodePosition","resetNodePositions","addStudyRow","addStudyRows","previewImport","importProject","triageSource"]),
+  command: z.enum(["createTeam","createInvite","joinInvite","selectTeam","createProject","addRecord","updateRecord","hideRecord","restoreRecord","addLink","removeLink","setNodePosition","resetNodePositions","addStudyRow","addStudyRows","previewImport","importProject","triageSource"]),
   projectId: uuid.optional(), teamId: uuid.optional(), expectedRevision: z.number().int().nonnegative().optional(),
   requestId: uuid, args: z.array(z.unknown()).max(3).default([]),
 }).strict();
@@ -410,6 +410,18 @@ export async function executeWorkspaceCommand(user: WorkspaceUser, raw: unknown,
             const existing=before.records.find(record=>record.id===id);
             if(!existing) throw invalid("Запись не найдена.");
             memory.updateRecord(id,{...values,author:existing.author});
+          } else if(input.command==="hideRecord" || input.command==="restoreRecord") {
+            const [id]=z.tuple([z.string().min(1).max(80)]).parse(args);
+            const record=before.records.find(item=>item.id===id);
+            const mapping=(await client.query<EntityRow>("SELECT * FROM workspace_entity_map WHERE project_id=$1 AND team_id=$2 AND local_id=$3 AND entity_type<>'relation'",[row.id,team.id,id])).rows[0];
+            if(!record || !mapping || (team.role!=="student_lead" && mapping.author_user_id!==user.id && mapping.imported_by!==user.id)) throw denied();
+            // Visibility is project state, never an edit or deletion of the authored
+            // source, its version chain, its links, or the attached private files.
+            if(input.command==="hideRecord")memory.hideRecord(id);else memory.restoreRecord(id);
+            const hidden=input.command==="hideRecord";
+            await client.query(`INSERT INTO audit_events(team_id,actor_user_id,action,entity_type,entity_id,metadata)
+              VALUES($1,$2,$3,'project',$4,$5)`,[team.id,user.id,hidden?"workspace.record.hidden":"workspace.record.restored",row.id,JSON.stringify({recordId:id,hidden})]);
+            result={recordId:id,hidden};
           } else if(input.command==="triageSource") {
             const triage=z.object({sourceId:uuid,status:z.enum(["inbox","linked","ignored"]),iterationId:z.string().min(1).max(80).optional(),relationType:z.enum(["DERIVED_FROM","REFERENCES"]).default("DERIVED_FROM")}).strict().parse(args[0]);
             const source=(await client.query<{id:string;local_id:string;status:string;iteration_id:string|null}>(`SELECT s.id,s.status,s.iteration_id,m.local_id

@@ -62,6 +62,22 @@ describe.skipIf(!configured)("private media — real PostgreSQL transactions and
     expect((await owner.query<{summary:string}>("SELECT summary FROM source_events WHERE id=$1",[sourceId])).rows[0].summary).toBe("Original student observation");
     await expect(owner.query("UPDATE artifacts SET sha256='changed' WHERE id=$1",[artifactId])).rejects.toMatchObject({code:"23514"});
   });
+  it("keeps private attachment bytes and their original record reference after hiding and restoring the graph source",async()=>{
+    const before=await state(),project=before.projects.find(item=>item.id===projectId)!;
+    const mediaBefore=await readWorkspaceMedia(a,artifactId,false,storage);
+    const map=(await owner.query<{local_id:string}>("SELECT local_id FROM workspace_entity_map WHERE entity_id=$1 AND project_id=$2",[sourceId,projectId])).rows[0];
+    const storedBefore=new Map([...files.entries()].map(([key,bytes])=>[key,Buffer.from(bytes)]));
+    const artifactBefore=(await owner.query("SELECT * FROM artifacts WHERE id=$1",[artifactId])).rows[0];
+    for(const command of ["hideRecord","restoreRecord"]){
+      const current=(await state()).projects.find(item=>item.id===projectId)!;
+      const changed=await executeWorkspaceCommand(a,{command,projectId,expectedRevision:current.serverRevision,requestId:randomUUID(),args:[map.local_id]});
+      const next=changed.projects.find(item=>item.id===projectId)!;
+      expect(next.records).toEqual(project.records);expect((next.hiddenRecordIds??[]).includes(map.local_id)).toBe(command==="hideRecord");
+      const file=await readWorkspaceMedia(a,artifactId,false,storage);
+      expect(file.bytes).toEqual(mediaBefore.bytes);expect(file.item.recordId).toBe(mediaBefore.item.recordId);
+      expect(files).toEqual(storedBefore);expect((await owner.query("SELECT * FROM artifacts WHERE id=$1",[artifactId])).rows[0]).toEqual(artifactBefore);
+    }
+  });
   it("rolls back source, snapshot, artifact and model writes after a later fault and cleans only staging bytes",async()=>{
     const before=await state(),size=files.size,values=input();
     await expect(uploadWorkspaceMedia(a,values,photo,{storage,afterCanonicalWrite:()=>{throw new Error("injected later failure");}})).rejects.toThrow("injected later failure");

@@ -1,5 +1,11 @@
 /** Interface copy only: record titles, bodies, author labels and units stay as authored. */
 const entries = {
+  'common.close': ['Закрыть', 'Close', 'Жабу'],
+  'canvas.hideRecord': ['Убрать из графа: {title}', 'Remove from graph: {title}', 'Графтан алып тастау: {title}'],
+  'canvas.hiddenCount': ['Скрытые: {count}', 'Hidden: {count}', 'Жасырылған: {count}'],
+  'canvas.hiddenTitle': ['Скрытые записи', 'Hidden records', 'Жасырылған жазбалар'],
+  'canvas.hiddenHint': ['История, файлы и связи сохранены. Запись можно вернуть.', 'History, files and connections are preserved. Restore a record at any time.', 'Тарих, файлдар және байланыстар сақталды. Жазбаны қайтара аласыз.'],
+  'canvas.restoreRecord': ['Вернуть', 'Restore', 'Қайтару'],
   'record.source': ['Материал', 'Source', 'Материал'],
   'record.iteration': ['Итерация', 'Iteration', 'Итерация'],
   'record.test': ['Испытание', 'Test', 'Сынақ'],

@@ -21,7 +21,7 @@ if(serverMode){
 let initialLocale=serverMode?store.serverContext.user.locale:'ru';
 try{initialLocale=localStorage.getItem('tracelab-locale')||initialLocale;}catch{}
 setWorkspaceLocale(['ru','en','kk'].includes(initialLocale)?initialLocale:'ru',serverMode?store.serverContext.team.timezone:Intl.DateTimeFormat().resolvedOptions().timeZone);
-const allowedViews=['graph','timeline','tests','history','study','gallery','models','sources','inbox'];
+const allowedViews=['graph','timeline','tests','history','study','gallery','models','sources','inbox','chat'];
 const searchParams=new URLSearchParams(location.search);
 let activeView=allowedViews.includes(searchParams.get('view'))?searchParams.get('view'):'graph';
 let selectedId=searchParams.get('record')||'DEC-01';
@@ -84,11 +84,19 @@ function renderInspector(project){
   inspector.innerHTML=`<div class="ws-record-id">${escape(recordType(record.kind))} · ${escape(record.id)}</div><h2>${escape(record.title)}</h2><p>${escape(record.body||shellT('inspector.noDescription'))}</p><dl><div><dt>${escape(shellT('record.author'))}</dt><dd>${escape(record.author||shellT('inspector.noAuthor'))}</dd></div><div><dt>${escape(shellT('inspector.date'))}</dt><dd>${escape(dateLabel(record.createdAt))}</dd></div>${record.revision?`<div><dt>${escape(shellT('inspector.version'))}</dt><dd>${escape(record.revision)}</dd></div>`:''}${result?`<div><dt>${escape(shellT('inspector.result'))}</dt><dd>${escape(result)}</dd></div>`:''}${Number.isFinite(record.measuredValue)?`<div><dt>${escape(shellT('inspector.measurement'))}</dt><dd>${escape(record.measuredValue)} ${escape(record.unit||shellT('inspector.noUnit'))}</dd></div>`:''}</dl>${record.conditions?`<h3>${escape(shellT('test.conditions'))}</h3><p>${escape(record.conditions)}</p>`:''}${record.criterion?`<h3>${escape(shellT('test.criterion'))}</h3><p>${escape(record.criterion)}</p>`:''}${why}<h3>${escape(shellT('inspector.related'))}</h3>${related.length?related.map(item=>`<button class="ws-related-button" type="button" data-select-record="${escape(item.record.id)}"><strong>${escape(item.record.title)}</strong><span>${escape(item.record.id)} · ${escape(item.link.label)}${item.link.status==='suggested'?' · '+escape(shellT('inspector.suggested')):''}</span></button>`).join(''):`<p>${escape(shellT('inspector.noLinks'))}</p>`}${project.dataKind!=='synthetic'?`<button class="ws-text-action ws-edit-record" type="button" data-edit-record="${escape(record.id)}">${escape(shellT('record.edit'))}</button><form id="ws-link-form"><h3>${escape(shellT('connection.add'))}</h3><label for="ws-link-target">${escape(shellT('connection.selectedTo'))}<select id="ws-link-target" name="to" required><option value="">${escape(shellT('inspector.choose'))}</option>${project.records.filter(item=>item.id!==record.id).map(item=>`<option value="${escape(item.id)}">${escape(item.title)} · ${escape(recordType(item.kind))}</option>`).join('')}</select></label><label for="ws-link-label">${escape(shellT('connection.what'))}<input id="ws-link-label" name="label" maxlength="160" required value="${escape(shellT('connection.supports'))}"></label><button class="button light-outline" type="submit">${escape(shellT('connection.save'))}</button></form>`:''}`;
   if(notes)inspector.insertAdjacentHTML('beforeend',notes);
   appendRecordHistory(inspector,record);
+  if(canManageGraphRecord(record.id)){
+    const hidden=project.hiddenRecordIds?.includes(record.id),action=document.createElement('button');
+    action.type='button';action.className='ws-text-action';action.textContent=shellT(hidden?'record.restoreGraph':'record.hideGraph');
+    action.addEventListener('click',()=>guarded(()=>hidden?restoreGraphRecord(record.id):hideGraphRecord(record.id)));inspector.append(action);
+  }
   if(serverMode)appendConflictingDrafts(inspector,store.serverContext.conflictDrafts?.filter(item=>item.projectId===project.id&&item.recordId===record.id),draft=>guarded(()=>openRecord(record.id,draft.record)));
   if(serverMode&&!store.serverContext.editableRecordIds?.[project.id]?.includes(record.id))inspector.querySelector('[data-edit-record]')?.remove();
   if(serverMode&&!['student','student_lead'].includes(store.serverContext.role))inspector.querySelector('#ws-link-form')?.remove();
   inspector.querySelector('#ws-link-form')?.addEventListener('submit',event=>{event.preventDefault();const fields=new FormData(event.target);guarded(async()=>{await store.addLink({from:record.id,to:String(fields.get('to')),label:String(fields.get('label')),status:'accepted',origin:'local'});feedback(shellT('feedback.linkSaved'));});});
 }
+function canManageGraphRecord(id){return !serverMode || store.serverContext.role==='student_lead' || (store.serverContext.role==='student' && store.serverContext.editableRecordIds?.[store.getProject().id]?.includes(id));}
+async function hideGraphRecord(id){if(!await personalProject())return;await store.hideRecord(id);selectedId=null;render();feedback(shellT('feedback.recordHidden'));}
+async function restoreGraphRecord(id){await store.restoreRecord(id);render();feedback(shellT('feedback.recordRestored'));}
 function renderHistory(project){
   const direction=readHistoryFilters(new URLSearchParams(location.search)).order==='oldest'?1:-1;
   const records=filteredRecords(project).sort((left,right)=>direction*(new Date(left.createdAt)-new Date(right.createdAt)));
@@ -131,14 +139,14 @@ function render(){
   $('#ws-timeline-actions').hidden=activeView!=='timeline';
   $('#ws-study-actions').hidden=activeView!=='study';
   $('#ws-connect').hidden=activeView!=='graph'&&activeView!=='history';
-  const standalone=['study','gallery','models','sources','inbox'].includes(activeView);
-  $('.ws-tools').hidden=['gallery','models','sources','inbox'].includes(activeView);
+  const standalone=['study','gallery','models','sources','inbox','chat'].includes(activeView);
+  $('.ws-tools').hidden=['gallery','models','sources','inbox','chat'].includes(activeView);
   $('#ws-toggle-inspector').hidden=standalone;
   $('.ws-search-label').hidden=activeView==='tests'||standalone;
   $('#ws-kind').closest('label').hidden=activeView==='tests'||standalone;
   $('.ws-workarea').dataset.wide=String(standalone);
   const options={selectedId,query:$('#ws-search').value.trim(),kind:$('#ws-kind').value,onSelect:selectRecord};
-  if(activeView==='graph')cleanup=renderCanvas($('#ws-view'),project,{...options,onConnect:pair=>guarded(()=>openConnection(pair)),onMove:(id,position)=>guarded(()=>preserveCanvasFocus(()=>store.setNodePosition(id,position))),onResetLayout:()=>guarded(()=>preserveCanvasFocus(()=>store.resetNodePositions())),onRemoveLink:id=>guarded(async()=>{await personalProject();await store.removeLink(id);feedback(shellT('feedback.linkRemoved'));}),onError:message=>feedback(message,true)})||(()=>{});
+  if(activeView==='graph')cleanup=renderCanvas($('#ws-view'),project,{...options,onConnect:pair=>guarded(()=>openConnection(pair)),onMove:(id,position)=>guarded(()=>preserveCanvasFocus(()=>store.setNodePosition(id,position))),onResetLayout:()=>guarded(()=>preserveCanvasFocus(()=>store.resetNodePositions())),onHideRecord:id=>guarded(()=>hideGraphRecord(id)),onRestoreRecord:id=>guarded(()=>restoreGraphRecord(id)),canHideRecord:canManageGraphRecord,onRemoveLink:id=>guarded(async()=>{await personalProject();await store.removeLink(id);feedback(shellT('feedback.linkRemoved'));}),onError:message=>feedback(message,true)})||(()=>{});
   else if(activeView==='timeline')cleanup=renderTimeline($('#ws-view'),historyProject,{...options,order:historyState.order})||(()=>{});
   else if(activeView==='tests')cleanup=renderTestChart($('#ws-view'),project,{onSelect:selectRecord})||(()=>{});
   else if(activeView==='study')cleanup=renderStudyChart($('#ws-view'),project)||(()=>{});
@@ -150,6 +158,10 @@ function render(){
   }else if(activeView==='sources'){
     const target=$('#ws-view');target.innerHTML=`<div class="ws-empty" role="status">${escape(shellT('common.loading'))}</div>`;let cancelled=false;cleanup=()=>{cancelled=true;};
     if(serverMode)import('./workspace-sources.js').then(({mountWorkspaceSources})=>{if(cancelled)return;const dispose=mountWorkspaceSources(target,{teamId:store.serverContext.team.id,projectId:project.id,role:store.serverContext.role,onChanged:()=>store.refresh()});cleanup=typeof dispose==='function'?dispose:()=>{cancelled=true;};}).catch(error=>{if(!cancelled)target.textContent=workspaceErrorText(error);});
+    else target.innerHTML=`<div class="ws-empty"><p>${escape(shellT('media.signinHint'))}</p><a href="/auth?mode=signin">${escape(shellT('common.signin'))}</a></div>`;
+  }else if(activeView==='chat'){
+    const target=$('#ws-view');target.innerHTML=`<div class="ws-empty" role="status">${escape(shellT('common.loading'))}</div>`;let cancelled=false;cleanup=()=>{cancelled=true;};
+    if(serverMode)import('./workspace-chat.js').then(({mountWorkspaceChat})=>{if(cancelled)return;const dispose=mountWorkspaceChat(target,{teamId:store.serverContext.team.id,teamName:store.serverContext.team.name,userId:store.serverContext.user.id});cleanup=()=>{cancelled=true;dispose?.();};}).catch(error=>{if(!cancelled)target.textContent=workspaceErrorText(error);});
     else target.innerHTML=`<div class="ws-empty"><p>${escape(shellT('media.signinHint'))}</p><a href="/auth?mode=signin">${escape(shellT('common.signin'))}</a></div>`;
   }else if(activeView==='inbox'){
     const target=$('#ws-view');target.innerHTML=`<div class="ws-empty" role="status">${escape(shellT('common.loading'))}</div>`;let cancelled=false;cleanup=()=>{cancelled=true;};
@@ -259,7 +271,7 @@ if(host){
   setInspectorWidth(inspectorWidth);setInspector(inspectorOpen);render();
   if(serverMode){
     let checking=false,pointerActive=false,lastInteraction=0;
-    const idle=()=>!document.hidden&&navigator.onLine&&!pointerActive&&!replayTimer&&Date.now()-lastInteraction>1000&&
+    const idle=()=>activeView!=='chat'&&!document.hidden&&navigator.onLine&&!pointerActive&&!replayTimer&&Date.now()-lastInteraction>1000&&
       !document.querySelector('dialog[open]')&&!document.activeElement?.matches('input,textarea,select,[contenteditable="true"]');
     async function refreshTeam(){
       if(checking||!idle())return;checking=true;
