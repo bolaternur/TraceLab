@@ -189,7 +189,7 @@ test('graph and timeline actions keep visitors on their current local workspace 
       const parameters = new URL(href, 'https://tracelab-test.invalid').searchParams;
       assert.equal(parameters.has('record'), false, 'marketing actions must not select a visitor record');
       assert.equal(parameters.has('project'), false, 'marketing actions must not switch a visitor project');
-      assert.notEqual(parameters.get('view'), 'models', 'the static workspace has no models route');
+      if(parameters.has('view'))assert.ok(['graph','timeline','tests','history','study','gallery','models','sources','inbox','chat'].includes(parameters.get('view')), 'navigation must choose a supported workspace view');
     }
   }
 });
@@ -201,6 +201,20 @@ test('Astra assets exist and marketing pages load the new stylesheet and interac
       if (route === 'workspace') continue;
       assert.ok(attributes(html, 'href').some(value => value.split('?')[0] === `${build.base}/astra.css`), `${route}: new stylesheet is connected`);
       assert.ok(attributes(html, 'src').some(value => value.split('?')[0] === `${build.base}/astra.js`), `${route}: language and interaction module is connected`);
+    }
+  }
+});
+
+test('motion components publish local assets and complete destinations under localhost and Pages base paths',async()=>{
+  const files=['astra-dots.js','astra-dots.css','astra-navigation.js','astra-navigation.css','astra-effects.js','astra-effects.css','workspace-navigation.js','workspace-navigation.css'];
+  for(const build of builds){
+    for(const file of files){const source=await readFile(path.join(build.directory,file),'utf8');assert.ok(source.length>0,`${file}: asset is published`);if(file.endsWith('.js'))assert.doesNotMatch(source, /\b(?:from\s*|import\s*\()["']https?:/,'components execute locally without remote imports');}
+    for(const [route,html] of build.html){if(route==='workspace'){assert.doesNotMatch(html,/\bdata-dot-field(?:\s|>|=)/,'working views keep their own functional canvas');continue;}
+      for(const stylesheet of ['astra-navigation.css','astra-dots.css','astra-effects.css'])assert.ok(attributes(html,'href').some(reference=>reference.split('?')[0]===`${build.base}/${stylesheet}`),`${route}: ${stylesheet} is connected`);
+      const trigger=[...html.matchAll(/<button\b[^>]*>/g)].map(match=>match[0]).find(tag=>attributes(tag,'aria-controls')[0]==='astra-navigation');assert.ok(trigger,`${route}: menu trigger points to native dialog`);assert.equal(attributes(trigger,'aria-haspopup')[0],'dialog');
+      assert.match(html,/<dialog\b[^>]*id="astra-navigation"[^>]*aria-labelledby="astra-navigation-title"/,`${route}: menu is a named modal dialog`);
+      const hrefs=attributes(html,'href');for(const view of ['graph','timeline','tests','history','gallery','models','chat'])assert.ok(hrefs.includes(`${build.base}/workspace/?view=${view}`),`${route}: ${view} destination is available`);
+      assert.match(html,/class="a-dot-field"\s+data-dot-field\s+aria-hidden="true"/,`${route}: decoration stays out of the accessibility tree`);
     }
   }
 });

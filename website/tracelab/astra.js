@@ -1,4 +1,7 @@
 import { copy } from './astra-copy.js';
+import {mountOverlayNavigation} from './astra-navigation.js';
+import {mountDotFields} from './astra-dots.js';
+import {mountEvidenceEffects} from './astra-effects.js';
 
 const storageKey = 'tracelab-locale';
 const records = [
@@ -10,6 +13,7 @@ let locale = 'ru';
 try { const saved = localStorage.getItem(storageKey); if (Object.hasOwn(copy, saved)) locale = saved; } catch {}
 const state = { tab: 'graph', filter: 'all', selected: 'prototype' };
 const tr = key => copy[locale][key] ?? copy.ru[key] ?? key;
+const navigation=mountOverlayNavigation({dialog:document.querySelector('#astra-navigation'),trigger:document.querySelector('[data-menu]'),localeText:tr});
 const date = value => {
   const parsed = new Date(value);
   // Some embedded Chromium builds lack Kazakh month names in their ICU data.
@@ -40,13 +44,6 @@ function renderRecords() {
   document.querySelectorAll('[data-filter]').forEach(el => el.setAttribute('aria-pressed',String(el.dataset.filter === state.filter)));
   updateDetails();
 }
-function setMenu(open) {
-  const header = document.querySelector('.a-header');
-  header?.classList.toggle('is-open',open);
-  const menu = document.querySelector('[data-menu]');
-  menu?.setAttribute('aria-expanded',String(open));
-  if (menu) menu.textContent = tr(open ? 'menuClose' : 'menuOpen');
-}
 function applyLocale(next, persist = false) {
   if (!Object.hasOwn(copy,next)) return;
   locale = next;
@@ -56,7 +53,7 @@ function applyLocale(next, persist = false) {
   document.querySelectorAll('[data-locale]').forEach(el => el.setAttribute('aria-pressed',String(el.dataset.locale === locale)));
   document.title = `${tr(document.body.dataset.titleKey)} — Iznera`;
   document.querySelector('meta[name="description"]')?.setAttribute('content',tr(document.body.dataset.descriptionKey));
-  setMenu(document.querySelector('.a-header')?.classList.contains('is-open') || false);
+  navigation.refreshLabels();
   renderRecords();
   if (persist) { try { localStorage.setItem(storageKey,locale); } catch {} }
 }
@@ -74,8 +71,6 @@ function selectTab(tab, focus = false) {
 document.addEventListener('click', event => {
   const localeButton = event.target.closest('[data-locale]');
   if (localeButton) { applyLocale(localeButton.dataset.locale,true); return; }
-  if (event.target.closest('[data-menu]')) { setMenu(document.querySelector('[data-menu]').getAttribute('aria-expanded') !== 'true'); return; }
-  if (event.target.closest('.a-nav-main a')) setMenu(false);
   const tab = event.target.closest('[data-tab]');
   if (tab) { selectTab(tab.dataset.tab); return; }
   const record = event.target.closest('[data-record]');
@@ -85,7 +80,6 @@ document.addEventListener('click', event => {
   if (event.target.closest('[data-reset]')) { state.filter='all'; state.selected='prototype'; renderRecords(); }
 });
 document.addEventListener('keydown', event => {
-  if (event.key === 'Escape' && document.querySelector('.a-header')?.classList.contains('is-open')) { setMenu(false); document.querySelector('[data-menu]')?.focus(); }
   const tab = event.target.closest('[data-tab]');
   if (!tab || !['ArrowRight','ArrowLeft','Home','End'].includes(event.key)) return;
   event.preventDefault();
@@ -96,3 +90,8 @@ document.addEventListener('keydown', event => {
 });
 window.addEventListener('storage', event => { if (event.key === storageKey && Object.hasOwn(copy,event.newValue)) applyLocale(event.newValue); });
 applyLocale(locale);
+let disposeMotion=null;
+function mountMotion(){if(disposeMotion)return;const dots=mountDotFields(),effects=mountEvidenceEffects();disposeMotion=()=>{dots();effects();};}
+mountMotion();
+window.addEventListener('pagehide',()=>{navigation.close({immediate:true,restoreFocus:false});disposeMotion?.();disposeMotion=null;});
+window.addEventListener('pageshow',()=>mountMotion());

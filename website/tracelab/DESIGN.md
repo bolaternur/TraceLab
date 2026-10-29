@@ -314,3 +314,13 @@ Replay advances every three seconds and can be stopped; changing the stage or in
 - **Don't** replace the approved Powder visual world while adapting this presentation.
 - **Don't** add pricing grids, invented testimonials, unsupported metrics or unrelated SaaS forms to this scoped site.
 - **Don't** disguise synthetic example measurements as research results.
+
+## Motion components — 29 October 2026
+
+The current Astra presentation keeps its dark neutral surfaces, local Inter, transparent Iznera wordmark and authored content. The supplied Framer Interactive Pattern and Motion Overlay Menu are the interaction references for this refinement. Coral `#fa5b47` is a restrained signal color; primary actions remain warm white. Do not introduce decorative sequence numbers or claims from the source template.
+
+The presentation hero and page introductions have a quiet, pointer-responsive dot field with negative space around the text. The field has at most 700 points (200 on compact layouts), a pixel ratio cap of 1.5, and no idle animation loop. Offscreen, hidden, coarse-pointer and reduced-motion states pause movement. Dots stay outside private work views.
+
+The site header opens a full-screen native dialog with large destination links, RU/EN/KK and workspace shortcuts. Its close bar stays available while the contents scroll. The workspace's Sections button opens the same visual language with all ten actual views and their purpose. Selecting a work view preserves the active team/project and uses the existing view controls. Keyboard focus returns on dismissal; reduced motion uses a short opacity change.
+
+The demonstration graph emits one brief coral beam when a record is selected. Hover spotlights are bounded to presentation surfaces and are updated at most once per frame. No effect changes evidence, measurements, roles, account behavior or saved engineering data. Public reference and license details are in `docs/FRAMER_COMPONENTS.md`.

@@ -7,6 +7,7 @@ import { setWorkspaceLocale, getWorkspaceLocale, formatDate, formatNumber, forma
 import { createOutbox, setOfflineContext } from './workspace-outbox.js';
 import { applyWorkspaceShellLocale, shellT, workspaceErrorText } from './workspace-shell-i18n.js';
 import {mountHistoryFilters,readHistoryFilters,filterHistoryRecords} from './workspace-filters.js';
+import {mountWorkspaceNavigation} from './workspace-navigation.js';
 import {appendRecordHistory,appendConflictingDrafts} from './workspace-record-history.js';
 
 const host=document.querySelector('[data-workspace]');
@@ -32,6 +33,7 @@ let inspectorOpen=false;
 let inspectorWidth=360;
 let connectionOrigin=null;
 let historyFilters;
+let workspaceNavigation=null;
 try{const panels=JSON.parse(localStorage.getItem('tracelab.workspace.panels.v1')||'{}');inspectorOpen=panels.open===true&&innerWidth>800;inspectorWidth=Math.max(280,Math.min(520,Number(panels.width)||360));}catch{/* Browser storage may be unavailable. */}
 const $=selector=>document.querySelector(selector);
 const escape=value=>String(value??'').replace(/[&<>"']/g,character=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
@@ -209,7 +211,8 @@ function parseCsv(text){
 }
 
 if(host){
-  mountProductControls({store,localStore,serverMode,onLocale:render,onError:error=>feedback(workspaceErrorText(error),true),onImport:()=>{selectedId=null;render();}});
+  mountProductControls({store,localStore,serverMode,onLocale:()=>{render();workspaceNavigation?.refresh();},onError:error=>feedback(workspaceErrorText(error),true),onImport:()=>{selectedId=null;render();}});
+  workspaceNavigation=mountWorkspaceNavigation({onSelect:view=>switchView(view,true)});
   historyFilters=mountHistoryFilters($('.ws-tools'),()=>{stopReplay();render();});
   if(serverMode){await setOfflineContext(offlineContext()).catch(()=>feedback(shellT('error.offlineStorage'),true));addEventListener('online',syncOutbox);syncOutbox();if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});}
   const requestedProject=searchParams.get('project');
