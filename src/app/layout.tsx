@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import "./globals.css";
 import "./fieldnotes.css";
 import "./unified-ui.css";
+import "../../website/tracelab/theme-system.css";
+import { themeBootstrap } from "../../website/tracelab/theme-bootstrap.js";
 import localFont from "next/font/local";
 import { brand } from "@/lib/brand";
 import { isLocale } from "@/lib/i18n";
@@ -36,8 +38,10 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const jar = await cookies();
   const lang = jar.get("pt_lang")?.value;
+  const nonce = (await headers()).get('x-iznera-nonce') || undefined;
   return (
-    <html lang={isLocale(lang) ? lang : "en"} className={`${plexSans.variable} ${plexMono.variable}`}>
+    <html lang={isLocale(lang) ? lang : "en"} className={`${plexSans.variable} ${plexMono.variable}`} suppressHydrationWarning>
+      <head><script nonce={nonce} dangerouslySetInnerHTML={{ __html: themeBootstrap }} /></head>
       <body className="bg-canvas text-ink antialiased">
         <a href="#main" className="skip-link">
           {lang === "ru" ? "Перейти к содержимому" : lang === "kk" ? "Мазмұнға өту" : "Skip to content"}

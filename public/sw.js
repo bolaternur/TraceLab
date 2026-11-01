@@ -1,7 +1,7 @@
 /* Cache only the public offline capture shell. Next manages its own build assets;
    development chunk URLs are reused and must never be served cache-first here. */
-const CACHE = "iznera-public-v7";
-const SHELL = ["/offline-capture.html", "/offline-capture.css", "/offline-capture.js", "/workspace-outbox.js", "/manifest.webmanifest", "/brand/iznera-logo.png", "/brand/iznera-mark.svg", "/assets/iznera-logo.png", "/assets/iznera-mark.svg"];
+const CACHE = "iznera-public-v9";
+const SHELL = ["/theme-bootstrap.js","/theme-toggle.js","/theme-system.css","/theme-public.css","/theme-workspace.css","/theme-account.css","/offline-account.css","/workspace-offline-account.js","/workspace-outbox-backup.js","/offline-capture.html", "/offline-capture.css", "/offline-capture.js", "/workspace-outbox.js", "/manifest.webmanifest", "/brand/iznera-logo.png", "/brand/iznera-mark.svg", "/assets/iznera-logo.png", "/assets/iznera-mark.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL).catch(() => undefined)).then(() => self.skipWaiting()));
@@ -20,7 +20,7 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(fetch(req).then(response=>{
       if(response.ok){const copy=response.clone();event.waitUntil(caches.open(CACHE).then(cache=>cache.put(req,copy)).catch(()=>undefined));}
       return response;
-    }).catch(async()=>await caches.match(req)||Response.error()));
+    }).catch(async()=>await caches.match(req,{ignoreSearch:true})||Response.error()));
     return;
   }
   // Authenticated pages, auth flows and APIs may contain user/team data and are never cached.
@@ -37,7 +37,8 @@ self.addEventListener("message", (event) => {
   if (event.data === "sync-outbox") self.clients.matchAll().then((cs) => cs.forEach((c) => c.postMessage("sync-outbox")));
   if (event.data === "clear-private-data") {
     event.waitUntil(
-      caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key)))),
+      // This cache contains public scripts/styles only. Keeping it makes offline capture reopenable after the next sign-in.
+      caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key)))),
     );
   }
 });

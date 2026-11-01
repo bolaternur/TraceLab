@@ -90,8 +90,9 @@ export async function authenticateAccount(raw: unknown, ctx: AccountContext) {
   if (!user || !valid || !user.verified_at) throw new AccountError("invalid_credentials", 401);
   const locale = input.locale ?? user.locale;
   if (locale !== user.locale) await pool.query("UPDATE users SET locale=$1 WHERE id=$2", [locale, user.id]);
+  const lifecycle = await pool.query<{ open: boolean }>("SELECT public.workspace_lifecycle_account_open($1) AS open", [user.id]);
   const memberships = await pool.query("SELECT id FROM team_memberships WHERE user_id=$1 AND status='active' LIMIT 1", [user.id]);
-  const next = input.next.startsWith("/join/") || memberships.rowCount ? input.next : `/onboarding?next=${encodeURIComponent(input.next)}`;
+  const next = !lifecycle.rows[0]?.open ? "/account" : input.next.startsWith("/join/") || memberships.rowCount ? input.next : `/onboarding?next=${encodeURIComponent(input.next)}`;
   return { user: { id: user.id, displayName: user.display_name, locale }, next, credentialHash: user.password_hash };
 }
 

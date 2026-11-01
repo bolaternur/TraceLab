@@ -4,17 +4,20 @@ import { fileURLToPath } from 'node:url';
 import { workspaceContent } from './workspace-surface.mjs';
 import { createHash } from 'node:crypto';
 import { astraPages } from './astra-pages.mjs';
+import {themeBootstrap} from './theme-bootstrap.js';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const assetFiles = ['tracelab.css', 'tracelab.js', 'workspace.css', 'workspace.js', 'workspace-server.js', 'workspace-product-controls.js', 'workspace-i18n.js', 'workspace-views.css', 'workspace-views.js', 'workspace-store.js', 'workspace-shell.css', 'workspace-canvas.css', 'workspace-canvas.js', 'workspace-astra.css', 'astra.css', 'astra.js', 'astra-copy.js'];
-assetFiles.push('workspace-outbox.js');
-assetFiles.push('workspace-report.js');
+assetFiles.push('workspace-timeline-media.js','workspace-handoff.js','workspace-handoff-model.js','workspace-handoff-copy.js','workspace-handoff.css','workspace-command.js','workspace-outbox.js','workspace-media-upload.js',"workspace-offline-account.js","workspace-outbox-backup.js","offline-account.css","workspace-report-model.js","workspace-report-composer.css","workspace-inbox-model.js","workspace-inbox.css");
+assetFiles.push('workspace-report.js','workspace-core.js','workspace-core.css','workspace-iterations.js','workspace-iterations-copy.js','workspace-iterations-model.js','workspace-iterations.css');
 assetFiles.push('workspace-shell-i18n.js');
 assetFiles.push('workspace-media.js','workspace-media-copy.js','workspace-media-editor.js','workspace-media.css');
 assetFiles.push('workspace-filters.js','workspace-sources.js','workspace-sources-copy.js');
 assetFiles.push('workspace-record-history.js','workspace-inbox.js','workspace-inbox-copy.js');
 assetFiles.push('workspace-team.js','workspace-team-copy.js');
 assetFiles.push('workspace-chat.js','workspace-chat-copy.js','workspace-chat-model.js','workspace-chat-call.js','workspace-chat.css');
-assetFiles.push('astra-dots.js','astra-dots.css','astra-navigation.js','astra-navigation.css','astra-effects.js','astra-effects.css','workspace-navigation.js','workspace-navigation.css');
+assetFiles.push('astra-dots.js','astra-dots.css','astra-navigation.js','astra-navigation.css','astra-effects.js','astra-effects.css','workspace-sidebar.js','workspace-sidebar.css');
+assetFiles.push('language-switcher.js','language-switcher.css');
+assetFiles.push('theme-bootstrap.js','theme-toggle.js','theme-system.css','theme-public.css','theme-workspace.css','theme-account.css');
 const fingerprint = createHash('sha256');
 for (const name of [...assetFiles, 'build.mjs', 'workspace-surface.mjs', 'astra-pages.mjs']) fingerprint.update(await readFile(path.join(here, name)));
 const revision = fingerprint.digest('hex').slice(0, 12);
@@ -31,10 +34,10 @@ function navigation(active = '') {
 }
 const footer = `<footer class="site-footer"><div class="container footer-top">${brand}<div class="footer-links"><a href="/demo">Учебный пример</a><a href="/research">Методика</a><a href="/materials">Материалы проекта</a></div></div><div class="container footer-bottom"><span>Iznera · Сохраняйте ход инженерной мысли.</span><span>Демонстрационный MVP</span></div></footer>`;
 function page(title, description, content, active = '') {
-  const workspaceAssets = active === 'workspace' ? '<link rel="stylesheet" href="/workspace-views.css"><link rel="stylesheet" href="/workspace-canvas.css"><link rel="stylesheet" href="/workspace-shell.css"><link rel="stylesheet" href="/workspace-media.css"><link rel="stylesheet" href="/workspace-chat.css"><link rel="stylesheet" href="/astra-navigation.css"><link rel="stylesheet" href="/workspace-navigation.css"><link rel="stylesheet" href="/workspace-astra.css"><script type="module" src="/workspace.js"></script>' : '';
+  const workspaceAssets = active === 'workspace' ? '<link rel="stylesheet" href="/workspace-views.css"><link rel="stylesheet" href="/workspace-canvas.css"><link rel="stylesheet" href="/workspace-shell.css"><link rel="stylesheet" href="/workspace-media.css"><link rel="stylesheet" href="/workspace-inbox.css"><link rel="stylesheet" href="/workspace-report-composer.css"><link rel="stylesheet" href="/workspace-chat.css"><link rel="stylesheet" href="/language-switcher.css"><link rel="stylesheet" href="/workspace-iterations.css"><link rel="stylesheet" href="/workspace-core.css"><link rel="stylesheet" href="/workspace-handoff.css"><link rel="stylesheet" href="/workspace-astra.css"><link rel="stylesheet" href="/workspace-sidebar.css"><script type="module" src="/workspace.js"></script>' : '';
   const header = active === 'workspace' ? '' : navigation(active);
   const pageFooter = active === 'workspace' ? '' : footer;
-  return `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080909"><meta name="robots" content="noindex,nofollow"><title>${title} — Iznera</title><meta name="description" content="${description}"><link rel="icon" href="/assets/iznera-mark.svg" type="image/svg+xml"><link rel="preload" href="/assets/inter-cyrillic.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/tracelab.css"><link rel="stylesheet" href="/workspace.css"><script src="/tracelab.js" defer></script>${workspaceAssets}</head><body class="${active === "workspace" ? "workspace-page" : "presentation-page"}"><a class="skip-link" href="#main">К содержимому</a>${header}<main id="main">${content}</main>${pageFooter}</body></html>`;
+  return `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080909"><script>${themeBootstrap}</script><meta name="robots" content="noindex,nofollow"><title>${title} — Iznera</title><meta name="description" content="${description}"><link rel="icon" href="/assets/iznera-mark.svg" type="image/svg+xml"><link rel="preload" href="/assets/inter-cyrillic.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/tracelab.css"><link rel="stylesheet" href="/workspace.css"><script src="/tracelab.js" defer></script>${workspaceAssets}<link rel="stylesheet" href="/theme-system.css"></head><body class="${active === "workspace" ? "workspace-page" : "presentation-page"}"><a class="skip-link" href="#main" data-ws-key="shell.skip">К содержимому</a>${header}<main id="main">${content}</main>${pageFooter}</body></html>`;
 }
 function traceWidget(compact = false) {
   return `<section class="trace-widget ${compact ? 'trace-compact' : ''}" aria-label="Интерактивный учебный пример" data-trace>
@@ -90,6 +93,8 @@ for (const [route, entry] of Object.entries(astraPages)) {
   await mkdir(directory, { recursive: true });
   await writeFile(path.join(directory, 'index.html'), versionAssets(prefix(entry.html)));
 }
+await mkdir(path.join(dist,'demo','workspace'),{recursive:true});
+await writeFile(path.join(dist,'demo','workspace','index.html'),versionAssets(prefix(page('Учебный проект','Изолированный пример с вымышленными данными.',workspaceContent,'workspace'))));
 await writeFile(path.join(dist, '404.html'), versionAssets(prefix(astraPages['/404'].html)));
 const docs = [
   ['README.md', 'project-overview.md'],

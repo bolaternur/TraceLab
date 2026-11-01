@@ -1,0 +1,104 @@
+/* Milk palette for the existing Iznera presentation. Geometry and type stay shared. */
+html[data-theme="milk"] .astra-page {
+  --a-bg:#f7f6f3;
+  --a-surface:#fff;
+  --a-raised:#eeebe4;
+  --a-ink:#242228;
+  --a-muted:#635f68;
+  --a-subtle:#746f78;
+  --a-border:#d6d1c8;
+  --a-accent:#ad3b2e;
+  --a-signal:#ad3b2e;
+  background:#f7f6f3;
+  color:#242228;
+  color-scheme:light;
+  caret-color:#ad3b2e;
+}
+html[data-theme="milk"] .astra-page ::selection { background:#f7dfd7; color:#9b3025; }
+html[data-theme="milk"] .astra-page :is(button,a,summary,input,select,textarea,[tabindex]):focus-visible { outline-color:#ad3b2e; }
+html[data-theme="milk"] .astra-page :is(.a-hero>p,.a-hero .a-lede,.a-eyebrow,.a-note,.a-meta,.a-empty,.a-hero .a-note,.a-graph-caption,.a-shortcuts,.a-footer-links,.a-footer small,.a-footer-bottom) { color:#635f68; }
+html[data-theme="milk"] .astra-page :is(h1,h2,h3,h4,.a-empty h3) { color:#242228; }
+html[data-theme="milk"] .astra-page .a-hero::before {
+  background-image:radial-gradient(circle,#8a7c6e35 0 .65px,transparent 1px),radial-gradient(circle,#8a7c6e26 0 .65px,transparent 1px),radial-gradient(ellipse at 50% 28%,#e6dbca55,transparent 58%);
+}
+
+html[data-theme="milk"] .astra-page .a-header .a-nav-shell { background:#fffefbef; border-color:#d6d1c8; box-shadow:0 12px 28px #4635260c; }
+html[data-theme="milk"] .astra-page .a-header .a-nav-main { background:transparent; }
+html[data-theme="milk"] .astra-page .a-nav-links a { color:#45413c; }
+html[data-theme="milk"] .astra-page .a-nav-links a:is(:hover,[aria-current="page"]) { color:#ad3b2e; }
+html[data-theme="milk"] .astra-page .a-header .a-menu-toggle { background:#f0ede7; border-color:#948c82; color:#242228; }
+html[data-theme="milk"] .astra-page .a-header .a-menu-toggle:hover { background:#eae5dd; border-color:#746f78; }
+html[data-theme="milk"] .astra-page .a-button.primary { background:#b94132; border-color:#b94132; color:#fff; }
+html[data-theme="milk"] .astra-page .a-button.primary:hover { background:#a63529; border-color:#a63529; color:#fff; }
+html[data-theme="milk"] .astra-page .a-button.primary:active { background:#942e23; border-color:#942e23; }
+html[data-theme="milk"] .astra-page .a-button.secondary { background:#fff; border-color:#948c82; color:#242228; }
+html[data-theme="milk"] .astra-page .a-button.secondary:hover { background:#eae5dd; border-color:#746f78; }
+html[data-theme="milk"] .astra-page .a-button.text { color:#45413c; }
+html[data-theme="milk"] .astra-page .a-button.text:hover { color:#ad3b2e; }
+
+html[data-theme="milk"] .astra-page .a-demo-surface { background:#fff; border-color:#d6d1c8; box-shadow:0 20px 65px #4635260a; }
+html[data-theme="milk"] .astra-page .a-demo-topline { color:#635f68; }
+html[data-theme="milk"] .astra-page .a-demo-topline strong { color:#242228; }
+html[data-theme="milk"] .astra-page .a-tabs button { color:#635f68; }
+html[data-theme="milk"] .astra-page .a-tabs button:hover { background:#eae5dd; color:#242228; }
+html[data-theme="milk"] .astra-page .a-tabs button[aria-selected="true"] { background:#f7dfd7; border-color:#e6c4b7; color:#9b3025; }
+html[data-theme="milk"] .astra-page .a-graph { background-color:#fcfbf8; background-image:radial-gradient(#b7aa9a70 .7px,transparent .8px); }
+html[data-theme="milk"] .astra-page .a-graph>svg { stroke:#94877b; }
+html[data-theme="milk"] .astra-page .a-graph>svg :is(path,line,polyline) { stroke:#94877b; }
+html[data-theme="milk"] .astra-page .a-graph>svg marker path { fill:#746f78; stroke:none; }
+html[data-theme="milk"] .astra-page .a-graph>svg text { fill:#635f68; }
+html[data-theme="milk"] .astra-page .a-graph>svg path.a-evidence-beam { stroke:#ad3b2e; }
+html[data-theme="milk"] .astra-page .a-node { background:#fff; border-color:#948c82; color:#242228; box-shadow:0 5px 16px #4635260d; }
+html[data-theme="milk"] .astra-page .a-node :is(span,small) { color:#635f68; }
+html[data-theme="milk"] .astra-page .a-node strong span { color:inherit; }
+html[data-theme="milk"] .astra-page .a-node:hover { background:#f0ede7; border-color:#746f78; }
+html[data-theme="milk"] .astra-page .a-node:is(.is-selected,[aria-pressed="true"],[aria-current="true"],[data-active="true"]) { border-color:#ad3b2e; background:#f7dfd7; box-shadow:0 8px 24px #46352612; }
+html[data-theme="milk"] .astra-page .a-node:is(.is-selected,[aria-pressed="true"],[aria-current="true"],[data-active="true"]) strong { color:#9b3025; }
+html[data-theme="milk"] .astra-page .a-node:active { background:#eed1c5; }
+html[data-theme="milk"] .astra-page .a-details { background:#f0ede7; }
+html[data-theme="milk"] .astra-page dl.a-meta { border-color:#d6d1c8; }
+html[data-theme="milk"] .astra-page dl.a-meta dt { color:#635f68; }
+html[data-theme="milk"] .astra-page dl.a-meta dd { color:#45413c; }
+html[data-theme="milk"] .astra-page .a-tag { background:#f0ede7; border-color:#d6d1c8; color:#635f68; }
+html[data-theme="milk"] .astra-page .a-filter-row button { background:#fcfbf8; border-color:#948c82; color:#45413c; }
+html[data-theme="milk"] .astra-page .a-filter-row button:hover { background:#eae5dd; color:#242228; }
+html[data-theme="milk"] .astra-page .a-filter-row button[aria-pressed="true"] { background:#b94132; border-color:#b94132; color:#fff; }
+html[data-theme="milk"] .astra-page .a-timeline-record { border-color:#d6d1c8; color:#635f68; }
+html[data-theme="milk"] .astra-page .a-timeline-record:hover { background:#f0ede7; }
+html[data-theme="milk"] .astra-page .a-timeline-record time,
+html[data-theme="milk"] .astra-page .a-timeline-record span { color:#635f68; }
+html[data-theme="milk"] .astra-page .a-timeline-record strong { color:#242228; }
+html[data-theme="milk"] .astra-page .a-timeline-record[aria-pressed="true"] { background:#f7dfd7; }
+html[data-theme="milk"] .astra-page .a-material-card { background:#fff; border-color:#d6d1c8; color:#242228; }
+html[data-theme="milk"] .astra-page .a-material-card:hover { background:#fcfbf8; border-color:#948c82; }
+html[data-theme="milk"] .astra-page .a-material-card :is(span,p),
+html[data-theme="milk"] .astra-page .a-material-card>svg { color:#635f68; }
+html[data-theme="milk"] .astra-page .a-material-card[aria-pressed="true"] { background:#f7dfd7; border-color:#ad3b2e; }
+html[data-theme="milk"] .astra-page .a-shortcuts a:hover { color:#ad3b2e; }
+
+html[data-theme="milk"] .astra-page [data-spotlight]::after { background:radial-gradient(340px circle at var(--spot-x,50%) var(--spot-y,50%),#b941320b,transparent 78%); }
+html[data-theme="milk"] .astra-page .a-feature>svg { color:#746f78; }
+html[data-theme="milk"] .astra-page .a-feature:hover h3 { color:#ad3b2e; }
+html[data-theme="milk"] .astra-page .a-process>li { border-color:#d6d1c8; }
+html[data-theme="milk"] .astra-page .a-faq summary { color:#45413c; }
+html[data-theme="milk"] .astra-page .a-faq summary::after { color:#746f78; }
+html[data-theme="milk"] .astra-page .a-faq details[open] summary { color:#242228; }
+html[data-theme="milk"] .astra-page .a-faq details p a { color:#ad3b2e; }
+html[data-theme="milk"] .astra-page .a-footer-links a:hover { color:#ad3b2e; }
+html[data-theme="milk"] .astra-page .a-prose .a-note { border-color:#948c82; background:#eeebe4; }
+html[data-theme="milk"] .astra-page .a-documents>a>span:last-child,
+html[data-theme="milk"] .astra-page .a-documents>a>small { color:#635f68; }
+html[data-theme="milk"] .astra-page .a-documents>a:hover { color:#ad3b2e; }
+html[data-theme="milk"] .astra-page :is(input,select,textarea) { background:#fcfbf8; border-color:#948c82; color:#242228; color-scheme:light; }
+html[data-theme="milk"] .astra-page :is(input,textarea)::placeholder { color:#746f78; }
+
+html[data-theme="milk"] .a-motion-menu {
+  --motion-ink:#242228; --motion-muted:#635f68; --motion-line:#d6d1c8; --motion-accent:#ad3b2e;
+  background:#f7f6f3; color:#242228; color-scheme:light; scrollbar-color:#948c82 #f7f6f3;
+}
+html[data-theme="milk"] .a-motion-menu::backdrop { background:#302a2359; }
+html[data-theme="milk"] .a-motion-menu ::selection { background:#f7dfd7; color:#9b3025; }
+html[data-theme="milk"] .a-motion-menu .a-motion-menu-bar { background:#f7f6f3; }
+html[data-theme="milk"] .a-motion-menu .a-motion-menu-close { background:#fff; border-color:#948c82; color:#242228; }
+html[data-theme="milk"] .a-motion-menu .a-motion-menu-close:hover { background:#eae5dd; border-color:#746f78; }
+html[data-theme="milk"] .a-motion-menu .a-motion-menu-secondary a:hover { color:#ad3b2e; }

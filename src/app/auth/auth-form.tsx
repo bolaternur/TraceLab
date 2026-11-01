@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { BrandLogo } from "@/components/brand-logo";
+import { AccountLanguageSwitcher } from "@/components/account-language-switcher";
+import { ThemeToggle } from "@/components/theme-toggle";
 import Link from "next/link";
 import { accountCopy, type AccountLocale } from "./account-copy";
 import { localConfirmation, type LocalMailMessage, type LocalMailPurpose } from "./local-confirmation";
@@ -112,7 +114,7 @@ export function AuthForm({ mode: initialMode, locale: initialLocale, next, previ
   const emailVisible = mode !== "reset" && !(mode === "verify" && (token || result === "email_verified"));
   const submitText = mode === "signup" ? copy.signup : mode === "signin" ? copy.signin : mode === "reset" ? copy.savePassword : mode === "verify" && token ? copy.confirm : copy.request;
   return <>
-    <header className="account-header"><Link className="account-brand" href="/" aria-label={copy.home}><BrandLogo /></Link><div className="account-languages" role="group" aria-label={copy.language}>{(["ru", "en", "kk"] as const).map(value => <button type="button" key={value} aria-pressed={locale === value} aria-label={{ ru: "Русский", en: "English", kk: "Қазақша" }[value]} onClick={() => changeLocale(value)}>{value.toUpperCase()}</button>)}</div></header>
+    <header className="account-header"><Link className="account-brand" href="/" aria-label={copy.home}><BrandLogo /></Link><div className="iz-header-actions account-header-actions"><ThemeToggle locale={locale}/><AccountLanguageSwitcher locale={locale} onChange={changeLocale}/></div></header>
     <section className="account-card" aria-labelledby="account-title">
       <h1 id="account-title">{copy[mode]}</h1><p className="account-intro">{intro}</p>
       {previewAvailable && mode !== "reset" && result !== "email_verified" ? <div className="account-local-notice"><strong>{copy.localMode}</strong><p>{copy.localModeNote}</p></div> : null}

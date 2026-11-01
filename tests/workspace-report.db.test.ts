@@ -4,7 +4,8 @@ import { randomUUID } from "node:crypto";
 import type { WorkspaceUser } from "@/server/workspace-service";
 import type { StorageAdapter } from "@/server/storage";
 
-const configured=Boolean(process.env.DATABASE_URL&&process.env.DATABASE_MIGRATION_URL);
+const isolatedName=(value:string)=>/^(?:iznera_test_[a-z0-9_]+|tracelab_unified_test(?:_[a-z0-9_]+)?)$/.test(value);
+const configured=Boolean(process.env.DATABASE_URL&&process.env.DATABASE_MIGRATION_URL&&isolatedName(new URL(process.env.DATABASE_URL).pathname.slice(1))&&new URL(process.env.DATABASE_MIGRATION_URL).pathname===new URL(process.env.DATABASE_URL).pathname);
 describe.skipIf(!configured)("server reports — real isolated PostgreSQL and guarded storage",()=>{
   let executeWorkspaceCommand: typeof import("@/server/workspace-service")["executeWorkspaceCommand"];
   let getWorkspace: typeof import("@/server/workspace-service")["getWorkspace"];
@@ -23,7 +24,7 @@ describe.skipIf(!configured)("server reports — real isolated PostgreSQL and gu
   async function update(body:string){const state=await getWorkspace(a,{project:projectId}),p=state.projects.find(item=>item.id===projectId)!;
     return executeWorkspaceCommand(a,command("updateRecord",[recordId,{body}],{projectId,expectedRevision:p.serverRevision}));}
   beforeAll(async()=>{
-    const name=(await owner.query<{name:string}>("SELECT current_database() AS name")).rows[0].name;if(!name.startsWith("tracelab_unified_"))throw new Error("Isolated test DB required");
+    const name=(await owner.query<{name:string}>("SELECT current_database() AS name")).rows[0].name;if(!isolatedName(name))throw new Error("A disposable test database is required; development databases are forbidden.");
     databaseChecked=true;
     ({executeWorkspaceCommand,getWorkspace}=await import("@/server/workspace-service"));
     ({createWorkspaceReport,downloadWorkspaceReport,previewWorkspaceReport,cancelWorkspaceReport}=await import("@/server/workspace-report-service"));
@@ -80,5 +81,18 @@ describe.skipIf(!configured)("server reports — real isolated PostgreSQL and gu
     const ready=await createWorkspaceReport(a,input(),{storage});
     const revokeOnRead={...storage,get:async(key:string)=>{await owner.query("UPDATE team_memberships SET status='removed' WHERE team_id=$1 AND user_id=$2",[teamId,b.id]);return storage.get(key);}};
     await expect(downloadWorkspaceReport(b,ready.exportId,revokeOnRead)).rejects.toMatchObject({status:403});
+  });
+  it("captures the chosen section order and rejects consent from an obsolete preview",async()=>{
+    const state=await getWorkspace(a,{project:projectId}),project=state.projects.find(item=>item.id===projectId)!;
+    const added=await executeWorkspaceCommand(a,command("addRecord",[{kind:"source",title:"Second report evidence",body:"Synthetic ordering fixture"}],{projectId,expectedRevision:project.serverRevision}));
+    const second=added.result as string,recordIds=[second,recordId],sections=[{title:"New evidence",recordIds:[second]},{title:"Original evidence",recordIds:[recordId]}];
+    const preview=await previewWorkspaceReport(a,projectId);
+    const result=await createWorkspaceReport(a,input({recordIds,sections,expectedProjectRevision:preview.project.revision}),{storage});
+    const json=JSON.parse((await downloadWorkspaceReport(a,result.exportId,storage)).bytes.toString());
+    expect(json.project.records.map((record:{id:string})=>record.id)).toEqual(recordIds);
+    expect(json.manifest.layout.sections).toEqual(sections);
+    expect(json.manifest.records.every((ref:{localId:string})=>recordIds.includes(ref.localId))).toBe(true);
+    await update("Changed after report preview — synthetic fixture");
+    await expect(createWorkspaceReport(a,input({recordIds,expectedProjectRevision:preview.project.revision}),{storage})).rejects.toMatchObject({code:"report_preview_changed",status:409});
   });
 });

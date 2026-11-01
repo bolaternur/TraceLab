@@ -5,7 +5,7 @@ const button=(text,action)=>{const node=el('button','wm-button',text);node.type=
 const field=(form,name,label,{type='text',value='',required=false,max=5000}={})=>{const wrap=el('label','wm-field',label),input=el(type==='textarea'?'textarea':'input');input.name=name;if(type!=='textarea')input.type=type;input.value=value;input.required=required;input.maxLength=max;wrap.append(input);form.append(wrap);return input;};
 const select=(form,name,label,options)=>{const wrap=el('label','wm-field',label),input=el('select');input.name=name;for(const [value,text]of options){const option=el('option','',text);option.value=value;input.append(option);}wrap.append(input);form.append(wrap);return input;};
 export function mountWorkspaceMedia(container,{teamId,projectId,mode='gallery',role,onChanged=()=>{}}={}){
-  let disposed=false,items=[],nextOffset=null,currentRole=role,xhr=null,dialog=null,lightbox=null,loading=false;
+  let disposed=false,items=[],nextOffset=null,currentRole=role,xhr=null,dialog=null,lightbox=null,loading=false,uploadQueue=null;
   const abort=new AbortController(),root=el('section','wm-library');container.replaceChildren(root);
   const readParams=()=>new URL(location.href).searchParams;
   let layout=readParams().get('mediaLayout')==='list'?'list':'grid';
@@ -40,6 +40,7 @@ export function mountWorkspaceMedia(container,{teamId,projectId,mode='gallery',r
       if(item.thumbnailUrl){const image=el('img');image.src=item.thumbnailUrl;image.alt=item.alt||item.name;image.loading='lazy';image.decoding='async';preview.append(image);}
       else preview.append(el('span','wm-file-kind',item.model?'GLB':item.mimeType==='application/pdf'?'PDF':'CSV'));
       const info=el('div','wm-card-info');info.append(el('h3','',item.name),el('p','wm-meta',[item.model?.versionLabel,item.authorLabel,formatDate(item.occurredAt)].filter(Boolean).join(' · ')),el('p','wm-caption',item.caption));
+      if(item.model&&item.thumbnailUrl)info.append(el('p','wm-meta',t('geometryPreview')));
       const actions=el('div','wm-card-actions'),source=el('a','',t('source'));source.href=urlFor(item);actions.append(source);
       if(item.model){const viewer=el('a','',t('open'));viewer.href=item.model.viewerUrl;actions.append(viewer);}
       info.append(actions);card.append(preview,info);list.append(card);
@@ -68,7 +69,12 @@ export function mountWorkspaceMedia(container,{teamId,projectId,mode='gallery',r
     form.onsubmit=async event=>{event.preventDefault();submit.disabled=true;try{const response=await fetch(item.url,{method:'PATCH',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(form))),signal:abort.signal}),data=await response.json();if(!response.ok)throw new Error(mediaErrorText(data.error?.code));modal.close();await load();}catch(e){error.textContent=e.message;}finally{submit.disabled=false;}};
     modal.onclose=()=>{modal.remove();if(dialog===modal)dialog=null;};modal.append(form);document.body.append(modal);modal.showModal();
   }
-  function showUpload(initialFile){if(!canWrite())return;const modal=el('dialog','wm-dialog'),form=el('form','wm-form');dialog=modal;let selectedFile=null,pending=null;
+  async function showUpload(initialFile){if(!canWrite())return;
+    if(mode!=='models'){
+      try{const {openMediaUploadQueue}=await import('./workspace-media-upload.js');if(disposed)return;uploadQueue?.close();uploadQueue=openMediaUploadQueue({teamId,projectId,initialFiles:initialFile?[initialFile]:[],signal:abort.signal,onClosed:async results=>{uploadQueue=null;if(disposed||!results.length)return;try{await load();await onChanged(results);}catch{if(!disposed)status.textContent=t('error');}}});}catch{if(!disposed)status.textContent=t('error');}
+      return;
+    }
+    const modal=el('dialog','wm-dialog'),form=el('form','wm-form');dialog=modal;let selectedFile=null,pending=null;
     form.append(el('h2','',t('upload')),el('p','wm-meta',t(mode==='models'?'glb':'formats')));
     const picker=el('input');picker.type='file';picker.accept=mode==='models'?'.glb':'.jpg,.jpeg,.png,.webp,.pdf,.csv';picker.hidden=true;
     const drop=el('div','wm-drop'),filename=el('p','wm-meta',t('drop'));drop.append(filename,button(t('choose'),()=>picker.click()));form.append(drop,picker);
@@ -106,5 +112,5 @@ export function mountWorkspaceMedia(container,{teamId,projectId,mode='gallery',r
     modal.addEventListener('cancel',()=>{xhr?.abort();});modal.onclose=()=>{xhr?.abort();modal.remove();if(dialog===modal)dialog=null;};modal.append(form);document.body.append(modal);if(initialFile)pick(initialFile);modal.showModal();
   }
   const restore=()=>{search.value=readParams().get('mediaQ')||'';type.value=readParams().get('mediaType')||'all';archive.value=readParams().get('mediaStatus')==='archived'?'archived':'active';renderItems();};window.addEventListener('popstate',restore);
-  add.hidden=!canWrite();load();return()=>{disposed=true;abort.abort();xhr?.abort();dialog?.close();lightbox?.close();window.removeEventListener('popstate',restore);root.remove();};
+  add.hidden=!canWrite();load();return()=>{disposed=true;abort.abort();uploadQueue?.close();xhr?.abort();dialog?.close();lightbox?.close();window.removeEventListener('popstate',restore);root.remove();};
 }

@@ -45,6 +45,11 @@ describe.skipIf(!configured)("private media — real PostgreSQL transactions and
     expect((await state()).projects.find(p=>p.id===projectId)!.records.filter(r=>r.id===first.recordId)).toHaveLength(1);
     const saved=await readWorkspaceMedia(b,artifactId,false,storage);expect(saved.mimeType).toBe("image/png");expect(saved.item.authorUserId).toBe(a.id);
     expect((await readWorkspaceMedia(coach,artifactId,true,storage)).mimeType).toBe("image/webp");
+    const timeline=await listWorkspaceMedia(a,{teamId,projectId,recordIds:[first.recordId!]});
+    expect(timeline.items).toHaveLength(1);expect(timeline.items[0].recordId).toBe(first.recordId);expect(timeline.items[0].thumbnailUrl).toBe('/api/workspace/media/'+artifactId+'?variant=thumbnail');
+    expect(JSON.stringify(timeline)).not.toContain('storageKey');expect(JSON.stringify(timeline)).not.toContain('sourceEventId');
+    expect((await listWorkspaceMedia(a,{teamId,projectId,recordIds:[randomUUID()]})).items).toHaveLength(0);
+    await expect(listWorkspaceMedia(foreign,{teamId,projectId,recordIds:[first.recordId!]})).rejects.toMatchObject({status:403});
     await expect(uploadWorkspaceMedia(a,{...values,caption:"A different body"},photo,{storage})).rejects.toMatchObject({code:"idempotency_conflict"});
   });
   it("denies other tenants, unverified and coach writes; caption versions never mutate source",async()=>{

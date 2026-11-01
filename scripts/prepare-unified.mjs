@@ -1,6 +1,8 @@
 import { spawnSync } from 'node:child_process';
 import { readdir, readFile, writeFile, copyFile } from 'node:fs/promises';
 import path from 'node:path';
+import {themeBootstrap} from '../website/tracelab/theme-bootstrap.js';
+import {themeToggleMarkup} from '../website/tracelab/theme-toggle.js';
 
 const output = path.resolve('public/_presentation');
 const build = spawnSync(process.execPath, ['website/tracelab/build.mjs'], {
@@ -21,6 +23,7 @@ async function markPages(directory) {
 }
 await markPages(output);
 for (const file of ['workspace-server.js', 'product-entry.js','workspace-outbox.js','offline-capture.html','offline-capture.js','offline-capture.css']) {
-  await copyFile(path.resolve('website/tracelab', file), path.join(output, file));
+  if(file==='offline-capture.html'){const html=await readFile(path.resolve('website/tracelab',file),'utf8');await writeFile(path.join(output,file),html.replace('<!--theme-bootstrap-->',`<script>${themeBootstrap}</script>`).replace('<!--theme-toggle-->',themeToggleMarkup()));}
+  else await copyFile(path.resolve('website/tracelab', file), path.join(output, file));
 }
 console.log('Astra presentation and workspace prepared for the single Next.js application. Static demo build remains separate.');

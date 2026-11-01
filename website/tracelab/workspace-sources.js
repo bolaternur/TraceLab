@@ -7,7 +7,7 @@ export function mountWorkspaceSources(container,{projectId,role,onChanged=()=>{}
   const abort=new AbortController(),root=el('section','wm-library'),header=el('header','wm-heading'),heading=el('div');
   heading.append(el('h2','',t('title')),el('p','',t('intro')));const add=button(t('configure'),()=>configure());header.append(heading,add);
   const status=el('p','wm-status');status.setAttribute('role','status');
-  const list=el('div','wm-grid'),receipts=el('div','wm-form');root.append(header,el('p','wm-meta',t('readOnly')),button(t('refresh'),()=>load()),status,list,el('h3','',t('history')),receipts,el('p','wm-meta',t('limits')));container.replaceChildren(root);
+  const list=el('div','wm-grid'),receipts=el('div','wm-form');const advanced=el('details','wm-advanced'),summary=el('summary','',({ru:'Технические ограничения',en:'Technical limits',kk:'Техникалық шектеулер'})[document.documentElement.lang]||'Technical limits');advanced.append(summary,el('p','wm-meta',t('limits')));root.append(header,el('p','wm-meta',t('readOnly')),button(t('refresh'),()=>load()),status,list,el('h3','',t('history')),receipts,advanced);container.replaceChildren(root);
   const writable=()=>currentRole==='student_lead';
   async function api(payload){const response=await fetch('/api/workspace/sources',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({...payload,projectId}),signal:abort.signal});const data=await response.json();if(!response.ok)throw new Error(t('error'));return data;}
   async function action(control,fn){control.disabled=true;status.textContent=t('loading');try{await fn();if(!disposed)await load();}catch(e){if(!disposed)status.textContent=e.message;}finally{control.disabled=false;}}

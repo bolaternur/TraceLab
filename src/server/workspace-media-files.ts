@@ -1,5 +1,6 @@
 import sharp from "sharp";
 import { inspectGlb, MEDIA_LIMITS, MediaError, mediaHash, uploadLimit, type UploadMetadata } from "./workspace-media-contract";
+import { createModelThumbnail } from "./workspace-model-thumbnail";
 
 export type PreparedMedia = { bytes: Buffer; mimeType: string; extension: string; thumbnail?: Buffer;
   metadata: Record<string, unknown> };
@@ -13,7 +14,8 @@ export async function prepareMedia(input: UploadMetadata, original: Buffer): Pro
   if (!original.length) throw new MediaError("empty_file");
   if (original.length > uploadLimit(input.kind)) throw new MediaError("file_too_large", 413);
   const metadata: Record<string, unknown> = { uploadedSha256: mediaHash(original), uploadedBytes: original.length,
-    filename: input.filename, caption: input.caption, alt: input.alt, pipelineVersion: 1 };
+    filename: input.filename, caption: input.caption, alt: input.alt, pipelineVersion: 1,
+    ...(input.clientPrivacyEdit ? { clientPrivacyEdit: input.clientPrivacyEdit, clientEditAssertion: "reported-by-uploader" } : {}) };
   if (["photo", "drawing", "render"].includes(input.kind)) {
     const format = imageMagic(original);
     if (!format) throw new MediaError("unsupported_file");
@@ -51,8 +53,10 @@ export async function prepareMedia(input: UploadMetadata, original: Buffer): Pro
         await decoder.raw().toBuffer();
       } catch (error) { if (error instanceof MediaError) throw error; throw new MediaError("invalid_model_texture"); }
     }
-    return { bytes: original, mimeType: "model/gltf-binary", extension: "glb",
-      metadata: { ...metadata, vertices: model.vertices, triangles: model.triangles, texturePixels: pixels, originalBytesRetained: true } };
+    const thumbnail=await createModelThumbnail(model);
+    return { bytes: original, mimeType: "model/gltf-binary", extension: "glb", ...(thumbnail?{thumbnail:thumbnail.bytes}:{}),
+      metadata: { ...metadata, vertices: model.vertices, triangles: model.triangles, texturePixels: pixels, originalBytesRetained: true,
+        thumbnailMethod:thumbnail?"bounded-orthographic-geometry":"unavailable",thumbnailSampledTriangles:thumbnail?.sampledTriangles??0,thumbnailIncludesTextures:false } };
   }
   if (input.kind === "document") {
     if (original.toString("ascii",0,5) === "%PDF-" && original.subarray(-1024).includes(Buffer.from("%%EOF")))

@@ -9,11 +9,21 @@ export const reportInput = z.object({
   purpose:z.enum(["engineering","competition"]).default("engineering"),
   scope:z.enum(["project","personal","handoff"]).default("project"),
   recordIds:z.array(z.string().min(1).max(100)).max(REPORT_LIMITS.records).optional(),
+  sections:z.array(z.object({title:z.string().trim().min(1).max(120),recordIds:z.array(z.string().min(1).max(100)).min(1).max(REPORT_LIMITS.records)}).strict()).max(30).optional(),
+  teamNumber:z.string().trim().regex(/^\d{1,8}$/).optional(),
+  expectedProjectRevision:z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
   acknowledgeWarnings:z.boolean().default(false),
 }).strict();
 export type ReportOptions=z.infer<typeof reportInput>;
 export type ReportPolicy={id:string;profileId:string;program:string;season:string;version:string;status:string;reviewedAt:string|null;reviewer:string|null;effectiveFrom:string|null;sourceUrls:string[];constraints:Record<string,unknown>;matrix:Record<string,string>};
 export type PolicyGate={decision:"ALLOW"|"ALLOW_WITH_DISCLOSURE"|"REQUIRE_REVIEW"|"BLOCK";allowed:boolean;code:string;policy:ReportPolicy|null};
+const policyAnchor=z.object({schemaVersion:z.literal(1),versionId:z.string().uuid().nullable(),profileId:z.string().uuid().nullable(),pinnedAt:z.string().datetime(),reason:z.enum(["season_handoff","new_season_unreviewed"])}).strict();
+export function reportPolicySelection(anchor:unknown,present:boolean):{mode:"legacy"|"blocked"|"pinned";versionId?:string;profileId?:string}{
+  if(!present)return {mode:"legacy"};
+  const result=policyAnchor.safeParse(anchor);
+  if(!result.success||result.data.reason==="new_season_unreviewed"||!result.data.versionId||!result.data.profileId)return {mode:"blocked"};
+  return {mode:"pinned",versionId:result.data.versionId,profileId:result.data.profileId};
+}
 export function evaluateReportPolicy(policy:ReportPolicy|null,program:string,season:string,purpose:ReportOptions["purpose"],now=new Date()):PolicyGate {
   const review=(code:string):PolicyGate=>({decision:"REQUIRE_REVIEW",allowed:false,code,policy});
   if(purpose==="engineering")return {decision:"ALLOW_WITH_DISCLOSURE",allowed:true,code:"engineering_not_competition_approval",policy};
@@ -27,7 +37,32 @@ export function evaluateReportPolicy(policy:ReportPolicy|null,program:string,sea
   if(decision!=="ALLOW"&&decision!=="ALLOW_WITH_DISCLOSURE")return review("policy_action_unknown");
   const maxPages=Number(policy.constraints.maxPages),maxFileMb=Number(policy.constraints.maxFileMb);
   if(!Number.isSafeInteger(maxPages)||maxPages<=0||!Number.isFinite(maxFileMb)||maxFileMb<=0)return review("policy_limits_unreviewed");
+  if(program==="FTC"&&(!Number.isSafeInteger(policy.constraints.maxContentPages)||Number(policy.constraints.maxContentPages)<1||policy.constraints.coverPages!==1||Number(policy.constraints.maxContentPages)+1!==maxPages||policy.constraints.fileUnit!=="MB"||policy.constraints.fileLimitExclusive!==true))return review("policy_layout_unreviewed");
+  const contentStart=String(policy.constraints.contentNotBefore??"");
+  if(program==="FTC"&&(!/^\d{4}-\d{2}-\d{2}T00:00:00\.000Z$/.test(contentStart)||!Number.isFinite(Date.parse(contentStart))))return review("policy_content_window_unreviewed");
   return {decision,allowed:true,code:"reviewed_configuration_not_award_guarantee",policy};
+}
+/** An explicit record sequence is part of the immutable report snapshot. */
+export function orderedReportRecords(records:WorkspaceRecord[],options:Pick<ReportOptions,"recordIds"|"sections">){
+  const byId=new Map(records.map(record=>[record.id,record]));
+  const ids=options.recordIds??records.map(record=>record.id);
+  if(new Set(ids).size!==ids.length||ids.some(id=>!byId.has(id)))throw new Error("invalid_report_selection");
+  const selected=ids.map(id=>byId.get(id)!);
+  if(options.sections){const sectionIds=options.sections.flatMap(section=>section.recordIds);if(sectionIds.length!==ids.length||new Set(sectionIds).size!==sectionIds.length||sectionIds.some((id,index)=>id!==ids[index]))throw new Error("invalid_report_sections");}
+  return selected;
+}
+export function reportOutputBudget(options:Pick<ReportOptions,"purpose">,policy:ReportPolicy|null){
+  if(options.purpose!=="competition")return {bytes:REPORT_LIMITS.bytes,pages:REPORT_LIMITS.pages,coverPages:0,contentPages:REPORT_LIMITS.pages,exclusive:false};
+  const limits=policy?.constraints??{},pages=Math.min(REPORT_LIMITS.pages,Number(limits.maxPages)),coverPages=1;
+  return {bytes:Math.min(REPORT_LIMITS.bytes,Number(limits.maxFileMb)*(limits.fileUnit==="MB"?1_000_000:1024*1024)),pages,coverPages,contentPages:Math.min(pages-coverPages,Number(limits.maxContentPages??pages-coverPages)),exclusive:true};
+}
+export function reportOutputWithinBudget(output:{bytes:number;pages:number|null},options:Pick<ReportOptions,"purpose"|"format">,policy:ReportPolicy|null){
+  const limit=reportOutputBudget(options,policy);
+  if(!Number.isSafeInteger(output.bytes)||output.bytes<1||!Number.isFinite(limit.bytes)||!Number.isSafeInteger(limit.pages)||limit.pages<1)return false;
+  if(output.pages!==null&&(!Number.isSafeInteger(output.pages)||output.pages<1))return false;
+  if(output.bytes>limit.bytes||(limit.exclusive&&output.bytes===limit.bytes))return false;
+  if(options.purpose==="competition"&&(options.format!=="pdf"||output.pages===null||!Number.isSafeInteger(output.pages)||output.pages<2))return false;
+  return output.pages===null||output.pages<=limit.pages&&output.pages-limit.coverPages<=limit.contentPages;
 }
 export type ReportWarning={code:string;recordId?:string;artifactId?:string};
 export type RecordRef={localId:string;canonicalId:string;entityType:string;sourceHash:string|null;authorUserId:string|null;importedBy:string|null;originalAuthorLabel:string|null;annotationId:string|null;annotationHash:string|null;sourceOriginal:unknown;annotationHistory:Array<{id:string;authorUserId:string|null;sourceMethod:string;provenance:string;supersedesId:string|null;createdAt:string;body:string}>};
@@ -55,7 +90,7 @@ export function decisionEvidenceIds(decisionId:string,records:WorkspaceRecord[],
 export function recordWarnings(records:WorkspaceRecord[],project:WorkspaceProject,refs:RecordRef[]):ReportWarning[]{
   const warnings:ReportWarning[]=[];
   for(const record of records){
-    if(record.kind==="decision"&&!record.rationale?.trim())warnings.push({code:"missing_why",recordId:record.id});
+    if((record.kind==="decision"||record.kind==="iteration"&&record.status==="closed")&&!record.rationale?.trim())warnings.push({code:"missing_why",recordId:record.id});
     if(record.kind==="decision"&&!decisionEvidenceIds(record.id,records,project.links).length)warnings.push({code:"missing_evidence",recordId:record.id});
     if(/[\w.+-]+@[\w.-]+\.[a-z]{2,}|(?:\+?\d[\d ()-]{8,}\d)/i.test([record.title,record.body,record.rationale,record.author].join(" ")))warnings.push({code:"possible_personal_data",recordId:record.id});
     if(!refs.find(ref=>ref.localId===record.id)?.authorUserId)warnings.push({code:"unverified_import_author",recordId:record.id});
@@ -69,6 +104,7 @@ export function publicManifest(data:ReportData){
     projectId:data.project.id,projectSnapshotId:data.projectSnapshotId,projectRevision:data.projectRevision,
     educationalOrigin:Boolean(data.project.educationalOrigin),scope:data.options.scope,format:data.options.format,
     locale:data.options.locale,paper:data.options.paper,contentHash:data.contentHash,
+    layout:{purpose:data.options.purpose,sections:data.options.sections??null,teamNumber:data.options.teamNumber??null},
     generation:{method:"deterministic-layout",aiUsed:false,studentTextRewritten:false},policy:data.policyGate,
     records:data.refs,media:data.media.map(({storageKey: _key,...media})=>media),warnings:data.warnings,completeness:data.completeness};
 }
@@ -90,6 +126,7 @@ export function reportWarningText(code:string,locale:ReportOptions["locale"]){
     media_reference_only:{en:"The file is listed in the manifest; its binary contents are not embedded.",ru:"Файл указан в манифесте; его содержимое не встроено.",kk:"Файл манифестте көрсетілген; мазмұны енгізілмеген."},
     image_not_embedded:{en:"The image exceeds the documented report limit or has no stored file.",ru:"Изображение превышает указанный лимит отчёта или файл отсутствует.",kk:"Сурет есеп шегінен асады немесе сақталған файл жоқ."},
     missing_or_changed_asset:{en:"An attached file is missing or its hash does not match.",ru:"Вложенный файл отсутствует или его контрольная сумма не совпадает.",kk:"Тіркелген файл жоқ немесе бақылау сомасы сәйкес емес."},
+    outside_policy_content_window:{en:"The record is outside the policy's permitted evidence period.",ru:"Запись выходит за допустимый период материалов по правилам.",kk:"Жазба ережеде рұқсат етілген материал кезеңінен тыс."},
   };
   return messages[code]?.[locale]??code;
 }

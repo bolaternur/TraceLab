@@ -1,16 +1,23 @@
+import {openReportDialog} from './workspace-report.js';
+import {mountWorkspaceCommand} from './workspace-command.js';
+import {coreText,mountCoreNavigation,renderOverview,mountMemory,decisionScope,showContextHelp} from './workspace-core.js';
+import {mountThemeToggles} from './theme-toggle.js';
+mountThemeToggles();
 import { store as localStore } from './workspace-store.js';
 import { createServerWorkspace } from './workspace-server.js';
 import { renderTestChart,renderStudyChart,renderTimeline } from './workspace-views.js';
+import { hydrateTimelineMedia } from './workspace-timeline-media.js';
 import { renderCanvas } from './workspace-canvas.js';
 import { mountProductControls, previewServerImport as showImportPreview } from './workspace-product-controls.js';
 import { setWorkspaceLocale, getWorkspaceLocale, formatDate, formatNumber, formatPercent, recordType } from './workspace-i18n.js';
 import { createOutbox, setOfflineContext } from './workspace-outbox.js';
 import { applyWorkspaceShellLocale, shellT, workspaceErrorText } from './workspace-shell-i18n.js';
 import {mountHistoryFilters,readHistoryFilters,filterHistoryRecords} from './workspace-filters.js';
-import {mountWorkspaceNavigation} from './workspace-navigation.js';
+import {mountWorkspaceSidebar,primeSidebarPreference} from './workspace-sidebar.js';
 import {appendRecordHistory,appendConflictingDrafts} from './workspace-record-history.js';
 
 const host=document.querySelector('[data-workspace]');
+primeSidebarPreference(host);
 const serverMode=document.body.dataset.runtime==='server'&&!location.pathname.startsWith('/demo/');
 let store=localStore;
 const outbox=createOutbox();
@@ -22,9 +29,9 @@ if(serverMode){
 let initialLocale=serverMode?store.serverContext.user.locale:'ru';
 try{initialLocale=localStorage.getItem('tracelab-locale')||initialLocale;}catch{}
 setWorkspaceLocale(['ru','en','kk'].includes(initialLocale)?initialLocale:'ru',serverMode?store.serverContext.team.timezone:Intl.DateTimeFormat().resolvedOptions().timeZone);
-const allowedViews=['graph','timeline','tests','history','study','gallery','models','sources','inbox','chat'];
+const allowedViews=['overview','iterations','memory','handoff','graph','timeline','tests','history','study','gallery','models','sources','inbox','chat'];
 const searchParams=new URLSearchParams(location.search);
-let activeView=allowedViews.includes(searchParams.get('view'))?searchParams.get('view'):'graph';
+let activeView=allowedViews.includes(searchParams.get('view'))?searchParams.get('view'):(serverMode?'overview':'graph');
 let selectedId=searchParams.get('record')||'DEC-01';
 let cleanup=()=>{};
 let replayTimer=null;
@@ -34,6 +41,7 @@ let inspectorWidth=360;
 let connectionOrigin=null;
 let historyFilters;
 let workspaceNavigation=null;
+let coreNavigation=null,commandNavigation=null;
 try{const panels=JSON.parse(localStorage.getItem('tracelab.workspace.panels.v1')||'{}');inspectorOpen=panels.open===true&&innerWidth>800;inspectorWidth=Math.max(280,Math.min(520,Number(panels.width)||360));}catch{/* Browser storage may be unavailable. */}
 const $=selector=>document.querySelector(selector);
 const escape=value=>String(value??'').replace(/[&<>"']/g,character=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
@@ -53,18 +61,19 @@ async function openConnection(pair={}){
   await personalProject();const project=store.getProject();
   if(project.records.length<2){feedback(shellT('error.twoRecords'),true);return;}
   const form=$('#ws-connect-form');form.reset();form.querySelector('.ws-form-error').textContent='';
-  $('#ws-connect-from').innerHTML=project.records.map(record=>`<option value="${escape(record.id)}">${escape(record.title)} · ${escape(record.id)}</option>`).join('');
+  $('#ws-connect-from').innerHTML=project.records.map(record=>`<option value="${escape(record.id)}">${escape(record.title)} · ${escape(recordType(record.kind))}</option>`).join('');
   $('#ws-connect-from').value=pair.from||selectedId||project.records[0].id;if(!$('#ws-connect-from').value)$('#ws-connect-from').selectedIndex=0;
   updateConnectionTargets(pair.to);$('#ws-connect-dialog').showModal();
 }
-function updateConnectionTargets(to){const from=$('#ws-connect-from').value;$('#ws-connect-to').innerHTML=`<option value="">${escape(shellT('inspector.choose'))}</option>`+store.getProject().records.filter(record=>record.id!==from).map(record=>`<option value="${escape(record.id)}">${escape(record.title)} · ${escape(record.id)}</option>`).join('');if(to)$('#ws-connect-to').value=to;}
+function updateConnectionTargets(to){const from=$('#ws-connect-from').value;$('#ws-connect-to').innerHTML=`<option value="">${escape(shellT('inspector.choose'))}</option>`+store.getProject().records.filter(record=>record.id!==from).map(record=>`<option value="${escape(record.id)}">${escape(record.title)} · ${escape(recordType(record.kind))}</option>`).join('');if(to)$('#ws-connect-to').value=to;}
 function filteredRecords(project){const query=$('#ws-search').value.trim().toLocaleLowerCase(getWorkspaceLocale());const kind=$('#ws-kind').value;return project.records.filter(record=>(kind==='all'||record.kind===kind)&&(!query||[record.id,record.title,record.body,record.author,record.rationale].join(' ').toLocaleLowerCase(getWorkspaceLocale()).includes(query)));}
 function selectRecord(id){
   const active=document.activeElement;
   const selectors=['.wc-node','.wc-record-button','.wc-port','.wv-test-row','.wv-measurement-select','.wv-timeline-button','.ws-record-list button'];
   const controlSelector=selectors.find(selector=>active?.matches?.(selector));
   const fromInspector=Boolean(active?.closest?.('#ws-inspector'));
-  selectedId=id;const url=new URL(location.href);if(id)url.searchParams.set('record',id);else url.searchParams.delete('record');history.replaceState(null,'',url);setInspector(Boolean(id));render();
+  const previousScroll=$('#ws-view').scrollTop;
+  selectedId=id;const url=new URL(location.href);if(id)url.searchParams.set('record',id);else url.searchParams.delete('record');history.replaceState(null,'',url);setInspector(Boolean(id));render();if(['timeline','history','memory'].includes(activeView))$('#ws-view').scrollTop=previousScroll;
   const replacement=controlSelector?[...document.querySelectorAll(controlSelector)].find(control=>control.dataset.recordId===id||control.getAttribute('aria-label')?.startsWith(id+'.')||control.getAttribute('aria-label')?.startsWith(id+':')||control.querySelector('.wv-record-id')?.textContent===id||control.dataset.selectRecord===id):null;
   if(replacement)replacement.focus({preventScroll:true});
   else if(fromInspector){const heading=$('#ws-inspector h2');heading.tabIndex=-1;heading.focus({preventScroll:true});}
@@ -81,9 +90,9 @@ function renderInspector(project){
   const tests=accepted.map(link=>project.records.find(item=>item.id===(link.from===record.id?link.to:link.from))).filter(item=>item?.kind==='test');
   const result=record.kind==='test'&&Number.isFinite(record.trials)&&Number.isFinite(record.successes)?shellT('inspector.resultRatio',{successes:formatNumber(record.successes),trials:formatNumber(record.trials),percent:formatPercent(record.successes/record.trials)}):'';
   const rationale=record.rationale?.trim();
-  const why=record.kind==='decision'?`<section class="ws-evidence-note"><strong>${escape(shellT('inspector.why'))}</strong><p>${rationale?escape(rationale):shellT('inspector.noRationale')}</p><p>${tests.length?escape(shellT('inspector.linkedTests',{tests:tests.map(test=>test.id).join(', ')})):shellT('inspector.noTests')}</p></section>`:'';
-  const notes=record.annotationHistory?.length?`<details class="ws-note-history"><summary>${escape(shellT('inspector.noteHistory'))} · ${record.annotationHistory.length}</summary>${record.annotationHistory.map(note=>`<article><p>${escape(note.body)}</p><small>${escape(note.field)} · ${escape(note.authorUserId)} · ${escape(dateLabel(note.createdAt))}<br>${escape(shellT('inspector.provenance'))}: ${escape(note.provenance||shellT('common.notProvided'))} · ${escape(note.sourceMethod||shellT('common.notProvided'))}</small></article>`).join('')}</details>`:'';
-  inspector.innerHTML=`<div class="ws-record-id">${escape(recordType(record.kind))} · ${escape(record.id)}</div><h2>${escape(record.title)}</h2><p>${escape(record.body||shellT('inspector.noDescription'))}</p><dl><div><dt>${escape(shellT('record.author'))}</dt><dd>${escape(record.author||shellT('inspector.noAuthor'))}</dd></div><div><dt>${escape(shellT('inspector.date'))}</dt><dd>${escape(dateLabel(record.createdAt))}</dd></div>${record.revision?`<div><dt>${escape(shellT('inspector.version'))}</dt><dd>${escape(record.revision)}</dd></div>`:''}${result?`<div><dt>${escape(shellT('inspector.result'))}</dt><dd>${escape(result)}</dd></div>`:''}${Number.isFinite(record.measuredValue)?`<div><dt>${escape(shellT('inspector.measurement'))}</dt><dd>${escape(record.measuredValue)} ${escape(record.unit||shellT('inspector.noUnit'))}</dd></div>`:''}</dl>${record.conditions?`<h3>${escape(shellT('test.conditions'))}</h3><p>${escape(record.conditions)}</p>`:''}${record.criterion?`<h3>${escape(shellT('test.criterion'))}</h3><p>${escape(record.criterion)}</p>`:''}${why}<h3>${escape(shellT('inspector.related'))}</h3>${related.length?related.map(item=>`<button class="ws-related-button" type="button" data-select-record="${escape(item.record.id)}"><strong>${escape(item.record.title)}</strong><span>${escape(item.record.id)} · ${escape(item.link.label)}${item.link.status==='suggested'?' · '+escape(shellT('inspector.suggested')):''}</span></button>`).join(''):`<p>${escape(shellT('inspector.noLinks'))}</p>`}${project.dataKind!=='synthetic'?`<button class="ws-text-action ws-edit-record" type="button" data-edit-record="${escape(record.id)}">${escape(shellT('record.edit'))}</button><form id="ws-link-form"><h3>${escape(shellT('connection.add'))}</h3><label for="ws-link-target">${escape(shellT('connection.selectedTo'))}<select id="ws-link-target" name="to" required><option value="">${escape(shellT('inspector.choose'))}</option>${project.records.filter(item=>item.id!==record.id).map(item=>`<option value="${escape(item.id)}">${escape(item.title)} · ${escape(recordType(item.kind))}</option>`).join('')}</select></label><label for="ws-link-label">${escape(shellT('connection.what'))}<input id="ws-link-label" name="label" maxlength="160" required value="${escape(shellT('connection.supports'))}"></label><button class="button light-outline" type="submit">${escape(shellT('connection.save'))}</button></form>`:''}`;
+  const why=record.kind==='decision'?`<section class="ws-evidence-note"><strong>${escape(shellT('inspector.why'))}</strong><p>${rationale?escape(rationale):shellT('inspector.noRationale')}</p><p>${tests.length?escape(shellT('inspector.linkedTests',{tests:tests.map(test=>test.title).join(', ')})):shellT('inspector.noTests')}</p></section>`:'';
+  const notes=record.annotationHistory?.length?`<details class="ws-note-history"><summary>${escape(shellT('inspector.noteHistory'))} · ${record.annotationHistory.length}</summary>${record.annotationHistory.map(note=>`<article><p>${escape(note.body)}</p><small>${escape(note.field)} · ${escape(note.authorLabel||shellT('inspector.noAuthor'))} · ${escape(dateLabel(note.createdAt))}<br>${escape(shellT('inspector.provenance'))}: ${escape(note.provenance||shellT('common.notProvided'))} · ${escape(note.sourceMethod||shellT('common.notProvided'))}</small></article>`).join('')}</details>`:'';
+  inspector.innerHTML=`<div class="ws-record-id">${escape(recordType(record.kind))}</div><h2>${escape(record.title)}</h2><p>${escape(record.body||shellT('inspector.noDescription'))}</p><dl><div><dt>${escape(shellT('record.author'))}</dt><dd>${escape(record.author||shellT('inspector.noAuthor'))}</dd></div><div><dt>${escape(shellT('inspector.date'))}</dt><dd>${escape(dateLabel(record.createdAt))}</dd></div>${record.revision?`<div><dt>${escape(shellT('inspector.version'))}</dt><dd>${escape(record.revision)}</dd></div>`:''}${result?`<div><dt>${escape(shellT('inspector.result'))}</dt><dd>${escape(result)}</dd></div>`:''}${Number.isFinite(record.measuredValue)?`<div><dt>${escape(shellT('inspector.measurement'))}</dt><dd>${escape(record.measuredValue)} ${escape(record.unit||shellT('inspector.noUnit'))}</dd></div>`:''}</dl>${record.conditions?`<h3>${escape(shellT('test.conditions'))}</h3><p>${escape(record.conditions)}</p>`:''}${record.criterion?`<h3>${escape(shellT('test.criterion'))}</h3><p>${escape(record.criterion)}</p>`:''}${why}<h3>${escape(shellT('inspector.related'))}</h3>${related.length?related.map(item=>`<button class="ws-related-button" type="button" data-select-record="${escape(item.record.id)}"><strong>${escape(item.record.title)}</strong><span>${escape(item.link.label)}${item.link.status==='suggested'?' · '+escape(shellT('inspector.suggested')):''}</span></button>`).join(''):`<p>${escape(shellT('inspector.noLinks'))}</p>`}${project.dataKind!=='synthetic'?`<button class="ws-text-action ws-edit-record" type="button" data-edit-record="${escape(record.id)}">${escape(shellT('record.edit'))}</button><form id="ws-link-form"><h3>${escape(shellT('connection.add'))}</h3><label for="ws-link-target">${escape(shellT('connection.selectedTo'))}<select id="ws-link-target" name="to" required><option value="">${escape(shellT('inspector.choose'))}</option>${project.records.filter(item=>item.id!==record.id).map(item=>`<option value="${escape(item.id)}">${escape(item.title)} · ${escape(recordType(item.kind))}</option>`).join('')}</select></label><label for="ws-link-label">${escape(shellT('connection.what'))}<input id="ws-link-label" name="label" maxlength="160" required value="${escape(shellT('connection.supports'))}"></label><button class="button light-outline" type="submit">${escape(shellT('connection.save'))}</button></form>`:''}`;
   if(notes)inspector.insertAdjacentHTML('beforeend',notes);
   appendRecordHistory(inspector,record);
   if(canManageGraphRecord(record.id)){
@@ -99,14 +108,17 @@ function renderInspector(project){
 function canManageGraphRecord(id){return !serverMode || store.serverContext.role==='student_lead' || (store.serverContext.role==='student' && store.serverContext.editableRecordIds?.[store.getProject().id]?.includes(id));}
 async function hideGraphRecord(id){if(!await personalProject())return;await store.hideRecord(id);selectedId=null;render();feedback(shellT('feedback.recordHidden'));}
 async function restoreGraphRecord(id){await store.restoreRecord(id);render();feedback(shellT('feedback.recordRestored'));}
+function setJournal(all){const url=new URL(location.href);all?url.searchParams.set('journal','all'):url.searchParams.delete('journal');history.pushState(null,'',url);$('#ws-kind').value='all';url.searchParams.delete('kind');history.replaceState(null,'',url);render();}
 function renderHistory(project){
   const direction=readHistoryFilters(new URLSearchParams(location.search)).order==='oldest'?1:-1;
-  const records=filteredRecords(project).sort((left,right)=>direction*(new Date(left.createdAt)-new Date(right.createdAt)));
+  const records=decisionScope(filteredRecords(project),new URLSearchParams(location.search)).sort((left,right)=>direction*(new Date(left.createdAt)-new Date(right.createdAt)));
   const view=$('#ws-view');
-  if(!records.length){view.innerHTML=`<div class="ws-empty"><h2>${escape(shellT('history.noMatch'))}</h2><p>${escape(shellT('history.noMatchHint'))}</p></div>`;return;}
-  view.innerHTML=`<div class="ws-record-list">${records.map(record=>`<button type="button" data-select-record="${escape(record.id)}" aria-current="${String(record.id===selectedId)}"><div><strong>${escape(record.title)}</strong><small>${escape(record.id)} · ${escape(record.author||shellT('inspector.noAuthor'))} · ${escape(dateLabel(record.createdAt))}</small><small>${escape((record.rationale||record.body||shellT('inspector.noDescriptionShort')).slice(0,180))}</small></div><span class="ws-record-kind">${escape(recordType(record.kind))}</span></button>`).join('')}</div>`;
+  if(!records.length&&(new URLSearchParams(location.search).get('journal')==='all'||store.getProject().records.some(record=>record.kind==='decision'))){view.innerHTML=`<div class="ws-empty"><h2>${escape(shellT('history.noMatch'))}</h2><p>${escape(shellT('history.noMatchHint'))}</p></div>`;return;}
+  if(!records.length){view.innerHTML=`<div class="ws-empty"><h2>${escape(coreText('emptyDecisions'))}</h2><p>${escape(coreText('emptyDecisionsHint'))}</p><button type="button" class="ws-tool-button" data-create-decision>${escape(coreText('addDecision'))}</button><button type="button" class="ws-tool-button" data-journal>${escape(coreText('journal'))}</button></div>`;view.querySelector('[data-create-decision]').disabled=serverMode&&!['student','student_lead'].includes(store.serverContext.role);view.querySelector('[data-create-decision]').onclick=()=>guarded(async()=>{await openRecord();$('#ws-record-kind').value='decision';configureRecordFields();});view.querySelector('[data-journal]').onclick=()=>setJournal(true);return;}
+  view.innerHTML=`<div class="ws-record-list">${records.map(record=>`<button type="button" data-select-record="${escape(record.id)}" aria-current="${String(record.id===selectedId)}"><div><strong>${escape(record.title)}</strong><small>${escape(record.author||shellT('inspector.noAuthor'))} · ${escape(dateLabel(record.createdAt))}</small><small>${escape((record.rationale||record.body||shellT('inspector.noDescriptionShort')).slice(0,180))}</small></div><span class="ws-record-kind">${escape(recordType(record.kind))}</span></button>`).join('')}</div>`;
 }
 function render(){
+  coreNavigation?.refresh();commandNavigation?.refresh();
   if(!host)return;
   applyWorkspaceShellLocale(document);
   $('#ws-replay').textContent=shellT(replayTimer?'timeline.stop':'timeline.replay');
@@ -116,7 +128,7 @@ function render(){
   if(serverMode)setWorkspaceLocale(getWorkspaceLocale(),store.serverContext.team.timezone);
   const historyState=readHistoryFilters(new URLSearchParams(location.search));
   historyFilters?.render(project,activeView==='timeline'||activeView==='history');
-  const historyProject={...project,records:filterHistoryRecords(project.records,historyState)};
+  const historyProject={...project,records:filterHistoryRecords(project.records,historyState,project)};
   host.dataset.view=activeView;
   $('#ws-project').innerHTML=state.projects.map(item=>`<option value="${escape(item.id)}" ${item.id===project.id?'selected':''}>${escape(item.name)}</option>`).join('');
   const synthetic=project.dataKind==='synthetic';
@@ -141,17 +153,25 @@ function render(){
   $('#ws-timeline-actions').hidden=activeView!=='timeline';
   $('#ws-study-actions').hidden=activeView!=='study';
   $('#ws-connect').hidden=activeView!=='graph'&&activeView!=='history';
-  const standalone=['study','gallery','models','sources','inbox','chat'].includes(activeView);
-  $('.ws-tools').hidden=['gallery','models','sources','inbox','chat'].includes(activeView);
+  const standalone=['overview','iterations','memory','handoff','study','gallery','models','sources','inbox','chat'].includes(activeView);
+  $('.ws-tools').hidden=['overview','iterations','memory','handoff','gallery','models','sources','inbox','chat'].includes(activeView);
   $('#ws-toggle-inspector').hidden=standalone;
   $('.ws-search-label').hidden=activeView==='tests'||standalone;
   $('#ws-kind').closest('label').hidden=activeView==='tests'||standalone;
   $('.ws-workarea').dataset.wide=String(standalone);
   const options={selectedId,query:$('#ws-search').value.trim(),kind:$('#ws-kind').value,onSelect:selectRecord};
-  if(activeView==='graph')cleanup=renderCanvas($('#ws-view'),project,{...options,onConnect:pair=>guarded(()=>openConnection(pair)),onMove:(id,position)=>guarded(()=>preserveCanvasFocus(()=>store.setNodePosition(id,position))),onResetLayout:()=>guarded(()=>preserveCanvasFocus(()=>store.resetNodePositions())),onHideRecord:id=>guarded(()=>hideGraphRecord(id)),onRestoreRecord:id=>guarded(()=>restoreGraphRecord(id)),canHideRecord:canManageGraphRecord,onRemoveLink:id=>guarded(async()=>{await personalProject();await store.removeLink(id);feedback(shellT('feedback.linkRemoved'));}),onError:message=>feedback(message,true)})||(()=>{});
-  else if(activeView==='timeline')cleanup=renderTimeline($('#ws-view'),historyProject,{...options,order:historyState.order})||(()=>{});
-  else if(activeView==='tests')cleanup=renderTestChart($('#ws-view'),project,{onSelect:selectRecord})||(()=>{});
-  else if(activeView==='study')cleanup=renderStudyChart($('#ws-view'),project)||(()=>{});
+  if(activeView==='overview')cleanup=renderOverview($('#ws-view'),project,{canWrite,onView:switchView,onRecord:id=>{if(project.records.find(record=>record.id===id)?.kind==='iteration')guarded(()=>launchIteration(id));else{switchView('graph');selectRecord(id);}},onCreate:kind=>guarded(async()=>{await openRecord();$('#ws-record-kind').value=kind;configureRecordFields();})});
+  else if(activeView==='memory')cleanup=mountMemory($('#ws-view'),{projects:store.getState().projects,currentProjectId:project.id,onRecord:(projectId,id)=>guarded(async()=>{if(projectId!==store.getProject().id)await store.selectProject(projectId);switchView('graph');selectRecord(id);})});
+  else if(activeView==='iterations'){let cancelled=false;const target=$('#ws-view');target.textContent=shellT('common.loading');cleanup=()=>{cancelled=true;};import('./workspace-iterations.js').then(({mountWorkspaceIterations})=>{if(cancelled)return;const dispose=mountWorkspaceIterations(target,{store,project,serverMode,onSelectRecord:id=>{switchView('graph');selectRecord(id);},onChanged:()=>store.refresh?.(),onCreateTest:()=>guarded(async()=>{await openRecord();$('#ws-record-kind').value='test';configureRecordFields();})});cleanup=()=>{cancelled=true;dispose?.();};}).catch(error=>{if(!cancelled)target.textContent=workspaceErrorText(error);});}
+  else if(activeView==='handoff'){let cancelled=false;const target=$('#ws-view');target.textContent=shellT('common.loading');cleanup=()=>{cancelled=true;};import('./workspace-handoff.js').then(({mountWorkspaceHandoff})=>{if(cancelled)return;const dispose=mountWorkspaceHandoff(target,{store,project,serverMode,onSelectRecord:id=>{switchView('graph');selectRecord(id);},onSelectProject:id=>guarded(()=>store.selectProject(id)),onExport:options=>guarded(()=>openReportDialog(store,options)),onChanged:()=>store.refresh?.()});cleanup=()=>{cancelled=true;dispose?.();};}).catch(error=>{if(!cancelled)target.textContent=workspaceErrorText(error);});}
+  else if(activeView==='graph')cleanup=renderCanvas($('#ws-view'),project,{...options,onConnect:pair=>guarded(()=>openConnection(pair)),onMove:(id,position)=>guarded(()=>preserveCanvasFocus(()=>store.setNodePosition(id,position))),onResetLayout:()=>guarded(()=>preserveCanvasFocus(()=>store.resetNodePositions())),onHideRecord:id=>guarded(()=>hideGraphRecord(id)),onRestoreRecord:id=>guarded(()=>restoreGraphRecord(id)),canHideRecord:canManageGraphRecord,onRemoveLink:id=>guarded(async()=>{await personalProject();await store.removeLink(id);feedback(shellT('feedback.linkRemoved'));}),onError:message=>feedback(message,true)})||(()=>{});
+  else if(activeView==='timeline'){
+    const target=$('#ws-view'),disposeTimeline=renderTimeline(target,historyProject,{...options,order:historyState.order,grouping:historyState.group,contextProject:project});
+    const disposeMedia=serverMode&&store.serverContext?.team?.id?hydrateTimelineMedia(target,{teamId:store.serverContext.team.id,projectId:project.id}):null;
+    cleanup=()=>{disposeMedia?.();disposeTimeline?.();};
+  }
+  else if(activeView==='tests')cleanup=renderTestChart($('#ws-view'),project,{onSelect:selectRecord,onCreate:canWrite?()=>guarded(async()=>{await openRecord();$('#ws-record-kind').value='test';configureRecordFields();}):undefined})||(()=>{});
+  else if(activeView==='study')cleanup=renderStudyChart($('#ws-view'),project,{onCreate:canWrite?()=>$('#ws-add-study').click():undefined})||(()=>{});
   else if(activeView==='gallery'||activeView==='models'){
     const view=activeView,target=$('#ws-view');target.innerHTML=`<div class="ws-empty" role="status">${escape(shellT('common.loading'))}</div>`;let cancelled=false;
     cleanup=()=>{cancelled=true;};
@@ -170,11 +190,15 @@ function render(){
     if(serverMode)import('./workspace-inbox.js').then(({mountWorkspaceInbox})=>{if(cancelled)return;const dispose=mountWorkspaceInbox(target,{teamId:store.serverContext.team.id,projectId:project.id,role:store.serverContext.role,onChanged:()=>store.refresh(),onSelectRecord:id=>{switchView('graph');selectRecord(id);},onCreateIteration:()=>guarded(async()=>{await openRecord();$('#ws-record-kind').value='iteration';configureRecordFields();})});cleanup=typeof dispose==='function'?dispose:()=>{cancelled=true;};}).catch(error=>{if(!cancelled)target.textContent=workspaceErrorText(error);});
     else target.innerHTML=`<div class="ws-empty"><p>${escape(shellT('media.signinHint'))}</p><a href="/auth?mode=signin">${escape(shellT('common.signin'))}</a></div>`;
   }else renderHistory(historyProject);
+  if(activeView==='history'&&$('#ws-view .ws-record-list')){const heading=document.createElement('header');heading.className='wk-history-heading';const title=document.createElement('h2');title.textContent=new URLSearchParams(location.search).get('journal')==='all'?coreText('journal'):coreText('onlyDecisions');const toggle=document.createElement('button');toggle.type='button';toggle.className='ws-tool-button';toggle.textContent=new URLSearchParams(location.search).get('journal')==='all'?coreText('onlyDecisions'):coreText('journal');toggle.onclick=()=>setJournal(new URLSearchParams(location.search).get('journal')!=='all');heading.append(title,toggle);$('#ws-view').prepend(heading);}
   renderInspector(project);
+  workspaceNavigation?.refresh();
 }
 function localDate(value=new Date()){const date=new Date(value);return new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16);}
-function configureRecordFields(){const kind=$('#ws-record-kind').value;$('#ws-test-fields').hidden=kind!=='test';$('#ws-decision-fields').hidden=kind!=='decision';}
+async function launchIteration(recordId=null,draft){if(!recordId)await personalProject();const {openWorkspaceIteration}=await import('./workspace-iterations.js');openWorkspaceIteration({store,project:store.getProject(),recordId,serverMode,draft,onSaved:async id=>{await store.refresh?.();selectedId=id;render();},onSelectRecord:id=>{switchView('graph');selectRecord(id);},onCreateTest:()=>guarded(async()=>{await openRecord();$('#ws-record-kind').value='test';configureRecordFields();})});}
+function configureRecordFields(){const kind=$('#ws-record-kind').value;if(kind==='iteration'&&$('#ws-record-dialog').open){const title=$('#ws-record-title').value,body=$('#ws-record-body').value;$('#ws-record-dialog').close();guarded(()=>launchIteration(null,{title,body}));return;}$('#ws-test-fields').hidden=kind!=='test';$('#ws-decision-fields').hidden=kind!=='decision';}
 async function openRecord(id=null,proposal=null){
+  if(id&&store.getProject().records.find(record=>record.id===id)?.kind==='iteration')return launchIteration(id,proposal);
   if(!await personalProject())return;
   editingId=id;const project=store.getProject();const record=project.records.find(item=>item.id===id);
   const form=$('#ws-record-form');form.reset();form.querySelector('.ws-form-error').textContent='';
@@ -192,7 +216,7 @@ function download(content,type,filename){const blob=new Blob([content],{type});c
 function exportReport(){
   const project=store.getProject();
   const disclaimer=project.dataKind==='synthetic'?shellT('report.synthetic'):project.educationalOrigin?shellT('report.copy'):shellT('report.local');
-  const html=`<!doctype html><html lang="${getWorkspaceLocale()}"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(project.name)} — Iznera</title><style>body{font:16px/1.6 system-ui,sans-serif;max-width:900px;margin:auto;padding:32px;color:#202620}h1,h2{line-height:1.25}section{padding:22px 0;border-top:1px solid #ccc}aside{padding:20px;background:#f0f4ed}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:12px;border-bottom:1px solid #ccc}p{white-space:pre-wrap}small{color:#465246}</style><h1>${escape(project.name)}</h1><p>${escape(project.description)}</p><aside>${escape(disclaimer)}</aside><h2>${escape(shellT('report.records'))}</h2>${project.records.map(record=>`<section><small>${escape(recordType(record.kind))} · ${escape(record.id)} · ${escape(record.createdAt)} · ${escape(record.author)}</small><h2>${escape(record.title)}</h2><p>${escape(record.body)}</p>${record.rationale?`<h3>${escape(shellT('decision.explanation'))}</h3><p>${escape(record.rationale)}</p>`:''}${Number.isFinite(record.trials)?`<p>${escape(shellT('inspector.result'))}: ${escape(record.successes)} ${escape(shellT('report.of'))} ${escape(record.trials)} ${escape(shellT('report.attempts'))}</p>`:''}${Number.isFinite(record.measuredValue)?`<p>${escape(shellT('inspector.measurement'))}: ${escape(record.measuredValue)} ${escape(record.unit||shellT('inspector.noUnit'))}</p>`:""}${record.conditions?`<p>${escape(shellT('report.conditions'))}: ${escape(record.conditions)}</p>`:''}${record.criterion?`<p>${escape(shellT('report.criterion'))}: ${escape(record.criterion)}</p>`:''}</section>`).join('')}<h2>${escape(shellT('report.links'))}</h2><table><thead><tr><th>${escape(shellT('report.from'))}</th><th>${escape(shellT('report.to'))}</th><th>${escape(shellT('report.meaning'))}</th><th>${escape(shellT('report.status'))}</th></tr></thead><tbody>${project.links.map(link=>`<tr><td>${escape(link.from)}</td><td>${escape(link.to)}</td><td>${escape(link.label)}</td><td>${escape(link.status||'accepted')}</td></tr>`).join('')}</tbody></table><h2>${escape(shellT('report.paired'))}</h2>${project.studyRows.length?`<table><thead><tr><th>${escape(shellT('report.code'))}</th><th>${escape(shellT('report.before'))}</th><th>${escape(shellT('report.with'))}</th></tr></thead><tbody>${project.studyRows.map(row=>`<tr><td>${escape(row.participantCode)}</td><td>${escape(row.baselineSeconds)}</td><td>${escape(row.traceSeconds)}</td></tr>`).join('')}</tbody></table>`:`<p>${escape(shellT('report.noMeasurements'))}</p>`}</html>`;
+  const html=`<!doctype html><html lang="${getWorkspaceLocale()}"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(project.name)} — Iznera</title><style>body{font:16px/1.6 system-ui,sans-serif;max-width:900px;margin:auto;padding:32px;color:#202620}h1,h2{line-height:1.25}section{padding:22px 0;border-top:1px solid #ccc}aside{padding:20px;background:#f0f4ed}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:12px;border-bottom:1px solid #ccc}p{white-space:pre-wrap}small{color:#465246}</style><h1>${escape(project.name)}</h1><p>${escape(project.description)}</p><aside>${escape(disclaimer)}</aside><h2>${escape(shellT('report.records'))}</h2>${project.records.map(record=>`<section><small>${escape(recordType(record.kind))} · ${escape(record.createdAt)} · ${escape(record.author)}</small><h2>${escape(record.title)}</h2><p>${escape(record.body)}</p>${record.rationale?`<h3>${escape(shellT('decision.explanation'))}</h3><p>${escape(record.rationale)}</p>`:''}${Number.isFinite(record.trials)?`<p>${escape(shellT('inspector.result'))}: ${escape(record.successes)} ${escape(shellT('report.of'))} ${escape(record.trials)} ${escape(shellT('report.attempts'))}</p>`:''}${Number.isFinite(record.measuredValue)?`<p>${escape(shellT('inspector.measurement'))}: ${escape(record.measuredValue)} ${escape(record.unit||shellT('inspector.noUnit'))}</p>`:""}${record.conditions?`<p>${escape(shellT('report.conditions'))}: ${escape(record.conditions)}</p>`:''}${record.criterion?`<p>${escape(shellT('report.criterion'))}: ${escape(record.criterion)}</p>`:''}</section>`).join('')}<h2>${escape(shellT('report.links'))}</h2><table><thead><tr><th>${escape(shellT('report.from'))}</th><th>${escape(shellT('report.to'))}</th><th>${escape(shellT('report.meaning'))}</th><th>${escape(shellT('report.status'))}</th></tr></thead><tbody>${project.links.map(link=>`<tr><td>${escape(project.records.find(item=>item.id===link.from)?.title||shellT('inspector.noDescriptionShort'))}</td><td>${escape(project.records.find(item=>item.id===link.to)?.title||shellT('inspector.noDescriptionShort'))}</td><td>${escape(link.label)}</td><td>${escape(link.status||'accepted')}</td></tr>`).join('')}</tbody></table><h2>${escape(shellT('report.paired'))}</h2>${project.studyRows.length?`<table><thead><tr><th>${escape(shellT('report.code'))}</th><th>${escape(shellT('report.before'))}</th><th>${escape(shellT('report.with'))}</th></tr></thead><tbody>${project.studyRows.map(row=>`<tr><td>${escape(row.participantCode)}</td><td>${escape(row.baselineSeconds)}</td><td>${escape(row.traceSeconds)}</td></tr>`).join('')}</tbody></table>`:`<p>${escape(shellT('report.noMeasurements'))}</p>`}</html>`;
   download(html,'text/html;charset=utf-8','iznera-project-report.html');feedback(shellT('feedback.report'));
 }
 function parseCsv(text){
@@ -212,7 +236,9 @@ function parseCsv(text){
 
 if(host){
   mountProductControls({store,localStore,serverMode,onLocale:()=>{render();workspaceNavigation?.refresh();},onError:error=>feedback(workspaceErrorText(error),true),onImport:()=>{selectedId=null;render();}});
-  workspaceNavigation=mountWorkspaceNavigation({onSelect:view=>switchView(view,true)});
+  coreNavigation=mountCoreNavigation();coreNavigation.refresh();
+  workspaceNavigation=mountWorkspaceSidebar();
+  commandNavigation=mountWorkspaceCommand({getProject:()=>store.getProject(),onView:view=>$(`[data-view="${view}"][role="tab"]`).click(),onRecord:id=>{$('[data-view="graph"][role="tab"]').click();selectRecord(id);}});
   historyFilters=mountHistoryFilters($('.ws-tools'),()=>{stopReplay();render();});
   if(serverMode){await setOfflineContext(offlineContext()).catch(()=>feedback(shellT('error.offlineStorage'),true));addEventListener('online',syncOutbox);syncOutbox();if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});}
   const requestedProject=searchParams.get('project');
@@ -235,7 +261,7 @@ if(host){
   $('#ws-edit-example').addEventListener('click',()=>guarded(copyExample));
   $('#ws-toggle-inspector').addEventListener('click',()=>setInspector(!inspectorOpen));
   $('#ws-close-inspector').addEventListener('click',()=>{setInspector(false);$('#ws-toggle-inspector').focus();});
-  $('#ws-open-help').addEventListener('click',()=>$('#ws-help-dialog').showModal());
+  $('#ws-open-help').addEventListener('click',()=>showContextHelp($('#ws-help-dialog'),activeView));
   $('#ws-connect').addEventListener('click',()=>guarded(()=>openConnection()));
   $('#ws-connect-from').addEventListener('change',()=>updateConnectionTargets());
   $('#ws-connect-form').addEventListener('submit',async event=>{event.preventDefault();const form=event.target,fields=new FormData(form),submit=form.querySelector('[type="submit"]');submit.disabled=true;try{const relationType=String(fields.get('relationType'));const meanings={RELATED_TO:shellT('connection.related'),SUPPORTS:shellT('connection.supports'),LEADS_TO:shellT('connection.leads'),CONTRADICTS:shellT('connection.contradicts'),SUPERSEDES:shellT('connection.supersedes')};await store.addLink({from:String(fields.get('from')),to:String(fields.get('to')),label:String(fields.get('label')).trim()||meanings[relationType],relationType,status:'accepted',origin:'student'});$('#ws-connect-dialog').close();feedback(shellT('feedback.connectionCreated'));}catch(error){form.querySelector('.ws-form-error').textContent=workspaceErrorText(error);}finally{submit.disabled=false;}});

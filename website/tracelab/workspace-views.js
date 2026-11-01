@@ -1,8 +1,17 @@
 /* Iznera workspace views. Imported text is always rendered with textContent. */
 const NS = 'http://www.w3.org/2000/svg';
 import { t, recordType, getWorkspaceLocale, formatDate, formatNumber, formatPercent, formatDayKey, formatDayLabel } from './workspace-i18n.js';
+import {recordIterationIds} from './workspace-iterations-model.js';
 let graphSerial = 0;
 const graphViewports = new Map();
+const timelineViewports = new Map();
+const timelineCopy={
+  ru:{ungrouped:'Без подсистемы',unassigned:'Без итерации',jump:'Перейти к группе',shown:'Показано',of:'из',more:'Показать ещё',why:'Почему?',missing:'Причина не задокументирована',result:'Результат',version:'Версия',draft:'Черновик',closed:'Завершено',next:'Следующий шаг',pass:'Успешно',fail:'Неуспешно',partial:'Частично',unknown:'Не определён'},
+  en:{ungrouped:'No subsystem',unassigned:'No iteration',jump:'Jump to group',shown:'Showing',of:'of',more:'Show more',why:'Why?',missing:'Reason not documented',result:'Result',version:'Version',draft:'Draft',closed:'Closed',next:'Next step',pass:'Pass',fail:'Fail',partial:'Partial',unknown:'Unknown'},
+  kk:{ungrouped:'Ішкі жүйе жоқ',unassigned:'Итерация жоқ',jump:'Топқа өту',shown:'Көрсетілді',of:'барлығы',more:'Тағы көрсету',why:'Неге?',missing:'Себеп құжатталмаған',result:'Нәтиже',version:'Нұсқа',draft:'Жоба жазбасы',closed:'Аяқталған',next:'Келесі қадам',pass:'Сәтті',fail:'Сәтсіз',partial:'Ішінара',unknown:'Анықталмаған'},
+};
+const timelineText=key=>timelineCopy[getWorkspaceLocale()][key];
+const emptyActionCopy={ru:{test:'Добавить первое испытание',study:'Добавить парное измерение'},en:{test:'Add the first test',study:'Add a paired measurement'},kk:{test:'Алғашқы сынақты қосу',study:'Жұпталған өлшем қосу'}};
 const noop = () => {};
 
 
@@ -37,10 +46,11 @@ function sorted(records, order = 'oldest') {
     return (order === 'newest' ? right - left : left - right) || String(a.id).localeCompare(String(b.id));
   });
 }
-function empty(container, title, body) {
+function empty(container, title, body, {onAction,actionLabel}={}) {
   container.replaceChildren();
   const block = el('div', 'wv-empty');
   block.append(el('h3', '', title), el('p', '', body));
+  if(typeof onAction==='function')block.append(button(actionLabel,'wv-empty-action',onAction));
   container.append(block);
   return noop;
 }
@@ -113,6 +123,7 @@ export function renderGraph(container, project, { selectedId = null, query = '',
     all.length ? t('graph.changeFilters') : t('graph.emptyText'));
   container.replaceChildren();
   const ids = new Set(visible.map(record => record.id));
+  const recordsById = new Map(visible.map(record => [record.id, record]));
   const links = linksOf(project).filter(link => ids.has(link.from) && ids.has(link.to));
   if (!ids.has(selectedId)) selectedId = null;
   const neighbors = new Set([selectedId]);
@@ -166,7 +177,7 @@ export function renderGraph(container, project, { selectedId = null, query = '',
       pathData = `M ${x1} ${y1} V ${routeY} H ${x2} V ${y2}`; lx = (x1 + x2) / 2; ly = routeY - 8;
     }
     const edge = svg('g', { class: `wv-edge${suggested ? ' is-suggested' : ''}${active ? ' is-active' : ''}${selectedId && !active ? ' is-muted' : ''}` });
-    edge.append(svg('title', {}, `${link.from} → ${link.to}: ${link.label || t('relation.generic')}${suggested ? `. ${t('relation.suggested')}` : ''}`));
+    edge.append(svg('title', {}, `${recordsById.get(link.from)?.title || t('common.untitled')} → ${recordsById.get(link.to)?.title || t('common.untitled')}: ${link.label || t('relation.generic')}${suggested ? `. ${t('relation.suggested')}` : ''}`));
     edge.append(svg('path', { d: pathData, 'marker-end': `url(#wv-arrow-${graphId}-${active ? 'active' : suggested ? 'suggested' : 'accepted'})` }));
     /* Short horizontal gaps carry arrows only. Full relation labels remain in
        the textual connection list, rather than overlapping node titles. */
@@ -178,14 +189,10 @@ export function renderGraph(container, project, { selectedId = null, query = '',
   }
   ordered.forEach(record => {
     const { x, y } = positions.get(record.id);
-    const node = svg('g', { transform: `translate(${x} ${y})`, class: `wv-node wv-node-${record.kind}${record.id === selectedId ? ' is-selected' : ''}${neighbors.has(record.id) && record.id !== selectedId ? ' is-neighbor' : ''}${selectedId && !neighbors.has(record.id) ? ' is-muted' : ''}`, tabindex: 0, role: 'button', 'aria-pressed': String(record.id === selectedId), 'aria-label': `${record.id}. ${recordType(record.kind)}. ${record.title}` });
-    node.append(svg('title', {}, `${record.id} · ${record.title}`));
+    const node = svg('g', { transform: `translate(${x} ${y})`, class: `wv-node wv-node-${record.kind}${record.id === selectedId ? ' is-selected' : ''}${neighbors.has(record.id) && record.id !== selectedId ? ' is-neighbor' : ''}${selectedId && !neighbors.has(record.id) ? ' is-muted' : ''}`, tabindex: 0, role: 'button', 'aria-pressed': String(record.id === selectedId), 'aria-label': `${recordType(record.kind)}. ${record.title}` });
+    node.append(svg('title', {}, record.title));
     node.append(svg('rect', { width: nodeWidth, height: nodeHeight, rx: 12, class: 'wv-node-bg' }));
-    const visibleId = String(record.id).length > 17 ? String(record.id).slice(0, 14) + '…' : String(record.id);
-    const idText = svg('text', { x: 15, y: 25, class: 'wv-node-id' }, visibleId);
-    idText.append(svg('title', {}, String(record.id)));
-    node.append(idText);
-    node.append(svg('text', { x: nodeWidth - 15, y: 25, class: 'wv-node-kind', 'text-anchor': 'end' }, recordType(record.kind)));
+    node.append(svg('text', { x: 15, y: 25, class: 'wv-node-kind' }, recordType(record.kind)));
     const title = svg('text', { x: 15, y: 53, class: 'wv-node-title' });
     shortLines(record.title, 20).forEach((line, index) => title.append(svg('tspan', { x: 15, dy: index ? 18 : 0 }, line)));
     node.append(title);
@@ -231,9 +238,9 @@ export function renderGraph(container, project, { selectedId = null, query = '',
     const row = el('div', `wv-graph-list-row${record.id === selectedId ? ' is-selected' : ''}`);
     const select = button('', 'wv-record-button', () => onSelect(record.id));
     select.setAttribute('aria-pressed', String(record.id === selectedId));
-    select.append(el('span', 'wv-record-id', record.id), el('span', '', record.title)); row.append(select);
+    select.append(el('span', '', record.title)); row.append(select);
     const outgoing = links.filter(link => link.from === record.id);
-    outgoing.forEach(link => { const relation = el('p', 'wv-relation'); relation.append(el('span', '', `→ ${link.to} · ${link.label || t('relation.generic')}`)); if (link.status === 'suggested') relation.append(el('span', 'wv-unconfirmed', t('relation.suggested'))); row.append(relation); });
+    outgoing.forEach(link => { const relation = el('p', 'wv-relation'); relation.append(el('span', '', `→ ${recordsById.get(link.to)?.title || t('common.untitled')} · ${link.label || t('relation.generic')}`)); if (link.status === 'suggested') relation.append(el('span', 'wv-unconfirmed', t('relation.suggested'))); row.append(relation); });
     if (!outgoing.length) row.append(el('p', 'wv-relation', t('relation.noneOutgoing')));
     listBody.append(row);
   });
@@ -250,12 +257,12 @@ export function renderGraph(container, project, { selectedId = null, query = '',
   return () => { rememberViewport(); scroller.removeEventListener('scroll', rememberViewport); mobileQuery?.removeEventListener('change', updateMobileList); };
 }
 
-export function renderTestChart(container, project, { onSelect = noop } = {}) {
+export function renderTestChart(container, project, { onSelect = noop,onCreate } = {}) {
   const allTests = sorted(recordsOf(project).filter(record => record.kind === 'test'));
   const tests = allTests.filter(record => record.successes !== null && record.successes !== '' && Number.isInteger(Number(record.trials)) && Number(record.trials) > 0 && Number.isInteger(Number(record.successes)) && Number(record.successes) >= 0 && Number(record.successes) <= Number(record.trials));
   const countedIds = new Set(tests.map(record => record.id));
   const measuredTests = allTests.filter(record => !countedIds.has(record.id) && record.measuredValue !== null && record.measuredValue !== undefined && record.measuredValue !== '' && Number.isFinite(Number(record.measuredValue)));
-  if (!allTests.length) return empty(container, t('tests.emptyTitle'), t('tests.emptyText'));
+  if (!allTests.length) return empty(container, t('tests.emptyTitle'), t('tests.emptyText'),{onAction:onCreate,actionLabel:emptyActionCopy[getWorkspaceLocale()].test});
   container.replaceChildren();
   const chart = el('div', 'wv-test-chart');
   chart.append(el('p', 'wv-chart-note', (project?.dataKind === 'synthetic' || project?.educationalOrigin) ? t('tests.educational') : t('tests.context')));
@@ -266,7 +273,7 @@ export function renderTestChart(container, project, { onSelect = noop } = {}) {
     const row = button('', 'wv-test-row', () => onSelect(record.id));
     row.setAttribute('aria-label', t('tests.open', { title: record.title, successes: record.successes, trials: record.trials }));
     const head = el('span', 'wv-test-row-head');
-    const title = el('span', 'wv-test-title'); title.append(el('span', 'wv-record-id', record.id), el('span', '', record.title));
+    const title = el('span', 'wv-test-title', record.title);
     head.append(title, el('strong', 'wv-test-value', t('tests.ratio', { successes: record.successes, trials: record.trials }))); row.append(head);
     const track = el('span', 'wv-test-track'); track.setAttribute('aria-hidden', 'true');
     const fill = el('span', 'wv-test-fill'); fill.style.width = `${percent}%`; track.append(fill); row.append(track);
@@ -278,7 +285,7 @@ export function renderTestChart(container, project, { onSelect = noop } = {}) {
     chart.append(row);
   });
   if (tests.length) chart.append(disclosureTable([t('record.test'), t('tests.successHeader'), t('tests.ratioHeader'), t('tests.unitHeader'), t('tests.contextHeader')], tests.map(record => [
-    `${record.id} · ${record.title}`, t('tests.ratio', { successes: record.successes, trials: record.trials }), formatPercent(Number(record.successes) / Number(record.trials)), record.unit || t('tests.attempt'), [record.conditions, record.criterion].filter(Boolean).join(' · ') || t('common.unavailable'),
+    record.title, t('tests.ratio', { successes: record.successes, trials: record.trials }), formatPercent(Number(record.successes) / Number(record.trials)), record.unit || t('tests.attempt'), [record.conditions, record.criterion].filter(Boolean).join(' · ') || t('common.unavailable'),
   ]), t('tests.tableCaption')));
   if (measuredTests.length) {
     const measurementScroll = el('div', 'wv-table-scroll wv-measurement-scroll');
@@ -291,7 +298,7 @@ export function renderTestChart(container, project, { onSelect = noop } = {}) {
     measuredTests.forEach(record => {
       const row = el('tr'); const identity = el('th'); identity.scope = 'row';
       const select = button('', 'wv-measurement-select', () => onSelect(record.id));
-      select.append(el('span', 'wv-record-id', record.id), el('span', '', record.title)); identity.append(select); row.append(identity);
+      select.append(el('span', '', record.title)); identity.append(select); row.append(identity);
       [formatNumber(record.measuredValue, { maximumFractionDigits: 12 }), record.unit || t('common.unavailable'), record.conditions || t('common.unavailable'), record.criterion || t('common.unavailable')].forEach(value => row.append(el('td', '', value)));
       body.append(row);
     });
@@ -318,10 +325,10 @@ function niceMaximum(value) {
   const raw = value / magnitude;
   return (raw <= 1 ? 1 : raw <= 2 ? 2 : raw <= 5 ? 5 : 10) * magnitude;
 }
-export function renderStudyChart(container, project) {
+export function renderStudyChart(container, project,{onCreate}={}) {
   const raw = Array.isArray(project?.studyRows) ? project.studyRows : [];
   const rows = raw.filter(row => row.baselineSeconds !== null && row.baselineSeconds !== '' && row.traceSeconds !== null && row.traceSeconds !== '' && Number.isFinite(Number(row.baselineSeconds)) && Number(row.baselineSeconds) >= 0 && Number.isFinite(Number(row.traceSeconds)) && Number(row.traceSeconds) >= 0);
-  if (!rows.length) return empty(container, t('study.emptyTitle'), t('study.emptyText'));
+  if (!rows.length) return empty(container, t('study.emptyTitle'), t('study.emptyText'),{onAction:onCreate,actionLabel:emptyActionCopy[getWorkspaceLocale()].study});
   container.replaceChildren();
   const chart = el('div', 'wv-study-chart');
   chart.append(el('p', 'wv-chart-note', (project?.dataKind === 'synthetic' || project?.educationalOrigin) ? t('study.educational') : t('study.context')));
@@ -340,8 +347,9 @@ export function renderStudyChart(container, project) {
   }
   rows.forEach((row, index) => {
     const y = top + index * rowHeight + rowHeight / 2;
-    diagram.append(svg('text', { x: left - 14, y: y + 4, 'text-anchor': 'end', class: 'wv-chart-participant' }, String(row.participantCode || row.id || t('study.participant', { count: index + 1 })).slice(0, 16)));
-    const pair = svg('g'); pair.append(svg('title', {}, t('study.pair', { code: row.participantCode || row.id, baseline: Number(row.baselineSeconds), trace: Number(row.traceSeconds) })));
+    const participant = row.participantCode || t('study.participant', { count: index + 1 });
+    diagram.append(svg('text', { x: left - 14, y: y + 4, 'text-anchor': 'end', class: 'wv-chart-participant' }, String(participant).slice(0, 16)));
+    const pair = svg('g'); pair.append(svg('title', {}, t('study.pair', { code: participant, baseline: Number(row.baselineSeconds), trace: Number(row.traceSeconds) })));
     pair.append(svg('line', { x1: x(row.baselineSeconds), x2: x(row.traceSeconds), y1: y, y2: y, class: 'wv-study-pair' }));
     pair.append(svg('circle', { cx: x(row.baselineSeconds), cy: y, r: 5, class: 'wv-baseline-dot' }));
     pair.append(svg('circle', { cx: x(row.traceSeconds), cy: y, r: 5, class: 'wv-trace-dot' }));
@@ -349,44 +357,80 @@ export function renderStudyChart(container, project) {
   });
   diagram.append(svg('text', { x: (left + width - right) / 2, y: height - 7, 'text-anchor': 'middle', class: 'wv-chart-axis' }, t('study.axis')));
   plot.append(diagram); chart.append(plot);
-  const table = disclosureTable([t('study.participantHeader'), t('study.baselineHeader'), t('study.traceHeader'), t('study.differenceHeader')], rows.map(row => [row.participantCode || row.id, formatNumber(Number(row.baselineSeconds)), formatNumber(Number(row.traceSeconds)), formatNumber(Number(row.traceSeconds) - Number(row.baselineSeconds))]), t('study.tableCaption'));
+  const table = disclosureTable([t('study.participantHeader'), t('study.baselineHeader'), t('study.traceHeader'), t('study.differenceHeader')], rows.map((row,index) => [row.participantCode || t('study.participant', { count: index + 1 }), formatNumber(Number(row.baselineSeconds)), formatNumber(Number(row.traceSeconds)), formatNumber(Number(row.traceSeconds) - Number(row.baselineSeconds))]), t('study.tableCaption'));
   table.open = true; chart.append(table);
   if (rows.length !== raw.length) chart.append(el('p', 'wv-chart-note', t('study.skipped', { count: raw.length - rows.length })));
   container.append(chart); return noop;
 }
 
-export function timelineGroups(records, { order = 'newest', now = new Date() } = {}) {
+export function timelineGroups(records, { order = 'newest', now = new Date(), grouping='day',project={records,links:[]} } = {}) {
   const groups = new Map();
   for (const record of sorted(records, order)) {
-    const key = formatDayKey(record.createdAt);
-    if (!groups.has(key)) groups.set(key, { key, label: formatDayLabel(record.createdAt, now), records: [] });
+    let key=formatDayKey(record.createdAt),label=formatDayLabel(record.createdAt,now);
+    if(grouping==='subsystem'){key=record.subsystem||'unassigned';label=record.subsystem||timelineText('ungrouped');}
+    if(grouping==='iteration'){
+      const iterationId=recordIterationIds(record,project)[0];key=iterationId||'unassigned';
+      label=project.records.find(item=>item.kind==='iteration'&&item.id===iterationId)?.title||timelineText('unassigned');
+    }
+    if (!groups.has(key)) groups.set(key, { key, label, records: [] });
     groups.get(key).records.push(record);
   }
   return [...groups.values()];
 }
 
-export function renderTimeline(container, project, { selectedId = null, query = '', kind = 'all', onSelect = noop, order = 'newest', now = new Date() } = {}) {
+export function renderTimeline(container, project, { selectedId = null, query = '', kind = 'all', onSelect = noop, order = 'newest', now = new Date(),grouping='day',contextProject=project,pageSize=100,mediaByRecord=new Map() } = {}) {
   const all = recordsOf(project); const records = all.filter(record => matches(record, query, kind));
   if (!records.length) return empty(container, all.length ? t('timeline.noMatches') : t('timeline.emptyTitle'), all.length ? t('graph.changeFilters') : t('timeline.emptyText'));
-  container.replaceChildren();
-  for (const group of timelineGroups(records, { order, now })) {
-    const section = el('section', 'wv-timeline-group');
-    section.dataset.day = group.key;
-    section.append(el('h3', 'wv-timeline-group-title', group.label));
-    const timeline = el('ol', 'wv-timeline');
-    group.records.forEach(record => {
-    const item = el('li', `wv-timeline-item${record.id === selectedId ? ' is-selected' : ''}`);
-    const select = button('', 'wv-timeline-button', () => onSelect(record.id)); select.setAttribute('aria-pressed', String(record.id === selectedId));select.dataset.recordId=record.id;
-    const time = el('time', 'wv-timeline-date', formatDate(record.createdAt));
-    if (!Number.isNaN(Date.parse(record.createdAt))) time.dateTime = record.createdAt;
-    const main = el('span', 'wv-timeline-main');
-    const meta = el('span', 'wv-timeline-meta');const identifier=el('span', 'wv-record-id', record.id.length>16?record.id.slice(0,8):record.id);identifier.title=record.id;meta.append(identifier, el('span', '', recordType(record.kind)));
-    main.append(meta, el('strong', 'wv-timeline-title', record.title));
-    if (record.body) main.append(el('span', 'wv-timeline-body', record.body));
-    if (record.author) main.append(el('span', 'wv-timeline-author', record.author));
-    select.append(time, main); item.append(select); timeline.append(item);
-  });
-    section.append(timeline); container.append(section);
+  const ordered=sorted(records,order),size=Math.max(25,Math.min(200,Math.trunc(pageSize)||100));
+  const key=[project.id,query,kind,order,grouping,ordered.map(record=>record.id).join(',')].join('|');
+  const previous=timelineViewports.get(key),selectedIndex=ordered.findIndex(record=>record.id===selectedId);
+  let shown=Math.min(ordered.length,Math.max(size,previous?.shown||0,selectedIndex>=0?Math.ceil((selectedIndex+1)/size)*size:0));
+  function paint() {
+    const top=container.scrollTop||0;container.replaceChildren();
+    const groups=timelineGroups(ordered.slice(0,shown),{order,now,grouping,project:contextProject});
+    const overview=el('div','wv-timeline-overview'),count=el('p','',`${timelineText('shown')} ${formatNumber(shown)} ${timelineText('of')} ${formatNumber(ordered.length)}`);overview.append(count);
+    const jumpLabel=el('label','wv-timeline-jump',timelineText('jump')),jump=el('select');jump.setAttribute('aria-label',timelineText('jump'));
+    groups.forEach((group,index)=>{const option=el('option','',group.label);option.value=String(index);jump.append(option);});jumpLabel.append(jump);overview.append(jumpLabel);container.append(overview);
+    const sections=[];
+    for (const group of groups) {
+      const section = el('section', 'wv-timeline-group');sections.push(section);
+      section.dataset.day = group.key;
+      section.append(el('h3', 'wv-timeline-group-title', group.label));
+      const timeline = el('ol', 'wv-timeline');
+      group.records.forEach(record => {
+        const item = el('li', `wv-timeline-item${record.id === selectedId ? ' is-selected' : ''}`);
+        const select = button('', 'wv-timeline-button', () => onSelect(record.id)); select.setAttribute('aria-pressed', String(record.id === selectedId));select.dataset.recordId=record.id;
+        const time = el('time', 'wv-timeline-date', formatDate(record.createdAt));
+        if (!Number.isNaN(Date.parse(record.createdAt))) time.dateTime = record.createdAt;
+        const main = el('span', 'wv-timeline-main');
+        const meta = el('span', 'wv-timeline-meta');meta.append(el('span', '', recordType(record.kind)));
+        if(record.subsystem)meta.append(el('span','',record.subsystem));
+        if(record.revision)meta.append(el('span','',timelineText('version')+': '+record.revision));
+        if(['iteration','decision'].includes(record.kind))meta.append(el('span','',timelineText(record.status==='closed'?'closed':'draft')));
+        main.append(meta, el('strong', 'wv-timeline-title', record.title));
+        const preview=mediaByRecord.get?.(record.id);
+        if(preview?.thumbnailUrl&&/^\/api\/workspace\/media\/[a-zA-Z0-9-]+\?variant=thumbnail$/.test(preview.thumbnailUrl)){
+          const image=el('img','wv-timeline-preview');image.src=preview.thumbnailUrl;image.alt=preview.caption||record.title;image.loading='lazy';image.decoding='async';main.append(image);
+        }
+        if (record.body) main.append(el('span', 'wv-timeline-body', record.body));
+        if(record.rationale)main.append(el('span','wv-timeline-why',timelineText('why')+' '+record.rationale));
+        else if(['iteration','decision'].includes(record.kind))main.append(el('span','wv-timeline-context',timelineText('missing')));
+        if(Number.isFinite(record.trials)&&Number.isFinite(record.successes))main.append(el('span','wv-timeline-context',timelineText('result')+': '+formatNumber(record.successes)+' / '+formatNumber(record.trials)));
+        if(Number.isFinite(record.measuredValue))main.append(el('span','wv-timeline-context',timelineText('result')+': '+formatNumber(record.measuredValue)+(record.unit?' '+record.unit:'')));
+        if(record.testOutcome)main.append(el('span','wv-timeline-context',timelineText('result')+': '+(timelineText(record.testOutcome)||record.testOutcome)));
+        if(record.nextStep)main.append(el('span','wv-timeline-context',timelineText('next')+': '+record.nextStep));
+        if (record.author) main.append(el('span', 'wv-timeline-author', record.author));
+        select.append(time, main); item.append(select); timeline.append(item);
+      });
+      section.append(timeline); container.append(section);
+    }
+    jump.addEventListener('change',()=>sections[Number(jump.value)]?.scrollIntoView?.({block:'start'}));
+    if(shown<ordered.length){const more=button(timelineText('more'),'wv-timeline-more',()=>{shown=Math.min(ordered.length,shown+size);paint();});container.append(more);}
+    container.scrollTop=top;
   }
-  return noop;
+  paint();container.scrollTop=previous?.top||0;
+  return()=>{
+    if(timelineViewports.size>=12&&!timelineViewports.has(key))timelineViewports.delete(timelineViewports.keys().next().value);
+    timelineViewports.set(key,{shown,top:container.scrollTop||0});
+  };
 }

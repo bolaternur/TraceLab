@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir,writeFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
-import { evaluateReportPolicy, publicManifest, recordWarnings, reportCopy, reportHash, reportInput, type ReportData, type ReportPolicy } from "@/server/workspace-report-model";
+import { evaluateReportPolicy, orderedReportRecords, publicManifest, recordWarnings, reportCopy, reportHash, reportInput, reportOutputBudget, reportOutputWithinBudget, type ReportData, type ReportPolicy } from "@/server/workspace-report-model";
 import { renderReportHtml,renderReportPdf } from "@/server/workspace-report-render";
 
 const now=new Date("2026-10-26T12:00:00Z");
@@ -19,6 +19,42 @@ function fixture():ReportData{
 }
 const policy:ReportPolicy={id:randomUUID(),profileId:randomUUID(),program:"TEST",season:"fixture-only",version:"fixture-1",status:"active",reviewedAt:now.toISOString(),reviewer:"Automated test fixture; not a real rules review",effectiveFrom:"2026-10-01T00:00:00Z",sourceUrls:["https://example.invalid/rules"],constraints:{validUntil:"2026-11-01T00:00:00Z",maxPages:30,maxFileMb:10},matrix:{export_deterministic_notebook:"ALLOW"}};
 describe("report policy and deterministic documents",()=>{
+  it("requires reviewed FTC cover/content/decimal byte semantics and a dated content window",()=>{
+    const ftc={...policy,program:"FTC"};
+    expect(evaluateReportPolicy(ftc,"FTC","fixture-only","competition",now).code).toBe("policy_layout_unreviewed");
+    const reviewed={...ftc,constraints:{...policy.constraints,coverPages:1,maxContentPages:15,maxPages:16,maxFileMb:15,fileUnit:"MB",fileLimitExclusive:true}};
+    expect(evaluateReportPolicy(reviewed,"FTC","fixture-only","competition",now).code).toBe("policy_content_window_unreviewed");
+    expect(evaluateReportPolicy({...reviewed,constraints:{...reviewed.constraints,contentNotBefore:"2026-01-01T00:00:00.000Z"}},"FTC","fixture-only","competition",now).allowed).toBe(true);
+  });
+  it("preserves explicit order and rejects duplicates, foreign IDs and inconsistent sections",()=>{
+    const records=fixture().project.records,ids=records.map(record=>record.id).reverse();
+    expect(orderedReportRecords(records,{recordIds:ids}).map(record=>record.id)).toEqual(ids);
+    const sections=[{title:"Choice",recordIds:[ids[0]]},{title:"Evidence",recordIds:[ids[1]]}];
+    expect(orderedReportRecords(records,{recordIds:ids,sections}).map(record=>record.id)).toEqual(ids);
+    for(const recordIds of [[ids[0],ids[0]],["foreign-id"]])expect(()=>orderedReportRecords(records,{recordIds})).toThrow("invalid_report_selection");
+    expect(()=>orderedReportRecords(records,{recordIds:ids,sections:[{title:"Reordered",recordIds:[...ids].reverse()}]})).toThrow("invalid_report_sections");
+    expect(()=>orderedReportRecords(records,{recordIds:ids,sections:[{title:"Missing",recordIds:[ids[0]]}]})).toThrow("invalid_report_sections");
+  });
+  it("enforces strict decimal-byte competition budgets and a measured PDF with cover + content",()=>{
+    const reviewed={...policy,constraints:{...policy.constraints,maxFileMb:15,fileUnit:"MB",coverPages:1,maxContentPages:15,maxPages:16}};
+    const options={purpose:"competition",format:"pdf"} as const;
+    expect(reportOutputBudget(options,reviewed)).toMatchObject({bytes:15_000_000,pages:16,contentPages:15,exclusive:true});
+    expect(reportOutputWithinBudget({bytes:14_999_999,pages:16},options,reviewed)).toBe(true);
+    expect(reportOutputWithinBudget({bytes:15_000_000,pages:16},options,reviewed)).toBe(false);
+    expect(reportOutputWithinBudget({bytes:1000,pages:17},options,reviewed)).toBe(false);
+    for(const pages of [null,0,1,1.5])expect(reportOutputWithinBudget({bytes:1000,pages},options,reviewed)).toBe(false);
+    for(const format of ["html","json"] as const)expect(reportOutputWithinBudget({bytes:1000,pages:2},{...options,format},reviewed)).toBe(false);
+  });
+  it("keeps the technical manifest separate from a competition PDF, while engineering PDFs keep it attached",async()=>{
+    const data=fixture();data.options.purpose="competition";data.options.teamNumber="12345";
+    data.policyGate={...evaluateReportPolicy(policy,"TEST","fixture-only","competition",now),policy};
+    data.project.records.forEach(record=>{record.body="Synthetic authored evidence. ".repeat(5);});
+    const rendered=await renderReportPdf(data);
+    expect(rendered.pages).toBeGreaterThanOrEqual(2);
+    expect(rendered.bytes.toString("latin1")).not.toContain("iznera-manifest.json");
+    expect(publicManifest(data).layout).toMatchObject({purpose:"competition",teamNumber:"12345"});
+    expect(publicManifest(data).records).toHaveLength(2);
+  });
   it("keeps original engineering export available but fails closed for unknown/stale/mismatched competition policy",()=>{
     expect(evaluateReportPolicy(null,"FTC","2026","engineering").allowed).toBe(true);
     expect(evaluateReportPolicy(null,"FTC","2026","competition").allowed).toBe(false);

@@ -127,17 +127,28 @@ async function appendSnapshot(client: PoolClient, user: WorkspaceUser, teamId: s
     [teamId,project.id,user.id,JSON.stringify(snapshot),previous?.id ?? null]);
 }
 const entityType = (record: WorkspaceRecord) => record.kind === "source" ? "source_event" : record.kind;
+/** A typed subsystem name selects or creates the team's project-local taxonomy.
+ * Imported IDs never grant access to another project's subsystem. */
+async function recordSubsystem(client: PoolClient, row: ProjectRow, record: WorkspaceRecord) {
+  const name = record.subsystem?.trim();
+  if (!name) return null;
+  await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", ["workspace-subsystem:" + row.id + ":" + name.toLocaleLowerCase("en")]);
+  const existing = (await client.query<{id:string}>("SELECT id FROM subsystems WHERE project_id=$1 AND team_id=$2 AND lower(name)=lower($3) ORDER BY created_at,id LIMIT 1", [row.id,row.team_id,name])).rows[0];
+  if (existing) return existing.id;
+  return (await client.query<{id:string}>("INSERT INTO subsystems(project_id,team_id,name) VALUES($1,$2,$3) RETURNING id", [row.id,row.team_id,name])).rows[0].id;
+}
 async function saveNewRecord(client: PoolClient, user: WorkspaceUser, row: ProjectRow, record: WorkspaceRecord, imported: boolean) {
   const id = randomUUID();
   const type = entityType(record);
+  const subsystemId = await recordSubsystem(client,row,record);
   await client.query(`INSERT INTO source_events(id,team_id,season_id,project_id,provider,provider_event_id,event_type,actor_user_id,title,summary,occurred_at,raw_metadata,content_hash,status)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'linked')`,
     [id,row.team_id,row.season_id,row.id,imported?"upload":"capture",row.id+":"+record.id,record.kind,imported?null:user.id,
       record.title,record.body,record.createdAt,JSON.stringify({workspaceLocalId:record.id,original:record,importedBy:imported?user.id:null,educationalOrigin:row.educational_origin}),
       hash(stable(record))]);
   if (record.kind === "iteration") {
-    await client.query("INSERT INTO iterations(id,team_id,project_id,title,change_summary,created_by,opened_at,state,outcome,closed_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
-      [id,row.team_id,row.id,record.title,record.body,imported?null:user.id,record.createdAt,record.status==="closed"?"closed":"open",record.outcome??null,record.status==="closed"?new Date():null]);
+    await client.query("INSERT INTO iterations(id,team_id,project_id,title,change_summary,created_by,opened_at,state,outcome,closed_at,subsystem_id,problem_or_goal) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)",
+      [id,row.team_id,row.id,record.title,record.body,imported?null:user.id,record.createdAt,record.status==="closed"?"closed":"open",record.outcome??null,record.status==="closed"?new Date():null,subsystemId,record.problemOrGoal??null]);
   } else if (record.kind === "test") {
     await client.query(`INSERT INTO tests(id,team_id,project_id,title,target_type,target_label,metric_name,units,trials,successes,value,pass_criteria,environment,observations,outcome,performed_at,created_by)
       VALUES($1,$2,$3,$4,'project',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
@@ -147,6 +158,11 @@ async function saveNewRecord(client: PoolClient, user: WorkspaceUser, row: Proje
   } else if (record.kind === "decision") {
     await client.query("INSERT INTO decisions(id,team_id,project_id,title,status,author_user_id,decided_at) VALUES($1,$2,$3,$4,$5,$6,$7)",
       [id,row.team_id,row.id,record.title,record.status==="draft"?"open":"closed",imported?null:user.id,record.createdAt]);
+  }
+  if (subsystemId) {
+    await client.query("UPDATE source_events SET subsystem_id=$1 WHERE id=$2 AND team_id=$3",[subsystemId,id,row.team_id]);
+    if(record.kind==="test")await client.query("UPDATE tests SET subsystem_id=$1 WHERE id=$2 AND team_id=$3",[subsystemId,id,row.team_id]);
+    if(record.kind==="decision")await client.query("UPDATE decisions SET subsystem_id=$1 WHERE id=$2 AND team_id=$3",[subsystemId,id,row.team_id]);
   }
   await client.query(`INSERT INTO workspace_entity_map(project_id,team_id,local_id,entity_type,entity_id,author_user_id,imported_by,original_author_label)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,[row.id,row.team_id,record.id,type,id,imported?null:user.id,imported?user.id:null,record.originalAuthorLabel ?? record.author]);
@@ -159,6 +175,7 @@ async function saveNewRecord(client: PoolClient, user: WorkspaceUser, row: Proje
 async function saveRecordEdit(client: PoolClient, user: WorkspaceUser, row: ProjectRow, record: WorkspaceRecord, mapping: EntityRow) {
   if (mapping.author_user_id !== user.id && mapping.imported_by !== user.id) throw denied();
   if (mapping.entity_type !== entityType(record)) throw invalid("Тип существующей записи нельзя изменить.");
+  const subsystemId = await recordSubsystem(client,row,record);
   const previous = (await client.query<{id:string}>(`SELECT id FROM annotations WHERE entity_id=$1 AND field='workspace_record' ORDER BY created_at DESC,id DESC LIMIT 1`,[mapping.entity_id])).rows[0];
   await client.query(`INSERT INTO annotations(team_id,entity_type,entity_id,field,author_user_id,body,source_method,provenance,supersedes_id,created_at)
     VALUES($1,$2,$3,'workspace_record',$4,$5,'typed','student',$6,clock_timestamp())`,
@@ -168,8 +185,16 @@ async function saveRecordEdit(client: PoolClient, user: WorkspaceUser, row: Proj
     [record.title,record.body,record.unit ?? null,record.trials ?? null,record.successes ?? null,record.measuredValue ?? null,record.criterion ?? null,record.conditions ?? null,mapping.entity_id,row.team_id]);
   if (record.kind === "decision") await client.query("UPDATE decisions SET title=$1,status=$2 WHERE id=$3 AND team_id=$4",[record.title,record.status==="draft"?"open":"closed",mapping.entity_id,row.team_id]);
   if (record.kind === "iteration") await client.query(`UPDATE iterations SET title=$1,change_summary=$2,state=$3,outcome=$4,
-    closed_at=CASE WHEN $3='closed' THEN COALESCE(closed_at,now()) ELSE NULL END WHERE id=$5 AND team_id=$6`,
-    [record.title,record.body,record.status==="closed"?"closed":"open",record.outcome??null,mapping.entity_id,row.team_id]);
+    closed_at=CASE WHEN $3='closed' THEN COALESCE(closed_at,now()) ELSE NULL END,
+    subsystem_id=CASE WHEN $9 THEN $7::uuid ELSE subsystem_id END,
+    problem_or_goal=CASE WHEN $10 THEN $8::text ELSE problem_or_goal END WHERE id=$5 AND team_id=$6`,
+    [record.title,record.body,record.status==="closed"?"closed":"open",record.outcome??null,mapping.entity_id,row.team_id,subsystemId,record.problemOrGoal??null,Object.hasOwn(record,"subsystem"),Object.hasOwn(record,"problemOrGoal")]);
+  if(Object.hasOwn(record,"subsystem")) {
+    // Subsystem assignment is triage metadata, never an edit of captured bytes.
+    await client.query("UPDATE source_events SET subsystem_id=$1 WHERE id=$2 AND team_id=$3",[subsystemId,mapping.entity_id,row.team_id]);
+    if(record.kind==="test")await client.query("UPDATE tests SET subsystem_id=$1 WHERE id=$2 AND team_id=$3",[subsystemId,mapping.entity_id,row.team_id]);
+    if(record.kind==="decision")await client.query("UPDATE decisions SET subsystem_id=$1 WHERE id=$2 AND team_id=$3",[subsystemId,mapping.entity_id,row.team_id]);
+  }
   if (record.rationale) {
     const old = (await client.query<{id:string}>("SELECT id FROM annotations WHERE entity_id=$1 AND field='rationale' ORDER BY created_at DESC,id DESC LIMIT 1",[mapping.entity_id])).rows[0];
     await client.query(`INSERT INTO annotations(team_id,entity_type,entity_id,field,author_user_id,body,supersedes_id,created_at)

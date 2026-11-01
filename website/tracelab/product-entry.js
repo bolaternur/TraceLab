@@ -34,24 +34,28 @@ const serverCopy = {
     step4Text:'Жазбаларға граф пен хронология арқылы орал. JSON немесе PDF / HTML есебін жүктеп ал.'
   },
 };
+let signedIn=false;
 function update() {
   const locale = document.documentElement.lang in labels ? document.documentElement.lang : 'ru';
   const text = labels[locale];
-  document.querySelectorAll('a.a-button.primary[href*="/workspace"]').forEach(link => {
-    link.href = '/auth?mode=signup';
+  document.querySelectorAll('a.a-button.primary[href*="/workspace"],a.a-button.primary[href*="/auth"]').forEach(link => {
+    link.href = signedIn?'/workspace?view=overview':'/auth?mode=signup';
     const label = link.querySelector('[data-i18n]');
     if (label) { label.dataset.productLabel = 'create'; label.removeAttribute('data-i18n'); label.textContent = text.create; }
   });
-  document.querySelectorAll('[data-product-label="create"]').forEach(label => label.textContent = text.create);
+  document.querySelectorAll('[data-product-label="create"]').forEach(label => label.textContent = signedIn?({ru:'Открыть рабочую область',en:'Open workspace',kk:'Жұмыс кеңістігін ашу'})[locale]:text.create);
   document.querySelectorAll('[data-i18n="projectStorageNote"],[data-i18n="faqStorageA"]').forEach(el => el.textContent = text.storage);
   for(const [key,value] of Object.entries(serverCopy[locale]))document.querySelectorAll(`[data-i18n="${key}"]`).forEach(el=>el.textContent=value);
+  const title=serverCopy[locale][document.body.dataset.titleKey];if(title)document.title=`${title} — Iznera`;
+  const description=serverCopy[locale][document.body.dataset.descriptionKey];if(description)document.querySelector('meta[name="description"]')?.setAttribute('content',description);
   let signIn = document.querySelector('[data-product-signin]');
   if (!signIn) {
     const actions = document.querySelector('.a-hero .a-actions');
     if (actions) { signIn = document.createElement('a'); signIn.className = 'a-button secondary'; signIn.href = '/auth?mode=signin'; signIn.dataset.productSignin = ''; actions.append(signIn); }
   }
-  if (signIn) signIn.textContent = text.signin;
+  if (signIn) {signIn.textContent=text.signin;signIn.hidden=signedIn;}
   try { document.cookie = `pt_lang=${locale}; Path=/; Max-Age=31536000; SameSite=Lax`; } catch {}
 }
 update();
+fetch('/api/account/session',{credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(5000)}).then(response=>response.ok?response.json():null).then(data=>{signedIn=Boolean(data?.user);update();}).catch(()=>{});
 new MutationObserver(update).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });

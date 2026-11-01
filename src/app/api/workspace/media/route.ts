@@ -10,7 +10,7 @@ export async function GET(request:Request){
     const user=await getCurrentUser();if(!user)return mediaJson({error:{code:"unauthenticated"}},401);
     const params=new URL(request.url).searchParams;
     return mediaJson(await listWorkspaceMedia(user,{teamId:params.get("team")||"",projectId:params.get("project")||"",
-      mode:params.get("mode")||undefined,offset:Number(params.get("offset")||0)}));
+      mode:params.get("mode")||undefined,offset:Number(params.get("offset")||0),recordIds:params.has("record")?params.getAll("record"):undefined}));
   }catch(error){return mediaFailure(error);}
 }
 export async function POST(request:Request){

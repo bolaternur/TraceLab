@@ -4,6 +4,8 @@ Iznera connects sources, engineering tests, decisions and student-authored expla
 
 **Development implementation, not a verified public beta.** Fictional demonstration records are never research results. The complete 2026-10-26 requirements, implementation evidence and unresolved gates are tracked in [docs/IMPLEMENTATION_MATRIX.md](docs/IMPLEMENTATION_MATRIX.md).
 
+The expanded October 31 brief is tracked in [the current traceability matrix](docs/plan-traceability.md). Start with the [Russian user guide](docs/IZNERA_USER_GUIDE_RU.md) for the observation → iteration → test → decision → report workflow. [November 1 validation](docs/VALIDATION_2026-11-01.md) records exact test results, screenshots and unverified deployment gates.
+
 ## One application and one startup
 
 The supported application is the root Next.js project. The Astra presentation, accounts, team onboarding, workspace and private APIs run on the same origin. `/workspace` uses PostgreSQL. `/demo/workspace` preserves the browser-local demonstration and its existing storage format. Older `/app` links redirect to the new workspace. The separate static build is a reference/demo build, not the production backend.
@@ -46,13 +48,17 @@ node scripts/verify-production-origin.mjs
 
 Database integration suites require `.env.local` with the isolated database and explicit opt-in flags documented in their files. They create randomized fixtures and clean only their own fixtures. The old Orion-seeded integration suites are separate legacy tests; do not seed a real team merely to satisfy them. No unit-test count implies that every browser flow, live provider or pilot gate is verified.
 
-`npm run test:db` enables the current unified DB suites together and refuses database names outside the dedicated `tracelab_unified_*` development/test family. CI uses this command on a fresh migrated database instead of schema push or fictional seed data.
+`npm run test:db` enables the earlier unified DB group and refuses database names outside the dedicated `tracelab_unified_*` development/test family. CI uses the complete self-contained runner below rather than schema push or fictional seed data.
+
+For an owner's machine with existing team data, prefer `node scripts/test-isolated-db.mjs`: it creates and migrates a uniquely named new local database, enables only the self-contained fixture suites and retains that database for inspection. It never migrates the existing team database. The legacy seeded suite is explicitly excluded; lifecycle runs against the registered migrations with the other current suites.
 
 ## Data integrity and recovery
 
 Original source records and artifact metadata are immutable. Author edits append versions. Shared mutations check membership, revision and request identity; layout is stored separately. Team import requires a preview bound to the exact payload and team, then explicit confirmation, and creates a separate project. Browser originals remain available.
 
 `node scripts/verify-local-backup.mjs` dumps the isolated local database, restores it into a unique temporary verification database, compares core table counts and retains the dump under ignored `.data/backups`. **Files require a separate backup** of `.data/storage` or the configured bucket. Store a complete database+files backup before a real deployment or migration.
+
+The [combined recovery rehearsal](docs/RECOVERY_REHEARSAL.md) creates fresh synthetic source/restored databases and private file stores, then verifies actual photo, thumbnail and report bytes through application access rules. This rehearsal does not back up or alter the owner's existing files and does not replace a production backup policy. See [data lifecycle boundaries](docs/DATA_LIFECYCLE_STATUS.md) and [report composition](docs/REPORT_COMPOSER.md).
 
 ## Scope and remaining gates
 

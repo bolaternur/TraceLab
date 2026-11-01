@@ -23,8 +23,9 @@ export async function GET(request:Request){
     const params=new URL(request.url).searchParams;
     if(params.has("download")){
       const file=await downloadWorkspaceReport(user,params.get("download")!);
+      if(params.get("manifest")==="1")return new Response(JSON.stringify(file.manifest,null,2),{headers:{...headers,"Content-Type":"application/json; charset=utf-8","Content-Disposition":`attachment; filename="${file.filename}.manifest.json"`}});
       return new Response(new Uint8Array(file.bytes),{headers:{...headers,"Content-Type":file.mimeType,"Content-Length":String(file.bytes.length),
-        "Content-Disposition":`attachment; filename="${file.filename}"`,"Content-Security-Policy":"default-src 'none'; sandbox"}});
+        "Content-Disposition":`${params.get("preview")==="1"&&file.mimeType==="application/pdf"?"inline":"attachment"}; filename="${file.filename}"`,"Content-Security-Policy":"default-src 'none'; sandbox"}});
     }
     return json(await previewWorkspaceReport(user,params.get("project")??""));
   }catch(error){return errorResponse(error);}

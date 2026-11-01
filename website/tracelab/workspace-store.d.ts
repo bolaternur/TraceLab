@@ -2,6 +2,7 @@ export interface WorkspaceRecord {
   id: string; kind: "source" | "iteration" | "test" | "decision"; title: string; body: string; author: string; createdAt: string;
   rationale?: string; status?: "draft" | "closed"; sourceType?: string; revision?: string; unit?: string;
   outcome?: "kept" | "reverted" | "iterate" | "deferred" | "rejected"; nextStep?: string;
+  subsystem?: string; problemOrGoal?: string; testOutcome?: "pass" | "fail" | "partial" | "unknown";
   criterion?: string; conditions?: string; measuredValue?: number; trials?: number; successes?: number;
   originalAuthorLabel?: string; authorProvenance?: string; recordHistory?: unknown; annotationHistory?: unknown[];
   [key: string]: unknown;

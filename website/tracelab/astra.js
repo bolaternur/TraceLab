@@ -2,6 +2,9 @@ import { copy } from './astra-copy.js';
 import {mountOverlayNavigation} from './astra-navigation.js';
 import {mountDotFields} from './astra-dots.js';
 import {mountEvidenceEffects} from './astra-effects.js';
+import {mountLanguageSwitcher} from './language-switcher.js';
+import {mountThemeToggles} from './theme-toggle.js';
+mountThemeToggles();
 
 const storageKey = 'tracelab-locale';
 const records = [
@@ -14,6 +17,7 @@ try { const saved = localStorage.getItem(storageKey); if (Object.hasOwn(copy, sa
 const state = { tab: 'graph', filter: 'all', selected: 'prototype' };
 const tr = key => copy[locale][key] ?? copy.ru[key] ?? key;
 const navigation=mountOverlayNavigation({dialog:document.querySelector('#astra-navigation'),trigger:document.querySelector('[data-menu]'),localeText:tr});
+const languageSwitchers=[...document.querySelectorAll('[data-language-switcher]')].map(root=>mountLanguageSwitcher(root,{locale,onChange:next=>applyLocale(next,true)}));
 const date = value => {
   const parsed = new Date(value);
   // Some embedded Chromium builds lack Kazakh month names in their ICU data.
@@ -50,7 +54,7 @@ function applyLocale(next, persist = false) {
   document.documentElement.lang = locale;
   document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = tr(el.dataset.i18n); });
   document.querySelectorAll('[data-i18n-label]').forEach(el => { el.setAttribute('aria-label',tr(el.dataset.i18nLabel)); });
-  document.querySelectorAll('[data-locale]').forEach(el => el.setAttribute('aria-pressed',String(el.dataset.locale === locale)));
+  languageSwitchers.forEach(controller=>controller.refresh(locale));
   document.title = `${tr(document.body.dataset.titleKey)} — Iznera`;
   document.querySelector('meta[name="description"]')?.setAttribute('content',tr(document.body.dataset.descriptionKey));
   navigation.refreshLabels();
@@ -69,8 +73,6 @@ function selectTab(tab, focus = false) {
   document.querySelectorAll('[role="tabpanel"]').forEach(el => { el.hidden = el.id !== `demo-panel-${tab}`; });
 }
 document.addEventListener('click', event => {
-  const localeButton = event.target.closest('[data-locale]');
-  if (localeButton) { applyLocale(localeButton.dataset.locale,true); return; }
   const tab = event.target.closest('[data-tab]');
   if (tab) { selectTab(tab.dataset.tab); return; }
   const record = event.target.closest('[data-record]');
@@ -93,5 +95,5 @@ applyLocale(locale);
 let disposeMotion=null;
 function mountMotion(){if(disposeMotion)return;const dots=mountDotFields(),effects=mountEvidenceEffects();disposeMotion=()=>{dots();effects();};}
 mountMotion();
-window.addEventListener('pagehide',()=>{navigation.close({immediate:true,restoreFocus:false});disposeMotion?.();disposeMotion=null;});
+window.addEventListener('pagehide',()=>{navigation.close({immediate:true,restoreFocus:false});languageSwitchers.forEach(controller=>controller.close({immediate:true}));disposeMotion?.();disposeMotion=null;});
 window.addEventListener('pageshow',()=>mountMotion());

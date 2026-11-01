@@ -206,7 +206,7 @@ test('Astra assets exist and marketing pages load the new stylesheet and interac
 });
 
 test('motion components publish local assets and complete destinations under localhost and Pages base paths',async()=>{
-  const files=['astra-dots.js','astra-dots.css','astra-navigation.js','astra-navigation.css','astra-effects.js','astra-effects.css','workspace-navigation.js','workspace-navigation.css'];
+  const files=['astra-dots.js','astra-dots.css','astra-navigation.js','astra-navigation.css','astra-effects.js','astra-effects.css','workspace-sidebar.js','workspace-sidebar.css'];
   for(const build of builds){
     for(const file of files){const source=await readFile(path.join(build.directory,file),'utf8');assert.ok(source.length>0,`${file}: asset is published`);if(file.endsWith('.js'))assert.doesNotMatch(source, /\b(?:from\s*|import\s*\()["']https?:/,'components execute locally without remote imports');}
     for(const [route,html] of build.html){if(route==='workspace'){assert.doesNotMatch(html,/\bdata-dot-field(?:\s|>|=)/,'working views keep their own functional canvas');continue;}
@@ -219,7 +219,7 @@ test('motion components publish local assets and complete destinations under loc
   }
 });
 
-test('workspace Astra theme is published last in the cascade without leaking into marketing routes', async () => {
+test('workspace theme precedes the selected sidebar refinement without leaking into marketing routes', async () => {
   for (const build of builds) {
     const cssFile = path.join(build.directory, 'workspace-astra.css');
     assert.ok((await stat(cssFile)).isFile(), `${build.base}: workspace theme asset is published`);
@@ -228,7 +228,8 @@ test('workspace Astra theme is published last in the cascade without leaking int
       .map(match => match[0])
       .filter(tag => attributes(tag, 'rel')[0] === 'stylesheet')
       .map(tag => attributes(tag, 'href')[0].split('?')[0]);
-    assert.equal(stylesheets.at(-1), `${build.base}/workspace-astra.css`, 'neutral workspace theme must override inherited green styles');
+    assert.equal(stylesheets.at(-2), `${build.base}/workspace-sidebar.css`, 'selected sidebar styling must override the old utility rail');
+    assert.equal(stylesheets.at(-3), `${build.base}/workspace-astra.css`, 'neutral workspace theme must still override inherited green styles');
     for (const file of ['workspace.css', 'workspace-views.css', 'workspace-canvas.css', 'workspace-shell.css']) {
       assert.ok(stylesheets.includes(`${build.base}/${file}`), `${file}: keep existing workspace layout and interaction styles`);
     }

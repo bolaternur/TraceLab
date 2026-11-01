@@ -1,4 +1,4 @@
-import { storage, type StorageAdapter } from "./storage";
+import { storage, lifecycleStorage, type StorageAdapter } from "./storage";
 import { MediaError } from "./workspace-media-contract";
 
 function keyPath(key: string) {
@@ -60,7 +60,7 @@ function adapter(): StorageAdapter {
   if (provider !== "supabase") throw new MediaError("storage_not_configured", 503);
   const { SUPABASE_URL: url, SUPABASE_SERVICE_ROLE_KEY: key, SUPABASE_STORAGE_BUCKET: bucket } = process.env;
   if (!url || !key || !bucket) throw new MediaError("storage_not_configured", 503);
-  return configured = new PrivateSupabaseStorage(url,key,bucket);
+  return configured = lifecycleStorage(new PrivateSupabaseStorage(url,key,bucket));
 }
 export const mediaStorage: StorageAdapter = {
   put: (key,bytes,type) => adapter().put(key,bytes,type),

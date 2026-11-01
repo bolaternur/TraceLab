@@ -6,14 +6,15 @@ import type { WorkspaceProject } from "../../website/tracelab/workspace-store.js
 import { workspaceTransaction, WorkspaceError, type WorkspaceUser } from "./workspace-service";
 import { mediaStorage } from "./workspace-media-storage";
 import type { StorageAdapter } from "./storage";
-import { decisionEvidenceIds, evaluateReportPolicy, publicManifest, recordWarnings, REPORT_LIMITS, reportHash, reportInput, type RecordRef, type ReportData, type ReportMedia, type ReportOptions, type ReportPolicy } from "./workspace-report-model";
+import { decisionEvidenceIds, evaluateReportPolicy, orderedReportRecords, publicManifest, recordWarnings, reportOutputWithinBudget, reportPolicySelection, REPORT_LIMITS, reportHash, reportInput, type RecordRef, type ReportData, type ReportMedia, type ReportOptions, type ReportPolicy } from "./workspace-report-model";
 import { renderReportHtml, renderReportPdf, type ReportImage } from "./workspace-report-render";
 
 const uuid=z.string().uuid();
 const denied=()=>new WorkspaceError("forbidden",403,"Нет доступа к этому проекту или отчёту.");
-type ProjectRow={id:string;team_id:string;season_id:string;name:string;description:string|null;team_name:string;program:string;season_name:string;role:string;revision:number;educational_origin:boolean;body:string|null;snapshot_id:string|null;competition_profile_id:string|null};
+type ProjectRow={id:string;team_id:string;season_id:string;name:string;description:string|null;team_name:string;program:string;season_name:string;role:string;revision:number;educational_origin:boolean;body:string|null;snapshot_id:string|null;competition_profile_id:string|null;policy_anchor:unknown;has_policy_anchor:boolean};
 async function projectRow(client:PoolClient,user:WorkspaceUser,id:string){
   const row=(await client.query<ProjectRow>(`SELECT p.*,t.name AS team_name,t.program,t.competition_profile_id,s.name AS season_name,m.role,
+    s.handoff_curated->'izneraPolicyAnchor' AS policy_anchor,COALESCE(s.handoff_curated ? 'izneraPolicyAnchor',false) AS has_policy_anchor,
     COALESCE(w.revision,0) AS revision,COALESCE(w.educational_origin,false) AS educational_origin,a.body,a.id AS snapshot_id
     FROM projects p JOIN teams t ON t.id=p.team_id JOIN seasons s ON s.id=p.season_id
     JOIN team_memberships m ON m.team_id=p.team_id AND m.user_id=$2 AND m.status='active'
@@ -23,16 +24,19 @@ async function projectRow(client:PoolClient,user:WorkspaceUser,id:string){
   if(!row)throw denied();return row;
 }
 async function loadPolicy(client:PoolClient,row:ProjectRow):Promise<ReportPolicy|null>{
-  if(!row.competition_profile_id)return null;
-  const p=(await client.query(`SELECT v.*,c.program FROM policy_versions v JOIN competition_profiles c ON c.id=v.profile_id
+  const selection=reportPolicySelection(row.policy_anchor,row.has_policy_anchor);
+  if(selection.mode==="blocked"||selection.mode==="legacy"&&!row.competition_profile_id)return null;
+  const p=selection.mode==="pinned"?(await client.query(`SELECT v.*,c.program FROM policy_versions v JOIN competition_profiles c ON c.id=v.profile_id WHERE v.id=$1 AND v.profile_id=$2`,[selection.versionId,selection.profileId])).rows[0]:(await client.query(`SELECT v.*,c.program FROM policy_versions v JOIN competition_profiles c ON c.id=v.profile_id
     WHERE v.profile_id=$1 ORDER BY (v.status='active') DESC,v.created_at DESC LIMIT 1`,[row.competition_profile_id])).rows[0];
   if(!p)return null;
   return {id:p.id,profileId:p.profile_id,program:p.program,season:String(p.constraints?.season??""),version:p.version,status:p.status,
     reviewedAt:p.reviewed_at?.toISOString()??null,reviewer:p.reviewer,effectiveFrom:p.effective_from?.toISOString()??null,
     sourceUrls:Array.isArray(p.source_urls)?p.source_urls:[],constraints:p.constraints??{},matrix:p.action_matrix??{}};
 }
+const reportProgram=(row:ProjectRow,policy:ReportPolicy|null)=>reportPolicySelection(row.policy_anchor,row.has_policy_anchor).mode==="pinned"&&policy?policy.program:row.program;
 async function capture(client:PoolClient,user:WorkspaceUser,options:ReportOptions):Promise<ReportData>{
   const row=await projectRow(client,user,options.projectId);
+  if(options.expectedProjectRevision!==undefined&&row.revision!==options.expectedProjectRevision)throw new WorkspaceError("report_preview_changed",409,"Материалы изменились после предпросмотра. Откройте отчёт заново и проверьте новый состав.");
   const project:WorkspaceProject=row.body?JSON.parse(row.body):{id:row.id,name:row.name,description:row.description??"",dataKind:"personal",records:[],links:[],studyRows:[]};
   project.id=row.id;project.name=row.name;project.educationalOrigin=Boolean(row.educational_origin||project.educationalOrigin||project.dataKind==="synthetic");
   delete project.nodePositions;
@@ -51,10 +55,11 @@ async function capture(client:PoolClient,user:WorkspaceUser,options:ReportOption
   const available=project.records.length,requested=options.recordIds?new Set(options.recordIds):null;
   if(requested&&[...requested].some(id=>!project.records.some(r=>r.id===id)))throw new WorkspaceError("record_not_found",422,"Выбранная запись отсутствует в проекте.");
   project.records=project.records.filter(record=>(!requested||requested.has(record.id))&&(options.scope!=="personal"||refs.some(ref=>ref.localId===record.id&&ref.authorUserId===user.id)));
+  try{project.records=orderedReportRecords(project.records,options);}catch{throw new WorkspaceError("invalid_fields",422,"Проверьте состав и порядок разделов отчёта.");}
   if(!project.records.length)throw new WorkspaceError("empty_report",422,"Для отчёта нужна хотя бы одна доступная запись.");
   if(project.records.length>REPORT_LIMITS.records)throw new WorkspaceError("selection_limit",422,"Выберите не более 500 записей; остальные материалы останутся в проекте.");
   const selectedIds=new Set(project.records.map(r=>r.id)),selectedRefs=refs.filter(ref=>selectedIds.has(ref.localId));
-  project.links=project.links.filter(link=>selectedIds.has(link.from)&&selectedIds.has(link.to));
+  project.links=project.links.filter(link=>link.status==="accepted"&&selectedIds.has(link.from)&&selectedIds.has(link.to));
   if(options.scope==="personal"){
     project.studyRows=[];delete project.annotationHistory;delete project.importManifest;delete project.importWarnings;
   }
@@ -68,15 +73,18 @@ async function capture(client:PoolClient,user:WorkspaceUser,options:ReportOption
       return {id:item.id,recordId:item.recordId,mimeType:item.mimeType,bytes:item.bytes,sha256:item.sha256,storageKey:item.storageKey,
         caption:String(edited.caption??item.metadata.caption??""),alt:String(edited.alt??item.metadata.alt??""),modelId:item.modelId,versionLabel:item.versionLabel,annotationId:item.annotationId} satisfies ReportMedia;
     });
-  const policy=await loadPolicy(client,row),policyGate=evaluateReportPolicy(policy,row.program,row.season_name,options.purpose);
+  const policy=await loadPolicy(client,row),program=reportProgram(row,policy),policyGate=evaluateReportPolicy(policy,program,row.season_name,options.purpose);
+  if(policyGate.allowed&&options.purpose==="competition"&&program==="FTC"&&!options.teamNumber)throw new WorkspaceError("team_number_required",422,"Для обложки портфолио нужен номер команды.");
   const warnings=recordWarnings(project.records,project,selectedRefs);
+  const earliest=Date.parse(String(policy?.constraints.contentNotBefore??""));
+  if(options.purpose==="competition"&&Number.isFinite(earliest))for(const record of project.records)if(!Number.isFinite(Date.parse(record.createdAt))||Date.parse(record.createdAt)<earliest)warnings.push({code:"outside_policy_content_window",recordId:record.id});
   for(const mediaItem of media)if(!["image/png","image/jpeg"].includes(mediaItem.mimeType))warnings.push({code:"media_reference_only",artifactId:mediaItem.id});
   if(options.purpose==="engineering")warnings.push({code:"engineering_not_competition_approval"});
   return {schemaVersion:1,exportId:randomUUID(),version:0,createdAt:new Date().toISOString(),creator:{id:user.id,displayName:user.displayName},
-    team:{id:row.team_id,name:row.team_name,program:row.program},season:{id:row.season_id,name:row.season_name},project,
+    team:{id:row.team_id,name:row.team_name,program},season:{id:row.season_id,name:row.season_name},project,
     projectSnapshotId:row.snapshot_id,projectRevision:row.revision,options,refs:selectedRefs,media,policyGate,warnings,
     completeness:{selected:project.records.length,available,complete:project.records.length===available},
-    contentHash:reportHash(JSON.stringify({project,refs:selectedRefs,media:media.map(({storageKey:_key,...item})=>item),policyGate}))};
+    contentHash:reportHash(JSON.stringify({project,refs:selectedRefs,media:media.map(({storageKey:_key,...item})=>item),policyGate,layout:{sections:options.sections,teamNumber:options.teamNumber,purpose:options.purpose}}))};
 }
 export async function previewWorkspaceReport(user:WorkspaceUser,projectId:string){
   return workspaceTransaction(user,async client=>{
@@ -87,11 +95,12 @@ export async function previewWorkspaceReport(user:WorkspaceUser,projectId:string
       j.user_id AS "creatorId",j.request_id AS "requestId",j.input->'options' AS options
       FROM exports e JOIN workspace_export_jobs j ON j.export_id=e.id WHERE j.project_id=$1 ORDER BY e.created_at DESC`,[projectId])).rows
       .map(item=>({...item,downloadUrl:item.status==="ready"?"/api/workspace/report?download="+item.id:null}));
-    return {project:{id:row.id,name:row.name,teamId:row.team_id,season:row.season_name,revision:row.revision},
-      records:project.records.map(record=>({id:record.id,title:record.title,kind:record.kind,author:record.author,
+    return {project:{id:row.id,name:row.name,teamId:row.team_id,program:reportProgram(row,policy),season:row.season_name,revision:row.revision},
+      records:project.records.map(record=>({id:record.id,title:record.title,kind:record.kind,author:record.author,createdAt:record.createdAt,revision:record.revision,summary:(record.rationale||record.body||"").slice(0,600),
         authoredByMe:Boolean(data?.refs.some(ref=>ref.localId===record.id&&ref.authorUserId===user.id)),
         evidenceIds:record.kind==="decision"?decisionEvidenceIds(record.id,project.records,project.links):[]})),warnings:data?.warnings??[],
-      policyGate:evaluateReportPolicy(policy,row.program,row.season_name,"competition"),completeness:{available:project.records.length,complete:true},limits:REPORT_LIMITS,exports};
+      attachments:(data?.media??[]).map(({storageKey:_key,...item})=>({...item,embedding:["image/png","image/jpeg"].includes(item.mimeType)&&item.bytes<=REPORT_LIMITS.imageBytes?"eligible_image":"reference_only"})),
+      policyGate:evaluateReportPolicy(policy,reportProgram(row,policy),row.season_name,"competition"),completeness:{available:project.records.length,complete:true},limits:REPORT_LIMITS,exports};
   });
 }
 type Job={export_id:string;team_id:string;project_id:string;user_id:string;request_id:string;payload_hash:string;storage_key:string;cleanup_keys:string[];input:ReportData;state:string;attempt:number;lease_until:Date|null};
@@ -119,12 +128,14 @@ export async function createWorkspaceReport(user:WorkspaceUser,raw:unknown,hooks
       // Retrying uses the captured snapshot and a fresh object key, never overwriting a previous attempt.
       const gate=evaluateReportPolicy(job.input.policyGate.policy,job.input.team.program,job.input.season.name,job.input.options.purpose);
       if(!gate.allowed)throw new WorkspaceError("policy_review_required",422,"Нужна актуальная проверенная версия правил соревнования.");
+      if(options.purpose==="competition"&&options.format!=="pdf")throw new WorkspaceError("competition_pdf_required",422,"Конкурсная подача требует PDF с измеренным числом страниц.");
       const key=`${job.team_id}/exports/${randomUUID()}.${options.format}`;
       job=(await client.query<Job>(`UPDATE workspace_export_jobs SET state='rendering',attempt=attempt+1,lease_until=now()+interval '10 minutes',updated_at=now(),
         cleanup_keys=cleanup_keys||jsonb_build_array(storage_key),storage_key=$2,error_code=NULL WHERE export_id=$1 RETURNING *`,[job.export_id,key])).rows[0];
     }else{
       const data=await capture(client,user,options);
       if(!data.policyGate.allowed)throw new WorkspaceError("policy_review_required",422,"Нужна актуальная проверенная версия правил соревнования.");
+      if(options.purpose==="competition"&&options.format!=="pdf")throw new WorkspaceError("competition_pdf_required",422,"Конкурсная подача требует PDF с измеренным числом страниц.");
       if(data.warnings.length&&!options.acknowledgeWarnings)throw new WorkspaceError("warnings_require_review",422,"Просмотрите предупреждения и подтвердите проверку перед созданием отчёта.");
       await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))",["report-version:"+row.id]);
       data.version=Number((await client.query<{version:number}>(`SELECT COALESCE(max(e.version),0)+1 AS version FROM exports e JOIN workspace_export_jobs j ON j.export_id=e.id WHERE j.project_id=$1`,[row.id])).rows[0].version);
@@ -158,9 +169,10 @@ export async function createWorkspaceReport(user:WorkspaceUser,raw:unknown,hooks
     if(options.format==="pdf"){const result=await renderReportPdf(data,images);bytes=result.bytes;pages=result.pages;}
     else if(options.format==="html")bytes=Buffer.from(await renderReportHtml(data,images));
     else bytes=Buffer.from(JSON.stringify({schemaVersion:1,project:data.project,manifest:publicManifest(data)},null,2));
-    const policy=data.policyGate.policy,policyMaxBytes=options.purpose==="competition"?Number(policy?.constraints.maxFileMb)*1024*1024:Infinity;
-    if(bytes.length>Math.min(REPORT_LIMITS.bytes,policyMaxBytes)||(pages!==null&&pages>Math.min(REPORT_LIMITS.pages,options.purpose==="competition"?Number(policy?.constraints.maxPages):Infinity)))throw new WorkspaceError("report_limit_exceeded",422,"Размер или число страниц превышает проверенное ограничение. Уменьшите выбор материалов.");
-    if(options.purpose==="competition"&&data.warnings.some(warning=>["missing_or_changed_asset","image_not_embedded","media_reference_only","missing_why","missing_evidence"].includes(warning.code)))throw new WorkspaceError("report_preflight_blocked",422,"Нужны недостающие доказательства или файлы перед экспортом для соревнования.");
+    const policy=data.policyGate.policy;
+    if(options.purpose==="competition"&&!evaluateReportPolicy(policy,data.team.program,data.season.name,options.purpose).allowed)throw new WorkspaceError("policy_review_required",422,"Срок проверки правил истёк во время подготовки отчёта. Нужна повторная проверка.");
+    if(!reportOutputWithinBudget({bytes:bytes.length,pages},options,policy))throw new WorkspaceError("report_limit_exceeded",422,"Размер или число страниц превышает проверенное ограничение. Уменьшите выбор материалов.");
+    if(options.purpose==="competition"&&data.warnings.some(warning=>["missing_or_changed_asset","image_not_embedded","media_reference_only","missing_why","missing_evidence","outside_policy_content_window"].includes(warning.code)))throw new WorkspaceError("report_preflight_blocked",422,"Нужны недостающие доказательства, файлы или материалы в допустимом периоде перед конкурсной подачей.");
     const mimeType={pdf:"application/pdf",html:"text/html; charset=utf-8",json:"application/json; charset=utf-8"}[options.format];
     const manifest={...publicManifest(data),output:{sha256:reportHash(bytes),bytes:bytes.length,pages,mimeType}};
     await storage.put(job.storage_key,bytes,mimeType);written=true;await hooks.afterStorage?.();
@@ -176,7 +188,8 @@ export async function createWorkspaceReport(user:WorkspaceUser,raw:unknown,hooks
   }catch(error){
     let cleanupFailed=false;
     if(written)try{await storage.delete(job.storage_key);}catch{cleanupFailed=true;}
-    const code=error instanceof WorkspaceError?error.code:"report_generation_failed";
+    const limitFailure=error instanceof Error&&/^report_(?:size|page)_limit$/.test(error.message);
+    const code=error instanceof WorkspaceError?error.code:limitFailure?"report_limit_exceeded":"report_generation_failed";
     // The durable intent survives loss of membership; an operator can recover that exact key.
     await workspaceTransaction(user,async client=>{
       await client.query(`UPDATE workspace_export_jobs SET state=$3,error_code=$4,lease_until=NULL,updated_at=now()
@@ -184,6 +197,7 @@ export async function createWorkspaceReport(user:WorkspaceUser,raw:unknown,hooks
       await client.query("UPDATE exports SET status='failed',error=$2 WHERE id=$1 AND status='queued'",[job.export_id,code]);
     }).catch(()=>{});
     if(error instanceof WorkspaceError)throw error;
+    if(limitFailure)throw new WorkspaceError("report_limit_exceeded",422,"Размер или число страниц превышает ограничение. Уменьшите выбор материалов.");
     throw new WorkspaceError("report_generation_failed",503,"Не удалось создать отчёт. Исходные записи сохранены; повторите запрос позже.");
   }
 }

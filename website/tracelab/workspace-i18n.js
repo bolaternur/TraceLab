@@ -181,7 +181,11 @@ export function formatDate(value, options = {}) {
   const date = value instanceof Date ? value : new Date(value);
   if (value == null || value === '' || Number.isNaN(date.getTime())) return t('common.dateMissing');
   const settings = { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', ...options, timeZone };
-  return cached(dateFormats, `${locale}:${JSON.stringify(settings)}`, () => new Intl.DateTimeFormat(intlLocales[locale], settings)).format(date);
+  const formatted = cached(dateFormats, `${locale}:${JSON.stringify(settings)}`, () => new Intl.DateTimeFormat(intlLocales[locale], settings)).format(date);
+  // Some embedded browsers have incomplete Kazakh ICU month names ("M09").
+  // Retain the formatter's timezone and order; replace only that placeholder.
+  const months=['қаңтар','ақпан','наурыз','сәуір','мамыр','маусым','шілде','тамыз','қыркүйек','қазан','қараша','желтоқсан'];
+  return locale==='kk'?formatted.replace(/\bM(0[1-9]|1[0-2])\b/g,(_,month)=>months[Number(month)-1]):formatted;
 }
 
 export function formatDayKey(value) {

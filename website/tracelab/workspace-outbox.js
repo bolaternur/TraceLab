@@ -1,4 +1,5 @@
 const DATABASE='tracelab-team-outbox-v1';
+const DOCUMENT_CONTEXT_EPOCH=Date.now();
 export const OUTBOX_LIMITS=Object.freeze({records:100,photoBytes:15*1024*1024,pendingPhotoBytes:60*1024*1024});
 const fallbackLocks=new Map();
 function queueLock(userId,work){
@@ -11,9 +12,12 @@ function failure(code,message){return Object.assign(new Error(message),{code});}
 function openDatabase(){return new Promise((resolve,reject)=>{if(!globalThis.indexedDB){reject(new Error('IndexedDB unavailable'));return;}const request=indexedDB.open(DATABASE,1);request.onupgradeneeded=()=>{request.result.createObjectStore('outbox',{keyPath:'id'});request.result.createObjectStore('context');};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);});}
 async function access(store,mode,action){const db=await openDatabase();try{return await new Promise((resolve,reject)=>{const transaction=db.transaction(store,mode);const request=action(transaction.objectStore(store));transaction.oncomplete=()=>resolve(request?.result);transaction.onabort=()=>reject(transaction.error||new Error('Offline storage failed'));transaction.onerror=()=>reject(transaction.error);});}finally{db.close();}}
 export const outboxStorage={all:()=>access('outbox','readonly',store=>store.getAll()),put:value=>access('outbox','readwrite',store=>store.put(value)),remove:id=>access('outbox','readwrite',store=>store.delete(id))};
-export async function setOfflineContext(context){await access('context','readwrite',store=>store.put(context,'active'));}
+export async function setOfflineContext(context){await access('context','readwrite',store=>{const cleared=store.get('clearedAt');cleared.onsuccess=()=>{
+  // A response from the signed-out document must not resurrect its identity after logout.
+  if(!(Number(cleared.result)>=DOCUMENT_CONTEXT_EPOCH))store.put(context,'active');
+};return cleared;});}
 export async function getOfflineContext(){return access('context','readonly',store=>store.get('active'));}
-export async function clearOfflineContext(){await access('context','readwrite',store=>store.delete('active'));}
+export async function clearOfflineContext(){await access('context','readwrite',store=>{store.delete('active');return store.put(Date.now(),'clearedAt');});}
 export function createOutbox({storage=outboxStorage,request=globalThis.fetch?.bind(globalThis),now=()=>new Date().toISOString(),id=()=>crypto.randomUUID()}={}){
   async function list(userId){return (await storage.all()).filter(row=>row.userId===userId).sort((a,b)=>a.createdAt.localeCompare(b.createdAt));}
   function requireContext(context){if(!context?.userId||!context?.projectId||!context?.teamId)throw failure('no_context','Sign in and open a project before capturing offline.');}
@@ -52,6 +56,7 @@ export function createOutbox({storage=outboxStorage,request=globalThis.fetch?.bi
     await storage.put(row);return key;
   }
   async function discard(userId,key){const row=(await list(userId)).find(item=>item.id===key);if(!row)return false;await storage.remove(key);return true;}
+  async function discardAll(userId){if(typeof userId!=='string'||!userId)throw failure('no_context','The draft owner is required.');const rows=await list(userId);for(const row of rows)await storage.remove(row.id);return rows.length;}
   async function flush(userId){
     const session=await request('/api/account/session',{cache:'no-store',credentials:'same-origin'});
     if(!session.ok)throw failure('signin_required','Sign in again before syncing.');
@@ -74,6 +79,6 @@ export function createOutbox({storage=outboxStorage,request=globalThis.fetch?.bi
   }
   const api={list,enqueue:(context,record)=>queueLock('device',()=>queueLock(context?.userId,()=>enqueue(context,record))),
     enqueuePhoto:(context,value)=>queueLock('device',()=>queueLock(context?.userId,()=>enqueuePhoto(context,value))),
-    discard:(userId,key)=>queueLock(userId,()=>discard(userId,key)),flush:userId=>queueLock(userId,()=>flush(userId))};
+    discard:(userId,key)=>queueLock(userId,()=>discard(userId,key)),discardAll:userId=>queueLock('device',()=>queueLock(userId,()=>discardAll(userId))),flush:userId=>queueLock(userId,()=>flush(userId))};
   return api;
 }

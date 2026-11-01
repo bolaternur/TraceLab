@@ -1,4 +1,5 @@
 import {getWorkspaceLocale,formatDate,formatNumber,recordType} from './workspace-i18n.js';
+import {reportOrderedRecords,moveReportRecord,reportSectionSequence,reportAttachmentStatus} from './workspace-report-model.js';
 
 const messages={
   title:['Отчёт проекта','Project report','Жоба есебі'],
@@ -41,10 +42,18 @@ const messages={
   rate_limited:['Слишком много запросов. Повторите через несколько минут.','Too many requests. Try again in a few minutes.','Сұрау тым көп. Бірнеше минуттан кейін қайталаңыз.'],
   invalid_fields:['Проверьте параметры и выбор записей.','Check report settings and record selection.','Есеп параметрлері мен жазба таңдауын тексеріңіз.']
 };
+Object.assign(messages,{
+  policy_content_window_unreviewed:['Нужно проверить допустимый период материалов по правилам сезона.','The season’s permitted evidence period needs review.','Маусым ережесіндегі материал кезеңі тексерілуі керек.'],outside_policy_content_window:['Запись выходит за допустимый период материалов по правилам.','This record is outside the policy’s permitted evidence period.','Жазба ережеде рұқсат етілген материал кезеңінен тыс.'],contentSince:['Материалы начиная с','Evidence from','Материалдардың басталу күні'],
+  policyDetails:['Программа, сезон и правила','Program, season and policy','Бағдарлама, маусым және ережелер'],program:['Программа','Program','Бағдарлама'],season:['Сезон','Season','Маусым'],policyVersion:['Версия правил','Policy version','Ереже нұсқасы'],reviewed:['Проверено','Reviewed','Тексерілген'],effective:['Действует с','Effective from','Қолданысқа енгізілген'],sources:['Официальные источники','Official sources','Ресми дереккөздер'],unknown:['Не указано','Not specified','Көрсетілмеген'],
+  reviewPath:['Администратор должен зарегистрировать проверенную версию правил с датой, источниками и ограничениями. Это окно не присваивает правилам статус проверки.','An administrator must register a reviewed policy with dates, sources and limits. This dialog cannot mark a policy reviewed.','Әкімші тексерілген ережені күнімен, дереккөздерімен және шектеулерімен тіркеуі керек. Бұл терезе ережені тексерілген деп белгілемейді.'],
+  policy_unknown:['Правила для команды ещё не выбраны.','No policy is selected for the team.','Командаға ереже әлі таңдалмаған.'],policy_season_unreviewed:['Программа или сезон не соответствуют активным правилам.','The program or season does not match an active policy.','Бағдарлама немесе маусым белсенді ережеге сәйкес емес.'],policy_review_incomplete:['В проверке правил не хватает даты, источников или ответственного.','The policy review is missing dates, sources or a reviewer.','Ережені тексеруде күн, дереккөз немесе тексеруші көрсетілмеген.'],policy_stale:['Срок проверки или действия правил истёк.','The policy review or validity period has expired.','Ереженің тексеру немесе қолданыс мерзімі өткен.'],policy_export_blocked:['Эта версия правил блокирует данный вид экспорта.','This policy blocks this export action.','Бұл ереже осы экспорт әрекетін бұғаттайды.'],policy_action_unknown:['Для этого вида экспорта ещё нет проверенного решения.','This export action has not been reviewed.','Бұл экспорт әрекеті әлі тексерілмеген.'],policy_limits_unreviewed:['Лимиты страниц и размера ещё не проверены.','Page and file limits have not been reviewed.','Бет және файл көлемі шектеулері әлі тексерілмеген.'],policy_layout_unreviewed:['Нужно проверить отдельные лимиты обложки, содержания и точную единицу размера файла.','Cover, content and exact file-size limits need review.','Мұқаба, мазмұн және файл көлемінің нақты шектеулері тексерілуі керек.'],
+  teamNumber:['Номер команды для обложки','Team number for the cover','Мұқабаға арналған команда нөмірі'],team_number_required:['Укажите номер команды для обложки.','Enter the team number for the cover.','Мұқабаға команда нөмірін енгізіңіз.'],competition_pdf_required:['Для конкурсной подачи нужен PDF с измеренным числом страниц.','Competition submission requires a PDF with a measured page count.','Байқауға ұсыну үшін бет саны өлшенген PDF қажет.'],report_preview_changed:['Материалы изменились после предпросмотра. Откройте отчёт заново и проверьте состав.','Evidence changed after the preview. Reopen the report and review the selection.','Алдын ала қараудан кейін материалдар өзгерді. Есепті қайта ашып, құрамын тексеріңіз.'],
+  sections:['Разделы документа','Document sections','Құжат бөлімдері'],plain:['Без разделов','No sections','Бөлімдерсіз'],byKind:['По типам выбранных записей','By selected record type','Таңдалған жазба түрлері бойынша'],preview:['Содержание и порядок','Contents and order','Мазмұны және реті'],previewNote:['Ниже — выбранные тексты и вложения. Точное число страниц и размер появятся после формирования PDF; проверьте его перед передачей.','Selected text and attachments are shown below. Exact pages and file size are available after PDF generation; inspect the PDF before sharing.','Төменде таңдалған мәтіндер мен файлдар көрсетілген. Нақты бет саны мен көлемі PDF құрастырылғаннан кейін белгілі болады; бөліспес бұрын тексеріңіз.'],moveUp:['Переместить выше','Move up','Жоғары жылжыту'],moveDown:['Переместить ниже','Move down','Төмен жылжыту'],attachments:['Вложения выбранных записей','Attachments in selected records','Таңдалған жазбалардың файлдары'],eligible_image:['Изображение будет проверено для встраивания','Image will be checked for embedding','Сурет енгізу үшін тексеріледі'],reference_only:['Только ссылка в манифесте; содержимое не встроено','Manifest reference only; contents are not embedded','Тек манифесттегі сілтеме; мазмұны енгізілмеген'],noAttachments:['У выбранных записей нет вложений.','Selected records have no attachments.','Таңдалған жазбаларда файл жоқ.'],openPreview:['Открыть PDF для проверки','Inspect the PDF','PDF-ті тексеру үшін ашу'],manifest:['Скачать манифест отдельно','Download separate manifest','Манифестті бөлек жүктеу'],actualSize:['Фактический размер','Actual size','Нақты көлем'],cover:['Обложка','Cover','Мұқаба'],content:['Содержание','Content','Мазмұн'],budget:['Проверенный бюджет','Reviewed budget','Тексерілген шектеу'],manifestNote:['Манифест происхождения хранится отдельно от конкурсного PDF и не занимает страницы портфолио.','The provenance manifest is separate from the competition PDF and does not consume portfolio pages.','Шығу тегі манифесті жарыс PDF-інен бөлек сақталады және портфолио беттерін алмайды.']
+});
 export function reportText(key,locale=getWorkspaceLocale()){return messages[key]?.[{ru:0,en:1,kk:2}[locale]??0]??messages.unavailable[{ru:0,en:1,kk:2}[locale]??0];}
 const make=(tag,text,props={})=>{const node=document.createElement(tag);if(text!==undefined&&text!==null)node.textContent=text;Object.assign(node,props);return node;};
 export function reportSelection(records,scope,selected){return records.filter(r=>(scope!=='personal'||r.authoredByMe)&&selected.has(r.id)).map(r=>r.id);}
-export async function openReportDialog(store){
+export async function openReportDialog(store,initialOptions={}){
   const locale=getWorkspaceLocale(),t=key=>reportText(key,locale),project=store.getProject(),user=store.getState().user;
   const opener=document.activeElement,dialog=make('dialog',null,{className:'ws-dialog ws-report-dialog'});
   const heading=make('div',null,{className:'ws-dialog-heading'}),title=make('h2',t('title'),{id:'ws-report-title'}),close=make('button',t('close'),{type:'button',className:'ws-tool-button'});
@@ -52,7 +61,7 @@ export async function openReportDialog(store){
   const status=make('p',t('loading'));status.setAttribute('role','status');
   dialog.append(heading,make('h3',project.name),make('p',t('intro')),status);document.body.append(dialog);
   dialog.addEventListener('close',()=>{dialog.remove();if(opener?.isConnected)opener.focus();},{once:true});dialog.showModal();
-  async function request(url,options={}){const response=await fetch(url,{credentials:'same-origin',cache:'no-store',...options});const data=await response.json();if(!response.ok){const error=new Error(t(data.error?.code));error.code=data.error?.code;throw error;}return data;}
+  async function request(url,options={}){const response=await fetch(url,{credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(125000),...options});const data=await response.json();if(!response.ok){const error=new Error(t(data.error?.code));error.code=data.error?.code;throw error;}return data;}
   try{
     let preview=await request('/api/workspace/report?project='+encodeURIComponent(project.id));
     if(!dialog.open)return;
@@ -63,37 +72,48 @@ export async function openReportDialog(store){
     const format=select('format',[['pdf','PDF'],['html','HTML'],['json','JSON']]),paper=select('paper',[['A4','A4'],['LETTER','Letter']]);
     const purpose=select('purpose',[['engineering',t('engineering')],['competition',t('competition')]]);
     const scope=select('scope',[['project',t('project')],['personal',t('personal')],['handoff',t('handoff')]]);
+    if(['project','personal','handoff'].includes(initialOptions.scope))scope.value=initialOptions.scope;
+    const grouping=select('sections',[['plain',t('plain')],['kind',t('byKind')]]);
+    const numberLabel=make('label',t('teamNumber')),teamNumber=make('input',null,{type:'text',inputMode:'numeric',maxLength:8,pattern:'[0-9]{1,8}'});numberLabel.append(teamNumber);settings.append(numberLabel);numberLabel.hidden=true;
     purpose.options[1].disabled=!preview.policyGate.allowed;
     if(!preview.policyGate.allowed)form.append(make('p',t('blocked'),{className:'ws-form-hint'}));
+    const policyPanel=make('section',null,{className:'ws-report-policy'});form.append(policyPanel);
+    function renderPolicy(){const gate=preview.policyGate,policy=gate.policy;policyPanel.replaceChildren(make('h3',t('policyDetails')));const dl=make('dl');for(const [label,value]of [[t('program'),preview.project.program],[t('season'),preview.project.season],[t('policyVersion'),policy?.version],[t('reviewed'),policy?.reviewedAt?formatDate(policy.reviewedAt):null],[t('effective'),policy?.effectiveFrom?formatDate(policy.effectiveFrom):null]])dl.append(make('dt',label),make('dd',value||t('unknown')));policyPanel.append(dl);if(policy){const links=make('div');links.append(make('strong',t('sources')));for(const source of policy.sourceUrls||[])if(/^https:\/\//.test(source))links.append(make('p',null),make('a',source,{href:source,target:'_blank',rel:'noopener noreferrer'}));policyPanel.append(links);const limits=policy.constraints||{};if(gate.allowed)policyPanel.append(make('p',`${t('budget')}: ${limits.coverPages??1} ${t('cover')} + ${limits.maxContentPages??Math.max(0,Number(limits.maxPages)-1)} ${t('pages')} · < ${limits.maxFileMb} ${limits.fileUnit||'MiB'}`,{className:'ws-report-budget'}));}if(!gate.allowed)policyPanel.append(make('p',t(gate.code)),make('p',t('reviewPath'),{className:'ws-form-hint'}));}
+    renderPolicy();
     const fieldset=make('fieldset',null,{className:'ws-report-records'}),legend=make('legend',t('selection')),actions=make('div',null,{className:'ws-report-actions'});
     const all=make('button',t('all'),{type:'button',className:'ws-tool-button'}),none=make('button',t('none'),{type:'button',className:'ws-tool-button'}),counter=make('span');
     counter.setAttribute('role','status');actions.append(all,none,counter);
     const list=make('div',null,{className:'ws-report-list'});fieldset.append(legend,actions,list);form.append(fieldset);
-    let selected=new Set(preview.records.map(r=>r.id)),busy=false;const checks=new Map();
+    const requested=Array.isArray(initialOptions.recordIds)?new Set(initialOptions.recordIds):null;
+    let selected=new Set(preview.records.filter(record=>!requested||requested.has(record.id)).map(record=>record.id)),order=preview.records.map(r=>r.id),busy=false;const checks=new Map();
+    const orderedRecords=()=>reportOrderedRecords(preview.records,order);
+    const selectedIds=()=>reportSelection(orderedRecords(),scope.value,selected);
+    const contentPreview=make('details',null,{className:'ws-report-composer-preview'}),contentSummary=make('summary',t('preview')),contentList=make('ol'),attachmentList=make('ul',null,{className:'ws-report-attachment-list'});contentPreview.append(contentSummary,make('p',t('previewNote')),contentList,make('h4',t('attachments')),attachmentList);form.append(contentPreview);
     const warnings=make('section',null,{className:'ws-report-warnings'});form.append(warnings);
     const ackLabel=make('label',null,{className:'ws-report-check'}),ack=make('input',null,{type:'checkbox',required:true});ackLabel.append(ack,make('span',t('ack')));form.append(ackLabel);
     const error=make('p',null,{className:'ws-form-error'});error.setAttribute('role','alert');
     const submit=make('button',t('create'),{className:'ws-app-primary',type:'submit'});form.append(error,submit);
     const result=make('div');result.setAttribute('role','status');form.append(result,make('p',t('pendingNote'),{className:'ws-form-hint'}));
-    function updateSelection(){const ids=reportSelection(preview.records,scope.value,selected);counter.textContent=t('selected')+': '+formatNumber(ids.length);submit.disabled=busy||!canWrite||!ids.length;ack.checked=false;
+    function updateSelection(){const ids=selectedIds();counter.textContent=t('selected')+': '+formatNumber(ids.length);submit.disabled=busy||!canWrite||!ids.length||ids.length>preview.limits.records;ack.checked=false;
       warnings.replaceChildren(make('h3',t('warnings')),make('p',t('warningScope'),{className:'ws-form-hint'}));
       const relevant=(preview.warnings||[]).filter(w=>w.code!=='missing_evidence'&&(!w.recordId||ids.includes(w.recordId)));
       for(const record of preview.records)if(record.kind==='decision'&&ids.includes(record.id)&&!record.evidenceIds?.some(id=>ids.includes(id)))relevant.push({code:'missing_evidence',recordId:record.id});
       for(const warning of relevant){const record=preview.records.find(r=>r.id===warning.recordId);warnings.append(make('p',t(warning.code)+(record?' — '+record.title:''),{className:'ws-form-hint'}));}
+      contentList.replaceChildren();for(const record of orderedRecords().filter(item=>ids.includes(item.id))){const li=make('li');li.append(make('strong',record.title),make('small',[recordType(record.kind),record.author,record.revision].filter(Boolean).join(' · ')));if(record.summary)li.append(make('p',record.summary));contentList.append(li);}attachmentList.replaceChildren();const attachments=(preview.attachments||[]).filter(item=>ids.includes(item.recordId));if(!attachments.length)attachmentList.append(make('li',t('noAttachments')));for(const attachment of attachments){const record=preview.records.find(item=>item.id===attachment.recordId),li=make('li');li.textContent=[attachment.caption||record?.title||t('unknown'),attachment.mimeType,formatNumber(attachment.bytes/1024,{maximumFractionDigits:1})+' KiB',t(reportAttachmentStatus(attachment,preview.limits))].join(' · ');attachmentList.append(li);}
     }
-    function renderSelection(){list.replaceChildren();checks.clear();const records=preview.records.filter(r=>scope.value!=='personal'||r.authoredByMe);
+    function renderSelection(){list.replaceChildren();checks.clear();const records=orderedRecords().filter(r=>scope.value!=='personal'||r.authoredByMe);
       if(!records.length)list.append(make('p',t('empty')));
-      for(const record of records){const label=make('label',null,{className:'ws-report-check'}),input=make('input',null,{type:'checkbox',checked:selected.has(record.id)}),text=make('span');
-        text.append(make('strong',record.title),make('small',recordType(record.kind)+' · '+record.author));label.append(input,text);list.append(label);checks.set(record.id,input);
+      for(const [index,record]of records.entries()){const row=make('div',null,{className:'ws-report-record-row'}),label=make('label',null,{className:'ws-report-check'}),input=make('input',null,{type:'checkbox',checked:selected.has(record.id)}),text=make('span');
+        text.append(make('strong',record.title),make('small',[recordType(record.kind),record.author,record.revision].filter(Boolean).join(' · ')));label.append(input,text);row.append(label);const controls=make('div',null,{className:'ws-report-order'});for(const [offset,key,path]of [[-1,'moveUp','M5 15l7-7 7 7'],[1,'moveDown','M5 9l7 7 7-7']]){const move=make('button',null,{type:'button',disabled:index+(offset)<0||index+offset>=records.length});move.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${path}"/></svg>`;move.setAttribute('aria-label',t(key)+' — '+record.title);move.title=t(key);move.onclick=()=>{const visible=records.map(item=>item.id),moved=moveReportRecord(visible,record.id,offset),visibleSet=new Set(visible);let cursor=0;order=order.map(id=>visibleSet.has(id)?moved[cursor++]:id);renderSelection();checks.get(record.id)?.focus();};controls.append(move);}row.append(controls);list.append(row);checks.set(record.id,input);
         input.onchange=()=>{if(input.checked)selected.add(record.id);else selected.delete(record.id);updateSelection();};
       }updateSelection();
     }
     all.onclick=()=>{for(const[id,check]of checks){selected.add(id);check.checked=true;}updateSelection();};
     none.onclick=()=>{for(const[id,check]of checks){selected.delete(id);check.checked=false;}updateSelection();};
-    scope.onchange=renderSelection;format.onchange=()=>{paper.disabled=format.value!=='pdf';ack.checked=false;};purpose.onchange=()=>{ack.checked=false;};
-    renderSelection();if(canWrite)dialog.append(form);else dialog.append(make('p',t('readOnly')));
+    scope.onchange=renderSelection;grouping.onchange=updateSelection;format.onchange=()=>{paper.disabled=format.value!=='pdf';ack.checked=false;};purpose.onchange=()=>{const competition=purpose.value==='competition';if(competition)format.value='pdf';for(const option of format.options)option.disabled=competition&&option.value!=='pdf';format.disabled=competition;paper.disabled=format.value!=='pdf';numberLabel.hidden=!competition||preview.project.program!=='FTC';teamNumber.required=!numberLabel.hidden;ack.checked=false;};
+    renderSelection();if(canWrite)dialog.append(form);else dialog.append(policyPanel,make('p',t('readOnly')));
     const history=make('section',null,{className:'ws-report-history'});dialog.append(history);
-    async function refreshHistory(){preview=await request('/api/workspace/report?project='+encodeURIComponent(project.id));if(dialog.open)renderHistory();}
+    async function refreshHistory(){const latest=await request('/api/workspace/report?project='+encodeURIComponent(project.id));preview.exports=latest.exports;preview.policyGate=latest.policyGate;if(dialog.open){renderPolicy();renderHistory();}}
     function renderHistory(){
       history.replaceChildren();const top=make('div',null,{className:'ws-dialog-heading'}),refresh=make('button',t('refresh'),{type:'button',className:'ws-tool-button'});
       refresh.onclick=async()=>{refresh.disabled=true;try{await refreshHistory();}catch(e){status.textContent=e.message;refresh.disabled=false;}};
@@ -105,6 +125,7 @@ export async function openReportDialog(store){
         if(output)row.append(make('small',(output.pages?formatNumber(output.pages)+' '+t('pages')+' · ':'')+formatNumber(output.bytes/1024,{maximumFractionDigits:1})+' KiB'));
         const controls=make('div',null,{className:'ws-report-actions'});row.append(controls);
         if(item.downloadUrl)controls.append(make('a',t('download'),{href:item.downloadUrl,download:'',className:'ws-tool-button'}));
+        if(item.downloadUrl){if(meta.format==='pdf')controls.append(make('a',t('openPreview'),{href:item.downloadUrl+'&preview=1',target:'_blank',rel:'noopener noreferrer',className:'ws-tool-button'}));controls.append(make('a',t('manifest'),{href:item.downloadUrl+'&manifest=1',download:'',className:'ws-tool-button'}));}
         if(item.creatorId===user?.id&&['failed','cleanup_pending','rendering','queued'].includes(item.state)){
           if(['failed','cleanup_pending'].includes(item.state)){const retry=make('button',t('retry'),{type:'button',className:'ws-tool-button'});retry.onclick=()=>historyAction(retry,async()=>request('/api/workspace/report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...item.options,requestId:item.requestId})}));controls.append(retry);}
           const cancel=make('button',t('cancel'),{type:'button',className:'ws-tool-button'});cancel.onclick=()=>historyAction(cancel,()=>request('/api/workspace/report?id='+encodeURIComponent(item.id),{method:'DELETE'}));controls.append(cancel);
@@ -115,17 +136,17 @@ export async function openReportDialog(store){
     async function historyAction(button,action){button.disabled=true;status.textContent=t('pending');try{await action();await refreshHistory();status.textContent='';}catch(e){status.textContent=e.message;button.disabled=false;}}
     renderHistory();let requestId='',lastBody='';
     form.onsubmit=async event=>{
-      event.preventDefault();if(busy)return;const recordIds=reportSelection(preview.records,scope.value,selected);if(!recordIds.length){error.textContent=t('empty_report');return;}
-      const input={projectId:project.id,format:format.value,paper:paper.value,purpose:purpose.value,scope:scope.value,recordIds,locale,acknowledgeWarnings:ack.checked},body=JSON.stringify(input);
+      event.preventDefault();if(busy)return;const recordIds=selectedIds();if(!recordIds.length){error.textContent=t('empty_report');return;}
+      const input={projectId:project.id,format:format.value,paper:paper.value,purpose:purpose.value,scope:scope.value,recordIds,sections:reportSectionSequence(orderedRecords(),recordIds,grouping.value==='kind',recordType),teamNumber:purpose.value==='competition'&&teamNumber.value.trim()?teamNumber.value.trim():undefined,expectedProjectRevision:preview.project.revision,locale,acknowledgeWarnings:ack.checked},body=JSON.stringify(input);
       if(body!==lastBody){requestId=crypto.randomUUID();lastBody=body;}
       busy=true;submit.disabled=true;submit.textContent=t('pending');error.textContent='';result.replaceChildren();
       try{const data=await request('/api/workspace/report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...input,requestId})});
-        result.append(make('p',t('prepared')),make('a',t('download'),{href:data.downloadUrl,download:'',className:'ws-app-primary'}));
+        result.className='ws-report-generated';result.append(make('p',t('prepared')));const output=data.manifest?.output;if(output)result.append(make('p',`${output.pages?formatNumber(output.pages)+' '+t('pages')+' · ':''}${t('actualSize')}: ${formatNumber(output.bytes)} B (${formatNumber(output.bytes/1_000_000,{maximumFractionDigits:3})} MB)`));result.append(make('a',t('download'),{href:data.downloadUrl,download:'',className:'ws-app-primary'}));if(input.format==='pdf')result.append(make('a',t('openPreview'),{href:data.downloadUrl+'&preview=1',target:'_blank',rel:'noopener noreferrer',className:'ws-tool-button'}));result.append(make('a',t('manifest'),{href:data.downloadUrl+'&manifest=1',download:'',className:'ws-tool-button'}));if(input.purpose==='competition')result.append(make('p',t('manifestNote')));
         for(const warning of data.warnings||[])if(!preview.warnings.some(w=>w.code===warning.code&&w.artifactId===warning.artifactId))result.append(make('p',t(warning.code),{className:'ws-form-hint'}));
         // A subsequent click explicitly creates a new immutable output version.
         lastBody='';requestId='';await refreshHistory();
       }catch(e){error.textContent=e.message;}
-      finally{busy=false;submit.disabled=!reportSelection(preview.records,scope.value,selected).length;submit.textContent=t('create');}
+      finally{busy=false;submit.disabled=!selectedIds().length;submit.textContent=t('create');}
     };
   }catch(error){status.textContent=error.message||t('unavailable');}
 }

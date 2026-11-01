@@ -72,9 +72,9 @@ describe("P0 server boundaries", () => {
   });
 
   it("rejects unverified legacy team cleanup instead of removing live evidence or reporting success", () => {
-    const jobs = source("src/app/api/jobs/run/route.ts");
-    const cleanup = jobs.split('if (kind === "storage.cleanup") {')[1]?.split('if (kind === "notify.tests_without_decisions")')[0];
-    expect(cleanup).toContain('throw new Error("Legacy team storage cleanup is disabled');
+    const jobs = source("src/server/background-jobs.ts");
+    const cleanup = jobs.split('if (job.kind === "storage.cleanup")')[1]?.split('if (job.kind === "notify.unsynced_reminder")')[0];
+    expect(cleanup).toContain('throw new JobError("legacy_storage_cleanup_disabled", false)');
     expect(cleanup).not.toContain("deletePrefix");
     expect(cleanup).not.toContain("return;");
     const deletion = source("src/server/actions.ts").split("export async function deleteTeam()")[1];

@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import sharp from "sharp";
 import { inspectGlb, MEDIA_LIMITS, parseUploadMetadata, readUploadBytes, uploadFingerprint, uploadMetadata } from "../src/server/workspace-media-contract";
 import { prepareMedia } from "../src/server/workspace-media-files";
+import { createModelThumbnail } from "../src/server/workspace-model-thumbnail";
 import { PrivateSupabaseStorage } from "../src/server/workspace-media-storage";
 
 function metadata(kind:"photo"|"document"|"model"="photo"){
@@ -30,6 +31,13 @@ describe("bounded source upload contract",()=>{
     expect(uploadFingerprint(input,bytes)).toBe(uploadFingerprint({...input},bytes));
     expect(uploadFingerprint({...input,caption:"changed"},bytes)).not.toBe(uploadFingerprint(input,bytes));
     expect(uploadFingerprint(input,Buffer.from("other"))).not.toBe(uploadFingerprint(input,bytes));
+  });
+  it("labels client-side privacy edits without receiving removed pixels or allowing the label on documents",async()=>{
+    const input=uploadMetadata.parse({...metadata(),clientPrivacyEdit:"local-crop-redaction"});
+    const cleaned=await sharp({create:{width:4,height:4,channels:3,background:"black"}}).png().toBuffer();
+    const prepared=await prepareMedia(input,cleaned);
+    expect(prepared.metadata).toMatchObject({clientPrivacyEdit:"local-crop-redaction",clientEditAssertion:"reported-by-uploader",originalBytesRetained:false});
+    expect(()=>uploadMetadata.parse({...metadata("document"),clientPrivacyEdit:"local-crop-redaction"})).toThrow();
   });
   it("counts streamed bytes even when content-length lies or is absent",async()=>{
     const request=new Request("http://localhost",{method:"POST",body:new Uint8Array(12),headers:{"content-length":"2"}});
@@ -65,7 +73,21 @@ describe("private image/document pipeline",()=>{
 describe("self-contained GLB validation",()=>{
   it("accepts a real self-contained triangle without changing its bytes",async()=>{
     const bytes=glb(),result=inspectGlb(bytes);expect(result.vertices).toBe(3);expect(result.triangles).toBe(1);
-    expect((await prepareMedia(metadata("model"),bytes)).bytes).toEqual(bytes);
+    const prepared=await prepareMedia(metadata("model"),bytes);
+    expect(prepared.bytes).toEqual(bytes);expect(prepared.thumbnail).toBeTruthy();
+    expect(prepared.metadata).toMatchObject({thumbnailMethod:"bounded-orthographic-geometry",thumbnailIncludesTextures:false,thumbnailSampledTriangles:1});
+    expect(await sharp(prepared.thumbnail!).metadata()).toMatchObject({format:"webp",width:640,height:420});
+  });
+  it("bounds geometry preview sampling and safely falls back for unsupported transforms",async()=>{
+    const inspected=inspectGlb(glb()),original=Buffer.from(inspected.binary);
+    const longIndices=Buffer.alloc(3*20000*2);for(let index=0;index<60000;index++)longIndices.writeUInt16LE(index%3,index*2);
+    const many={...inspected,binary:Buffer.concat([inspected.binary,longIndices]),triangles:20000,json:{...inspected.json,
+      bufferViews:[{buffer:0,byteLength:36},{buffer:0,byteOffset:36,byteLength:longIndices.length}],
+      accessors:[{bufferView:0,componentType:5126,count:3,type:"VEC3"},{bufferView:1,componentType:5123,count:60000,type:"SCALAR"}],
+      meshes:[{primitives:[{attributes:{POSITION:0},indices:1}]}]}};
+    const result=await createModelThumbnail(many);expect(result).not.toBeNull();expect(result!.sampledTriangles).toBeLessThanOrEqual(6000);
+    expect(await createModelThumbnail({...inspected,json:{...inspected.json,nodes:[{mesh:0,scale:[Infinity,1,1]}]}})).toBeNull();
+    expect(inspected.binary).toEqual(original);
   });
   it.each(["https://attacker.invalid/a.bin","../../private.bin","data:application/octet-stream;base64,AAAA"])("rejects any external/data resource URI %s",uri=>{
     expect(()=>inspectGlb(glb(doc=>doc.buffers[0].uri=uri))).toThrow("model_external_resource");

@@ -195,7 +195,7 @@ export function renderCanvas(container, project, {
   links.forEach(link => { if (link.from === selectedId) neighbors.add(link.to); if (link.to === selectedId) neighbors.add(link.from); });
   links.forEach(link => {
     const group = vector('g', { class: `wc-edge${link.status === 'suggested' ? ' is-suggested' : ''}${link.from === selectedId || link.to === selectedId ? ' is-related' : ''}`, 'data-link-id': link.id });
-    const title = `${link.from} → ${link.to}: ${link.label || t('relation.generic')}${link.status === 'suggested' ? `. ${t('relation.suggested')}` : ''}`;
+    const title = `${recordsById.get(link.from)?.title || t('common.untitled')} → ${recordsById.get(link.to)?.title || t('common.untitled')}: ${link.label || t('relation.generic')}${link.status === 'suggested' ? `. ${t('relation.suggested')}` : ''}`;
     const path = vector('path', { class: 'wc-edge-line', 'marker-end': `url(#wc-arrow-${instance}-${link.from === selectedId || link.to === selectedId ? 'active' : link.status === 'suggested' ? 'suggested' : 'accepted'})` });
     const target = vector('path', { class: 'wc-edge-target', tabindex: 0, role: 'button', 'aria-label': title, 'data-link-id': link.id });
     const label = vector('text', { class: 'wc-edge-label', 'text-anchor': 'middle' }); label.textContent = String(link.label || t('relation.generic'));
@@ -212,7 +212,7 @@ export function renderCanvas(container, project, {
     node.dataset.recordId = record.id; node.tabIndex = 0; node.setAttribute('role', 'group'); node.setAttribute('aria-roledescription', t('canvas.recordRole'));
     node.setAttribute('aria-label', t('canvas.recordLabel', { type: recordType(record.kind), title: record.title }));
     if (record.id === selectedId) node.setAttribute('aria-current', 'true');
-    const header = element('div', 'wc-node-meta'); header.append(element('span', 'wc-node-kind', recordType(record.kind)), element('span', 'wc-node-id', record.id));
+    const header = element('div', 'wc-node-meta'); header.append(element('span', 'wc-node-kind', recordType(record.kind)));
     const title = element('h3', 'wc-node-title', record.title); title.id = `wc-${instance}-record-${index}`; title.title = record.title;
     const detail = element('p', 'wc-node-detail');
     if (record.kind === 'test' && Number(record.trials) > 0 && Number.isInteger(Number(record.successes))) detail.textContent = t('canvas.testResult', { successes: Number(record.successes), trials: Number(record.trials) });
@@ -251,11 +251,11 @@ export function renderCanvas(container, project, {
     world.append(node); nodeElements.set(record.id, node);
     const listRow = element('div', 'wc-list-row');
     const select = button('', '', () => { focusRecord(record.id); selectRecord(record.id); }); select.className = 'wc-record-button'; select.dataset.recordId = record.id;
-    select.append(element('span', 'wc-list-meta', `${recordType(record.kind)} · ${record.id}`), element('strong', '', record.title));
+    select.append(element('span', 'wc-list-meta', recordType(record.kind)), element('strong', '', record.title));
     listRow.append(select);
     const outgoing = links.filter(link => link.from === record.id);
     outgoing.forEach(link => {
-      const relation = element('button', 'wc-list-link', `${t('relation.to', { title: recordsById.get(link.to)?.title || link.to, label: link.label || t('relation.generic') })}${link.status === 'suggested' ? ` · ${t('relation.suggested')}` : ''}`);
+      const relation = element('button', 'wc-list-link', `${t('relation.to', { title: recordsById.get(link.to)?.title || t('common.untitled'), label: link.label || t('relation.generic') })}${link.status === 'suggested' ? ` · ${t('relation.suggested')}` : ''}`);
       relation.type = 'button'; relation.dataset.linkId = link.id; relation.addEventListener('click', () => selectLink(link.id)); listRow.append(relation);
     });
     if (!outgoing.length) listRow.append(element('p', 'wc-list-muted', t('relation.noneOutgoing')));
@@ -358,8 +358,10 @@ export function renderCanvas(container, project, {
     const size = dimensions(); const area = bounds();
     const horizontal = size.width < 500 ? 25 : 64;
     const vertical = size.height < 450 ? 64 : 90;
-    const zoom = clamp(Math.min((size.width - horizontal * 2) / area.width, (size.height - vertical * 2) / area.height, 1), MIN_ZOOM, MAX_ZOOM);
-    camera = { x: size.width / 2 - (area.minX + area.width / 2) * zoom, y: size.height / 2 - (area.minY + area.height / 2) * zoom, zoom };
+    const top = Math.min(size.height * .4, Math.max(vertical, (hint.offsetTop || 18) + (hint.offsetHeight || 0) + 18));
+    const availableHeight = Math.max(1, size.height - top - vertical);
+    const zoom = clamp(Math.min((size.width - horizontal * 2) / area.width, availableHeight / area.height, 1), MIN_ZOOM, MAX_ZOOM);
+    camera = { x: size.width / 2 - (area.minX + area.width / 2) * zoom, y: top + availableHeight / 2 - (area.minY + area.height / 2) * zoom, zoom };
     hadCamera = true; draw(); rememberCamera();
   }
   function focusRecord(id) {
@@ -416,7 +418,7 @@ export function renderCanvas(container, project, {
     const source = recordsById.get(link.from); const target = recordsById.get(link.to);
     edgePanel.replaceChildren();
     const heading = element('div', 'wc-edge-heading'); heading.append(element('strong', '', link.label || t('relation.generic')), button('', 'close', clearLink, t('relation.close'))); edgePanel.append(heading);
-    edgePanel.append(element('p', '', `${source?.title || link.from} → ${target?.title || link.to}`));
+    edgePanel.append(element('p', '', `${source?.title || t('common.untitled')} → ${target?.title || t('common.untitled')}`));
     edgePanel.append(element('span', 'wc-edge-status', link.status === 'suggested' ? t('relation.suggested') : t('relation.accepted')));
     const remove = button(t('relation.remove'), 'trash', () => requestRemoveLink(id)); remove.classList.add('wc-remove-link'); edgePanel.append(remove); edgePanel.hidden = false;
   }

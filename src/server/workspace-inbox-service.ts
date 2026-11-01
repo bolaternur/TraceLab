@@ -20,11 +20,12 @@ export async function getWorkspaceInbox(user:WorkspaceUser,projectId:string,opti
     const rows=(await client.query(`SELECT s.id AS "sourceId",m.local_id AS "recordId",s.title,s.summary,s.provider,s.event_type AS "eventType",s.status,
       s.actor_external_id AS "externalActor",u.display_name AS "authorName",s.occurred_at AS "occurredAt",s.received_at AS "receivedAt",
       to_char(s.received_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS "cursorTime",
-      im.local_id AS "iterationId",jsonb_build_object('repository',s.raw_metadata->>'repository','sha',s.raw_metadata->>'sha',
+      im.local_id AS "iterationId",ss.name AS "subsystemName",jsonb_build_object('repository',s.raw_metadata->>'repository','sha',s.raw_metadata->>'sha',
         'branch',s.raw_metadata->>'branch','url',s.raw_metadata->>'url','externalAuthorshipUnverified',s.raw_metadata->'externalAuthorshipUnverified') AS metadata
       FROM source_events s JOIN workspace_entity_map m ON m.entity_id=s.id AND m.entity_type='source_event' AND m.project_id=s.project_id
       LEFT JOIN workspace_entity_map im ON im.entity_id=s.iteration_id AND im.entity_type='iteration' AND im.project_id=s.project_id
       LEFT JOIN users u ON u.id=s.actor_user_id
+      LEFT JOIN subsystems ss ON ss.id=s.subsystem_id AND ss.project_id=s.project_id
       WHERE s.project_id=$1 AND s.team_id=$2 AND s.status=$3 ${cursor?"AND (s.received_at,s.id)<($4::timestamptz,$5::uuid)":""}
       ORDER BY s.received_at DESC,s.id DESC LIMIT 51`,cursor?[projectId,access.team_id,wanted,cursor.time,cursor.id]:[projectId,access.team_id,wanted])).rows;
     const hasMore=rows.length>50,items=rows.slice(0,50),last=items.at(-1);

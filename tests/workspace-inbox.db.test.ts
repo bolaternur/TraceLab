@@ -56,4 +56,33 @@ describe.skipIf(process.env.RUN_WORKSPACE_INBOX_DB_TESTS!=="true" || !process.en
     expect(JSON.stringify(current.recordHistory)).toContain('"status":"closed"');expect(current.status).toBe("draft");
     expect((await inbox.getWorkspaceInbox(lead,project)).iterations.find(i=>i.id===otherIteration).canEdit).toBe(false);
   });
+  it("keeps a project-local subsystem and goal in canonical iterations and immutable version history",async()=>{
+    const values={kind:"iteration",title:"Subsystem closeout fixture",subsystem:"Intake fixture",problemOrGoal:"Retain a 180 g part",body:"New pad"};
+    const id=await record(lead,values);
+    const canonical=async()=>(await admin.query(`SELECT i.problem_or_goal,s.name AS subsystem,i.state FROM iterations i
+      JOIN workspace_entity_map m ON m.entity_id=i.id AND m.entity_type='iteration'
+      LEFT JOIN subsystems s ON s.id=i.subsystem_id WHERE m.project_id=$1 AND m.local_id=$2`,[project,id])).rows[0];
+    expect(await canonical()).toEqual({problem_or_goal:values.problemOrGoal,subsystem:values.subsystem,state:"open"});
+    await workspace.executeWorkspaceCommand(lead,{command:"updateRecord",projectId:project,expectedRevision:await revision(),requestId:randomUUID(),args:[id,{status:"closed",rationale:"Original surface slipped",outcome:"iterate",testOutcome:"partial",problemOrGoal:"Repeat at a steeper angle"}]});
+    expect(await canonical()).toEqual({problem_or_goal:"Repeat at a steeper angle",subsystem:values.subsystem,state:"closed"});
+    const current=(await workspace.getWorkspace(lead,{project})).projects.find(p=>p.id===project)!.records.find(r=>r.id===id)!;
+    expect(current.testOutcome).toBe("partial");expect(JSON.stringify(current.recordHistory)).toContain(values.problemOrGoal);
+    // Existing source remains the original captured statement after closeout.
+    expect((await admin.query(`SELECT s.raw_metadata->'original'->>'problemOrGoal' AS goal FROM source_events s
+      JOIN workspace_entity_map m ON m.entity_id=s.id WHERE m.project_id=$1 AND m.local_id=$2`,[project,id])).rows[0].goal).toBe(values.problemOrGoal);
+    await expect(workspace.executeWorkspaceCommand(student,{command:"updateRecord",projectId:project,expectedRevision:await revision(),requestId:randomUUID(),args:[id,{problemOrGoal:"Someone else's explanation"}]})).rejects.toMatchObject({code:"forbidden"});
+  });
+  it("reads season handoff only for active members without archiving or copying any project",async()=>{
+    const {getWorkspaceHandoff}=await import("@/server/workspace-handoff-service");
+    const before=(await admin.query("SELECT id,is_active,handoff_completed_at FROM seasons WHERE team_id=$1 ORDER BY id",[team])).rows;
+    const beforeProjects=(await admin.query("SELECT id FROM projects WHERE team_id=$1 ORDER BY id",[team])).rows;
+    const view=await getWorkspaceHandoff(lead,project);expect(view.projects.some(item=>item.id===project)).toBe(true);expect(view.season.name).toBe("2026");
+    expect((await getWorkspaceHandoff(coach,project)).role).toBe("coach");
+    await expect(getWorkspaceHandoff(foreign,project)).rejects.toMatchObject({code:"forbidden"});
+    await admin.query("UPDATE team_memberships SET status='removed' WHERE team_id=$1 AND user_id=$2",[team,student.id]);
+    try{await expect(getWorkspaceHandoff(student,project)).rejects.toMatchObject({code:"forbidden"});}
+    finally{await admin.query("UPDATE team_memberships SET status='active' WHERE team_id=$1 AND user_id=$2",[team,student.id]);}
+    expect((await admin.query("SELECT id,is_active,handoff_completed_at FROM seasons WHERE team_id=$1 ORDER BY id",[team])).rows).toEqual(before);
+    expect((await admin.query("SELECT id FROM projects WHERE team_id=$1 ORDER BY id",[team])).rows).toEqual(beforeProjects);
+  });
 });

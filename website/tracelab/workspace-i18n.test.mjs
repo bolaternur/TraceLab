@@ -82,6 +82,23 @@ test('timeline is newest-first, supports oldest-first, groups by team day, and k
   assert.equal(JSON.stringify(records), before);
 });
 
+test('timeline groups by authored subsystem or accepted iteration context without promoting suggestions',()=>{
+  setWorkspaceLocale('en','UTC');
+  const records=[{id:'version',kind:'iteration',title:'Grip v2',subsystem:'Intake',createdAt:'2026-10-30T08:00:00Z'},
+    {id:'test',kind:'test',subsystem:'Intake',createdAt:'2026-10-31T09:00:00Z'},
+    {id:'proposal',kind:'source',createdAt:'2026-10-31T10:00:00Z'}];
+  const project={records,links:[{from:'test',to:'version',status:'accepted'},{from:'proposal',to:'version',status:'suggested'}]};
+  const grouped=timelineGroups(records,{grouping:'iteration',project});
+  assert.equal(grouped.find(group=>group.key==='version').label,'Grip v2');
+  assert.deepEqual(grouped.find(group=>group.key==='version').records.map(record=>record.id),['test','version']);
+  assert.deepEqual(grouped.find(group=>group.key==='unassigned').records.map(record=>record.id),['proposal']);
+  const subsystems=timelineGroups(records,{grouping:'subsystem',project});
+  assert.equal(subsystems.find(group=>group.key==='Intake').records.length,2);
+  assert.equal(subsystems.find(group=>group.key==='unassigned').label,'No subsystem');
+  // Context can include an iteration outside the visible date range.
+  assert.equal(timelineGroups([records[1]],{grouping:'iteration',project})[0].label,'Grip v2');
+});
+
 // A narrow DOM adapter exercises rendering and selection without adding a browser
 // framework dependency. Browser layout, focus and touch checks remain separate.
 class Node {
@@ -112,6 +129,80 @@ class Node {
   getBoundingClientRect() { return { width: this.clientWidth, height: this.clientHeight, x: 0, y: 0 }; }
   all() { return [this, ...this.children.flatMap(child => child.all())]; }
 }
+
+test('empty test and study views offer localized creation actions only when supplied',()=>{
+  const prior=globalThis.document;globalThis.document={createElement:tag=>new Node(tag),createElementNS:(_,tag)=>new Node(tag)};
+  try{
+    for(const locale of ['ru','en','kk']){
+      setWorkspaceLocale(locale,'UTC');
+      for(const render of [renderTestChart,renderStudyChart]){
+        const container=new Node('div');let created=0;
+        render(container,{records:[],studyRows:[]},{onCreate:()=>created++});
+        const action=container.all().find(node=>node.className==='wv-empty-action');assert.ok(action);assert.ok(action.textContent.length>5);action.handlers.click();assert.equal(created,1);
+        render(container,{records:[],studyRows:[]});assert.equal(container.all().some(node=>node.className==='wv-empty-action'),false);
+      }
+    }
+  }finally{if(prior===undefined)delete globalThis.document;else globalThis.document=prior;}
+});
+
+test('large timelines render bounded pages, retain scroll on detail refresh, and open deep-linked records',()=>{
+  const oldDocument=globalThis.document;
+  globalThis.document={createElement:tag=>new Node(tag),createElementNS:(_,tag)=>new Node(tag)};
+  try{
+    setWorkspaceLocale('en','UTC');
+    const project={id:'large-timeline-fixture',links:[],records:Array.from({length:1000},(_,index)=>({id:'record-'+index,kind:'source',title:'Fixture '+index,body:'Original evidence',createdAt:new Date(Date.UTC(2026,0,1,0,index)).toISOString()}))};
+    const original=JSON.stringify(project),container=new Node('div');
+    let cleanup=renderTimeline(container,project);
+    const items=()=>container.all().filter(node=>node.className.includes('wv-timeline-item'));
+    assert.equal(items().length,100);
+    container.all().find(node=>node.className==='wv-timeline-more').handlers.click();
+    assert.equal(items().length,200);container.scrollTop=360;cleanup();
+    cleanup=renderTimeline(container,project);
+    assert.equal(items().length,200);assert.equal(container.scrollTop,360);cleanup();
+    renderTimeline(container,project,{selectedId:'record-0'});
+    assert.equal(items().length,1000);assert.equal(container.all().filter(node=>node.className.includes('is-selected')).length,1);
+    assert.equal(JSON.stringify(project),original);
+  }finally{if(oldDocument===undefined)delete globalThis.document;else globalThis.document=oldDocument;}
+});
+
+test('record UUIDs stay internal while graph, timeline and test selection use human-readable titles', () => {
+  const oldDocument = globalThis.document;
+  globalThis.document = { createElement: tag => new Node(tag), createElementNS: (_, tag) => new Node(tag) };
+  try {
+    setWorkspaceLocale('ru', 'Asia/Qyzylorda');
+    const sourceId = '11111111-1111-4111-8111-111111111111';
+    const testId = '22222222-2222-4222-8222-222222222222';
+    const measuredId = '33333333-3333-4333-8333-333333333333';
+    const project = { id: 'project', name: 'Проверка', records: [
+      { id: sourceId, kind: 'source', title: 'Прототип захвата', body: 'Наблюдение автора', createdAt: '2026-10-29T08:00:00Z' },
+      { id: testId, kind: 'test', title: 'Проверка удержания', trials: 20, successes: 17, createdAt: '2026-10-29T09:00:00Z' },
+      { id: measuredId, kind: 'test', title: 'Замер нагрузки', measuredValue: 12.5, unit: 'N', createdAt: '2026-10-29T10:00:00Z' },
+    ], links: [{ id: '44444444-4444-4444-8444-444444444444', from: sourceId, to: testId, label: 'Проверен в испытании', status: 'accepted' }], studyRows: [{ id: '55555555-5555-4555-8555-555555555555', baselineSeconds: 30, traceSeconds: 24 }] };
+    const before = JSON.stringify(project);
+    for (const render of [renderGraph, renderTimeline, renderTestChart, renderCanvas]) {
+      const container = new Node('div'); let selected;
+      const cleanup = render(container, project, { onSelect: id => { selected = id; } });
+      const text = container.textContent;
+      assert.ok(text.includes('Проверка удержания'));
+      if (render !== renderTimeline) assert.ok(text.includes('17'));
+      const presentation = container.all().map(node => [node.textContent, node.attributes['aria-label'] || '', node.title || ''].join(' ')).join(' ');
+      for (const id of [sourceId, testId, measuredId, project.links[0].id]) assert.ok(!presentation.includes(id), `${render.name} exposes ${id}`);
+      const selectable = container.all().find(node => node.handlers.click && (node.className.includes('timeline-button') || node.className.includes('test-row') || node.className.includes('record-button') || node.attributes.class?.includes('wv-node')));
+      assert.ok(selectable, `${render.name} retains record selection`);
+      selectable.handlers.click();
+      assert.ok(project.records.some(record => record.id === selected), `${render.name} preserves internal identity`);
+      cleanup?.();
+    }
+    const study = new Node('div');
+    renderStudyChart(study, project);
+    assert.ok(study.textContent.includes(t('study.participant', {count:1})));
+    assert.ok(!study.textContent.includes(project.studyRows[0].id));
+    assert.equal(JSON.stringify(project), before);
+  } finally {
+    if (oldDocument === undefined) delete globalThis.document;
+    else globalThis.document = oldDocument;
+  }
+});
 
 test('all locales render real timeline, test, research and canvas labels without rewriting records', () => {
   const oldDocument = globalThis.document;

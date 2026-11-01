@@ -57,8 +57,8 @@ jobs:
         run: node scripts/check-migrations.mjs
       - name: Unit and security tests (no seeded legacy database)
         run: env -u DATABASE_URL -u DATABASE_MIGRATION_URL npm test
-      - name: Current real database integration tests
-        run: npm run test:db
+      - name: All self-contained database integration suites in a fresh database
+        run: node scripts/test-isolated-db.mjs
       - run: npm run test:static
       - run: node --test tests/pilot-preflight.node.test.mjs
       - run: npm run build

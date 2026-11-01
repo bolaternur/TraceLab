@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { z } from "zod";
 import { appendWorkspaceRecord, workspaceTransaction, type WorkspaceUser } from "./workspace-service";
-import { MEDIA_LIMITS, MediaError, mediaHash, uploadFingerprint, uploadMetadata, type UploadMetadata } from "./workspace-media-contract";
+import { MEDIA_LIMITS, MediaError, mediaHash, uploadFingerprint, uploadMetadata, timelineMediaRecordIds, type UploadMetadata } from "./workspace-media-contract";
 import { prepareMedia, type PreparedMedia } from "./workspace-media-files";
 import { mediaStorage } from "./workspace-media-storage";
 import type { StorageAdapter } from "./storage";
@@ -56,10 +56,24 @@ function mediaView(row:MediaRow) {
     model:row.model_id?{id:row.model_id,category:row.category,versionLabel:row.version_label,
       previousModelId:row.metadata.previousModelId ?? null,viewerUrl:"/workspace/model/"+row.model_id}:null };
 }
-export async function listWorkspaceMedia(user:WorkspaceUser,options:{teamId:string;projectId:string;offset?:number;mode?:string}) {
+type MediaListOptions={teamId:string;projectId:string;offset?:number;mode?:string;recordIds?:string[]};
+type TimelineMediaList={items:Array<{recordId:string|null;thumbnailUrl:string|null;caption:string;alt:string}>;nextOffset:null};
+type WorkspaceMediaList={items:Array<ReturnType<typeof mediaView>&{canEdit:boolean}>;nextOffset:number|null;role:string;usage:Awaited<ReturnType<typeof usage>>;acceptedFormats:string[];limits:typeof MEDIA_LIMITS};
+export function listWorkspaceMedia(user:WorkspaceUser,options:Omit<MediaListOptions,"recordIds">&{recordIds:string[]}):Promise<TimelineMediaList>;
+export function listWorkspaceMedia(user:WorkspaceUser,options:Omit<MediaListOptions,"recordIds">&{recordIds?:undefined}):Promise<WorkspaceMediaList>;
+export function listWorkspaceMedia(user:WorkspaceUser,options:MediaListOptions):Promise<WorkspaceMediaList|TimelineMediaList>;
+export async function listWorkspaceMedia(user:WorkspaceUser,options:MediaListOptions):Promise<WorkspaceMediaList|TimelineMediaList> {
   const offset=z.number().int().min(0).max(100000).parse(options.offset ?? 0);
+  const recordIds=options.recordIds===undefined?undefined:timelineMediaRecordIds.parse(options.recordIds);
   return workspaceTransaction(user,async client=>{
     const role=await access(client,user,options.teamId,options.projectId);
+    if(recordIds){
+      // One thumbnail per explicitly requested record, within the authorized project.
+      // This path never scans the full gallery or returns private storage keys.
+      const rows=(await client.query<MediaRow>(selectMedia.replace('SELECT a.*','SELECT DISTINCT ON (w.local_id) a.*')+" WHERE a.team_id=$1 AND e.project_id=$2 AND w.local_id=ANY($3::text[]) AND a.metadata ? 'thumb' ORDER BY w.local_id,a.created_at DESC,a.id DESC LIMIT 100",[options.teamId,options.projectId,recordIds])).rows;
+      await audit(client,user,options.teamId,"media.timeline_metadata","project",options.projectId);
+      return {items:rows.map(row=>{const item=mediaView(row);return {recordId:item.recordId,thumbnailUrl:item.thumbnailUrl,caption:item.caption,alt:item.alt};}),nextOffset:null};
+    }
     const extra=options.mode==="models"?" AND m.id IS NOT NULL":options.mode==="gallery"?" AND m.id IS NULL":"";
     const rows=(await client.query<MediaRow>(selectMedia+" WHERE a.team_id=$1 AND e.project_id=$2"+extra+" ORDER BY a.created_at DESC,a.id DESC LIMIT 51 OFFSET $3",
       [options.teamId,options.projectId,offset])).rows;

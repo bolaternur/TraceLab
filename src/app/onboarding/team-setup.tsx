@@ -2,6 +2,7 @@
 import {useRef,useState,type FormEvent} from 'react';
 import Link from 'next/link';
 import {BrandLogo} from '@/components/brand-logo';
+import {ThemeToggle} from '@/components/theme-toggle';
 import {JoinForm} from '../join/[code]/join-form';
 
 const copy={
@@ -30,7 +31,7 @@ export function TeamSetup({initialLocale}:{initialLocale:string}){
   }
   function next(){const controls=form.current?.querySelectorAll<HTMLInputElement>('[data-step="basics"] input');if(controls&&[...controls].every(input=>input.reportValidity()))setStep(1);}
   return <main id="main" className="tl-setup" lang={locale}>
-    <header><Link href="/" aria-label={text.home}><BrandLogo /></Link><label>{text.language}<select value={locale} onChange={event=>language(event.target.value as Locale)} disabled={pending}><option value="ru">Русский</option><option value="en">English</option><option value="kk">Қазақша</option></select></label></header>
+    <header><Link href="/" aria-label={text.home}><BrandLogo /></Link><div className="iz-header-actions tl-setup-header-actions"><ThemeToggle locale={locale}/><label>{text.language}<select value={locale} onChange={event=>language(event.target.value as Locale)} disabled={pending}><option value="ru">Русский</option><option value="en">English</option><option value="kk">Қазақша</option></select></label></div></header>
     <div className="tl-setup-content"><h1>{text.title}</h1><p>{text.subtitle}</p>
       <div className="tl-setup-choice" role="group" aria-label={text.choice}><button type="button" disabled={pending} aria-pressed={mode==='join'} className={mode==='join'?'':'secondary'} onClick={()=>setMode('join')}>{text.joinChoice}</button><button type="button" disabled={pending} aria-pressed={mode==='create'} className={mode==='create'?'':'secondary'} onClick={()=>setMode('create')}>{text.createChoice}</button></div>
       <section className="tl-setup-join" hidden={mode!=='join'}><JoinForm locale={locale} embedded/></section>

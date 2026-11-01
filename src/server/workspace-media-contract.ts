@@ -16,12 +16,15 @@ export const uploadMetadata = z.object({
   name: text(160).min(1), filename: text(180).min(1), caption: text(5000).default(""), alt: text(500).default(""),
   kind: z.enum(["photo", "drawing", "render", "document", "video", "model"]),
   occurredAt: z.string().datetime({ offset: true }), subsystemId: z.string().uuid().optional(),
+  clientPrivacyEdit: z.literal("local-crop-redaction").optional(),
   model: z.object({ category: z.enum(["robot", "assembly", "part"]), versionLabel: text(80).min(1),
     tags: z.array(text(40).min(1)).max(20).default([]), previousModelId: z.string().uuid().optional() }).strict().optional(),
 }).strict().superRefine((value, ctx) => {
   if ((value.kind === "model") !== Boolean(value.model)) ctx.addIssue({ code: "custom", message: "Model metadata is required only for a model." });
+  if (value.clientPrivacyEdit && !["photo", "drawing", "render"].includes(value.kind)) ctx.addIssue({ code: "custom", message: "Local photo edits apply to image files only." });
 });
 export type UploadMetadata = z.infer<typeof uploadMetadata>;
+export const timelineMediaRecordIds=z.array(z.string().trim().min(1).max(100).refine(value=>!/[\u0000-\u001f]/.test(value))).min(1).max(100).refine(values=>new Set(values).size===values.length);
 export function parseUploadMetadata(header: string | null): UploadMetadata {
   if (!header || header.length > 30_000) throw new MediaError("invalid_metadata");
   try { return uploadMetadata.parse(JSON.parse(decodeURIComponent(header))); }

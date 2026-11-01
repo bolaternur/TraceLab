@@ -1,6 +1,7 @@
 "use client";
 import {useRef,useState,type FormEvent} from "react";
 import Link from "next/link";
+import {ThemeToggle} from "@/components/theme-toggle";
 import {isTeamCodeInput,joinCopy,joinErrorKey,type JoinLocale} from "../join-copy";
 
 export function JoinForm({code='',locale:initialLocale,embedded=false}:{code?:string;locale:string;embedded?:boolean}) {
@@ -30,7 +31,7 @@ export function JoinForm({code='',locale:initialLocale,embedded=false}:{code?:st
     finally{busy.current=false;setPending(false);}
   }
   return <section className="tl-join-content" lang={locale}>
-    {!embedded?<label className="tl-join-language">{t.language}<select value={locale} onChange={event=>language(event.target.value as JoinLocale)} disabled={pending}><option value="ru">Русский</option><option value="en">English</option><option value="kk">Қазақша</option></select></label>:null}
+    {!embedded?<div className="iz-header-actions tl-join-theme-actions"><ThemeToggle locale={locale}/><label className="tl-join-language">{t.language}<select value={locale} onChange={event=>language(event.target.value as JoinLocale)} disabled={pending}><option value="ru">Русский</option><option value="en">English</option><option value="kk">Қазақша</option></select></label></div>:null}
     {embedded?<h2>{t.title}</h2>:<h1>{t.title}</h1>}<p>{t.note}</p>
     <form onSubmit={submit} className="tl-join-form">
       {legacy?<p>{t.invite}</p>:<label>{t.code}<input name="code" value={value} onChange={event=>{setValue(event.target.value);setError(null);}} autoComplete="off" autoCapitalize="characters" spellCheck={false} required maxLength={64} aria-describedby="team-code-hint" aria-invalid={error==='invalid'||error==='unavailable'} className="tl-team-code"/><span id="team-code-hint" className="tl-setup-hint">{t.hint}</span></label>}

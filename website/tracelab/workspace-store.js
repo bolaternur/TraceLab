@@ -116,6 +116,7 @@ function normalizeRecordContent(input, { requireDecisionWhy = false } = {}) {
   for (const [key, label, maximum] of [
     ['sourceType', 'Тип материала', 80], ['revision', 'Версия', 80], ['unit', 'Единица измерения', 80],
     ['rationale', 'Обоснование', 12000], ['criterion', 'Критерий испытания', 1000], ['conditions', 'Условия испытания', 2000],
+    ['subsystem', 'Подсистема', 120],
   ]) optionalString(result, input, key, label, maximum);
   result.originalAuthorLabel = string(own(input, 'originalAuthorLabel') ? input.originalAuthorLabel : result.author, 'Исходное имя автора', 160);
   result.authorProvenance = own(input, 'authorProvenance') ? input.authorProvenance : own(input, 'nativeRef') ? 'imported-unverified' : 'legacy-unverified';
@@ -133,6 +134,11 @@ function normalizeRecordContent(input, { requireDecisionWhy = false } = {}) {
     result.status = own(input, 'status') ? input.status : 'draft';
     if (!['draft', 'closed'].includes(result.status)) fail('Статус версии: выберите draft или closed.');
     optionalString(result, input, 'nextStep', 'Следующий шаг', 2000);
+    optionalString(result, input, 'problemOrGoal', 'Задача и ограничения', 4000);
+    if (own(input, 'testOutcome') && input.testOutcome !== undefined && input.testOutcome !== null && input.testOutcome !== '') {
+      if (!['pass', 'fail', 'partial', 'unknown'].includes(input.testOutcome)) fail('Результат итерации: выберите pass, fail, partial или unknown.');
+      result.testOutcome = input.testOutcome;
+    }
     if (own(input, 'outcome') && input.outcome !== '' && input.outcome !== undefined && input.outcome !== null) {
       if (!['kept', 'reverted', 'iterate', 'deferred', 'rejected'].includes(input.outcome)) fail('Итог версии: выберите дальнейшее действие.');
       result.outcome = input.outcome;
@@ -349,7 +355,7 @@ function normalizeProject(input) {
 function normalizeState(input) {
   object(input, 'Рабочее пространство');
   if (!own(input, 'schemaVersion') || input.schemaVersion !== 1) fail('Версия данных не поддерживается. Нужна schemaVersion: 1.');
-  const projects = limitedArray(input.projects, 'Проекты', LIMITS.projects).map(normalizeProject);
+  const projects = limitedArray(input.projects, 'Проекты', LIMITS.projects).map(normalizeProject).map(refreshBuiltinDemoLabels);
   if (projects.length === 0) fail('Рабочее пространство должно содержать хотя бы один проект.');
   const ids = new Set();
   for (const project of projects) {
@@ -402,6 +408,28 @@ function demoProject() {
     links: pairs.map(([from, to, label], index) => ({ id: `LINK-${String(index + 1).padStart(2, '0')}`, from, to, label, status: 'accepted', origin: 'educational' })),
     studyRows: [],
   });
+}
+
+/** A historical protected demo may remain in browser storage after rebranding.
+ * Refresh only its exact factory label, never an authored/copy/team record. */
+function refreshBuiltinDemoLabels(project) {
+  if(project.id!==DEMO_ID||project.dataKind!=='synthetic')return project;
+  const current=demoProject(),factory=current.records.find(record=>record.id==='TEST-02');
+  const oldBody='Повторили подъём той же детали с той же высотой. Значения вымышлены и не измеряют пользу TraceLab.';
+  const matchesFactory=record=>{
+    if(!record||record.body!==oldBody)return false;
+    const candidate={...record,body:factory.body};delete candidate.recordHistory;
+    const expected={...factory};delete expected.recordHistory;
+    return JSON.stringify(candidate)===JSON.stringify(expected);
+  };
+  const record=project.records.find(item=>item.id==='TEST-02');
+  const versions=record?.recordHistory?.versions;
+  if(matchesFactory(record)&&(!versions||versions.length===1&&matchesFactory(versions[0].snapshot))){
+    record.body=factory.body;if(versions)versions[0].snapshot.body=factory.body;
+  }
+  const oldDescription='Вымышленный инженерный сценарий: участники, даты и измерения синтетические. Это пример связей материалов, испытаний и решений, а не результаты исследования TraceLab.';
+  if(project.description===oldDescription)project.description=current.description;
+  return project;
 }
 
 function initialState() {

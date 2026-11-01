@@ -13,3 +13,16 @@ test('deep link filters validate dates and use exact authored labels',()=>{
   const records=[{id:'1',author:'A'},{id:'2',author:'AB'}];assert.deepEqual(filterHistoryRecords(records,filters),[records[0]]);
   assert.equal(records.length,2);
 });
+
+test('subsystem and iteration filters use accepted links and preserve safe deep-link defaults',()=>{
+  const records=[{id:'iteration',kind:'iteration',title:'Grip v2',subsystem:'Intake',createdAt:'2026-10-31T08:00:00Z'},
+    {id:'accepted',kind:'test',subsystem:'Intake',createdAt:'2026-10-31T09:00:00Z'},
+    {id:'suggested',kind:'source',subsystem:'Intake',createdAt:'2026-10-31T10:00:00Z'},
+    {id:'other',kind:'test',subsystem:'Lift',createdAt:'2026-10-31T11:00:00Z'}];
+  const project={records,links:[{from:'accepted',to:'iteration',status:'accepted'},{from:'iteration',to:'suggested',status:'suggested'}]};
+  const filters=readHistoryFilters(new URLSearchParams('subsystem=Intake&iteration=iteration&group=iteration'));
+  assert.equal(filters.group,'iteration');
+  assert.deepEqual(filterHistoryRecords(records,filters,project).map(item=>item.id),['iteration','accepted']);
+  assert.equal(readHistoryFilters(new URLSearchParams('group=made-up')).group,'day');
+  assert.equal(readHistoryFilters(new URLSearchParams()).order,'newest');
+});

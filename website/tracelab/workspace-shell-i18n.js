@@ -2,6 +2,7 @@ import { getWorkspaceLocale } from './workspace-i18n.js';
 
 /** Interface-only translations. Values inside user records and form inputs are never rewritten. */
 const entries = {
+  'shell.skip':['Перейти к содержимому','Skip to content','Мазмұнға өту'],
   'record.hideGraph': ['Убрать из графа', 'Remove from graph', 'Графтан алып тастау'],
   'record.restoreGraph': ['Вернуть в граф', 'Restore to graph', 'Графқа қайтару'],
   'feedback.recordHidden': ['Убрано из графа. Вернуть можно через «Скрытые записи».', 'Removed from graph. Restore it through Hidden records.', 'Графтан алынды. «Жасырылған жазбалар» арқылы қайтара аласыз.'],

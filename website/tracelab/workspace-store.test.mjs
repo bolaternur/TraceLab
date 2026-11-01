@@ -42,6 +42,24 @@ function record(overrides = {}) {
   return { kind: 'source', title: 'Модель', body: 'Исходная CAD-модель', author: 'Участник P-01', ...overrides };
 }
 
+test('rebranding refreshes only exact protected demo labels and preserves authored copies and layout',()=>{
+  const store=makeStore(),demo=JSON.parse(JSON.stringify(store.getProject()));
+  const oldBody='Повторили подъём той же детали с той же высотой. Значения вымышлены и не измеряют пользу TraceLab.';
+  demo.records.find(item=>item.id==='TEST-02').body=oldBody;
+  demo.description=demo.description.replace('исследования Iznera.','исследования TraceLab.');
+  const copyId=store.importProject(JSON.stringify({...demo,dataKind:'personal',name:'Authored historical copy'}));
+  const saved=JSON.parse(JSON.stringify(store.getState()));saved.projects[0]=demo;demo.nodePositions={'TEST-02':{x:123,y:456}};
+  const storage=mockStorage({[STORAGE_KEY]:JSON.stringify(saved)}),restored=makeStore({storage});
+  const protectedDemo=restored.getState().projects.find(item=>item.id===demo.id);
+  assert.ok(protectedDemo.records.find(item=>item.id==='TEST-02').body.endsWith('пользу Iznera.'));
+  assert.deepEqual(protectedDemo.nodePositions,demo.nodePositions);
+  assert.equal(restored.getState().projects.find(item=>item.id===copyId).records.find(item=>item.id==='TEST-02').body,oldBody);
+  // A non-factory record, even under a synthetic ID, is not rewritten.
+  const changed=JSON.parse(JSON.stringify(saved));changed.projects[0].records.find(item=>item.id==='TEST-02').title='User supplied title';
+  const kept=makeStore({storage:mockStorage({[STORAGE_KEY]:JSON.stringify(changed)})});
+  assert.equal(kept.getState().projects[0].records.find(item=>item.id==='TEST-02').body,oldBody);
+});
+
 function nativeFixture() {
   const note = (id, entityType, entityId, field, body, createdAt, provenance = 'student') => ({ id, entityType, entityId, field, body, createdAt, provenance, sourceMethod: provenance === 'student' ? 'manual' : 'ai', authorUserId: 'USER-EXACT-ID' });
   return {
