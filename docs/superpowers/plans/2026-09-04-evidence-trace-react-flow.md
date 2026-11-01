@@ -6,7 +6,7 @@
 
 **Architecture:** The server remains authoritative for graph entities and relations. `evidenceGraph()` produces domain rows; a pure adapter converts them to a client-safe `EvidenceTraceSnapshot`; a pure layout module turns that snapshot into deterministic layered positions. The client React Flow surface consumes only that snapshot and transient selection/viewport state. It never creates or persists evidence relations. Suggested relations remain visually and semantically distinct from accepted relations.
 
-**Tech Stack:** Next.js 16.2.6, React 19.2.6, TypeScript 5.9.3, `@xyflow/react` 12.11.6, `elkjs` 0.10.x/compatible current release, Tailwind CSS 4, existing TraceLab design tokens, Node built-in test runner for dependency-free model/contract tests.
+**Tech Stack:** Next.js 16.2.6, React 19.2.6, TypeScript 5.9.3, `@xyflow/react` 12.11.6, `elkjs` 0.10.x/compatible current release, Tailwind CSS 4, existing Iznera design tokens, Node built-in test runner for dependency-free model/contract tests.
 
 **Spec:** `docs/superpowers/specs/2026-09-04-spatial-workbench-design.md`
 

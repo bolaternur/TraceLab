@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+.iznera-wordmark{display:inline-flex;flex:none;align-items:center;justify-content:center;width:128px;height:44px;padding:6px 9px;background:transparent;vertical-align:middle}
+.iznera-wordmark img{display:block;width:110px;height:32px;object-fit:contain;max-width:100%}
+.account-brand .iznera-wordmark img{width:110px;height:32px}
+@media(max-width:380px){.iznera-wordmark{width:118px;padding-inline:6px}.account-header{gap:12px}}
+
 :root {
   --motion-micro: 130ms;
   --motion-selection: 140ms;
@@ -112,7 +117,7 @@
   }
 }
 
-/* Ayu palette selected for TraceLab, independent of the OS appearance. */
+/* Ayu palette selected for Iznera, independent of the OS appearance. */
 :root {
   color-scheme: dark;
   --bg-canvas: #091f36;

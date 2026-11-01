@@ -6,7 +6,7 @@
 
 **Architecture:** `subsystemTimeline()` remains the authoritative server query. The route normalizes its rows once into a serializable `EngineeringTimelineSnapshot`, then hands that snapshot to a narrow client island. Desktop uses a custom horizontal time surface rather than React Flow: fixed-size event cards are positioned on a time axis, density changes pixels-per-time and source-event aggregation, iteration membership renders as non-authoritative visual bands, and selection opens a docked inspector. Mobile and screen-reader paths keep chronological semantic lists.
 
-**Tech Stack:** Next.js 16 Server Components, React 19 client islands, TypeScript 5.9, Motion 12 for inspector/camera-like focus transitions, existing TraceLab tokens/components, native scroll/ResizeObserver for the time surface, Node dependency-free contract/model tests.
+**Tech Stack:** Next.js 16 Server Components, React 19 client islands, TypeScript 5.9, Motion 12 for inspector/camera-like focus transitions, existing Iznera tokens/components, native scroll/ResizeObserver for the time surface, Node dependency-free contract/model tests.
 
 **Spec:** `docs/superpowers/specs/2026-09-04-spatial-workbench-design.md` §16 and `docs/superpowers/specs/2026-09-04-tracelab-frontend-design.md` §6.4.
 

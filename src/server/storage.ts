@@ -45,7 +45,19 @@ class LocalDiskStorage implements StorageAdapter {
   }
 }
 
-export const storage: StorageAdapter = new LocalDiskStorage();
+/** Load the database fence only for actual object I/O; pure crypto/type helpers remain usable without a DB. */
+export function lifecycleStorage(adapter: StorageAdapter): StorageAdapter {
+  let protectedAdapter: Promise<StorageAdapter> | undefined;
+  const guarded = () => protectedAdapter ??= import("./account-lifecycle-storage").then(module => module.withLifecycleStorage(adapter));
+  return {
+    put: async (key, bytes, type) => (await guarded()).put(key, bytes, type),
+    get: async key => (await guarded()).get(key),
+    delete: key => adapter.delete(key),
+    deletePrefix: async () => { throw new Error("bulk_delete_requires_review"); },
+  };
+}
+
+export const storage: StorageAdapter = lifecycleStorage(new LocalDiskStorage());
 
 export const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 export const ALLOWED_UPLOAD_TYPES = new Set([...ALLOWED_IMAGE_TYPES, "text/csv", "application/pdf", "video/mp4"]);

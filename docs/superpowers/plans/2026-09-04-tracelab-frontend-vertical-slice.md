@@ -1,10 +1,10 @@
-# TraceLab Frontend Vertical Slice Implementation Plan
+# Iznera Frontend Vertical Slice Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Rebuild the existing TraceLab frontend foundation and the Today → Capture/Why → Timeline vertical slice into the Living Evidence Lab design while preserving existing evidence, policy, tenancy, and offline behavior.
+**Goal:** Rebuild the existing Iznera frontend foundation and the Today → Capture/Why → Timeline vertical slice into the Living Evidence Lab design while preserving existing evidence, policy, tenancy, and offline behavior.
 
-**Architecture:** Keep Next.js Server Components and all existing server/domain modules. Introduce a small TraceLab presentation layer with design tokens, domain UI models, semantic evidence components, and a redesigned responsive shell. Client-side state remains narrow: mobile nav and Capture keep their current client boundaries; no new runtime UI library is required for this first slice because npm registry access is unavailable in the execution environment.
+**Architecture:** Keep Next.js Server Components and all existing server/domain modules. Introduce a small Iznera presentation layer with design tokens, domain UI models, semantic evidence components, and a redesigned responsive shell. Client-side state remains narrow: mobile nav and Capture keep their current client boundaries; no new runtime UI library is required for this first slice because npm registry access is unavailable in the execution environment.
 
 **Tech Stack:** Next.js 16, React 19, TypeScript, Tailwind CSS 4, existing IndexedDB outbox. Future-ready seams are preserved for Base UI, Motion, React Flow/ELK, and Phosphor once dependencies can be installed.
 

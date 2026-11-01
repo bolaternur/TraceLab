@@ -1,6 +1,6 @@
 # Local presentation verification
 
-Checked on 9 October 2026. This report covers the presentation website only; it does not verify the main TraceLab application or its database.
+Checked on 9 October 2026. This report covers the presentation website only; it does not verify the main Iznera application or its database.
 
 The final Playwright run passed 41 browser assertions across the home, demo, research and materials routes. Desktop width: 1440px. Mobile width: 390px. Additional home check: 1117px, matching the observed in-app viewport.
 

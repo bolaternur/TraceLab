@@ -48,7 +48,7 @@ const PROMPTS: Record<CaptureKind, CapturePrompt> = {
   reflection: {
     eyebrow: "Student reflection",
     title: "What did you learn?",
-    helper: "Capture your own words. TraceLab does not generate or rewrite reflection content.",
+    helper: "Capture your own words. Iznera does not generate or rewrite reflection content.",
   },
 };
 

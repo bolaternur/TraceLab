@@ -1,4 +1,4 @@
-# TraceLab — START HERE for RKNP Daryn
+# Iznera — START HERE for RKNP Daryn
 
 ## 1. Run the hardened checkpoint
 
@@ -19,7 +19,7 @@ Keep the generated `package-lock.json` after install.
 
 ## 2. Judge routes
 
-- `/showcase` — 60-second trilingual TraceLab story. Use this first when a judge asks “what does it do?”
+- `/showcase` — 60-second trilingual Iznera story. Use this first when a judge asks “what does it do?”
 - `/research` — research question, hypothesis, experimental design and metrics.
 - `/app` — real Spatial Evidence Workbench.
 - `/app/timeline` — real Engineering Timeline with **Trace Replay** (`R` toggles replay).
@@ -38,7 +38,7 @@ lead@trace.demo / demo1234
 2. **Showcase** — Source → Student Why → Test → Decision → Why? → next-season memory.
 3. **Real workspace** — show that these are actual first-class evidence objects, not slides.
 4. **Trace Replay** — replay the real timeline.
-5. **Research** — explain the matched baseline vs TraceLab study and the predeclared outcomes.
+5. **Research** — explain the matched baseline vs Iznera study and the predeclared outcomes.
 6. **Trust** — student authorship remains separate from source facts and machine suggestions.
 
 Full script: `docs/rknp/RKNP_JUDGE_DEMO.md`.
@@ -62,4 +62,4 @@ At minimum try to measure:
 
 ## 5. One sentence to remember
 
-**TraceLab preserves not only what students built, but the source-linked evidence of how and why they built it.**
+**Iznera preserves not only what students built, but the source-linked evidence of how and why they built it.**

@@ -1,0 +1,7 @@
+/* A decorative field only: page content keeps its existing reading order. */
+.a-dot-surface{position:relative;isolation:isolate}
+.a-dot-surface>.a-dot-field{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;user-select:none;-webkit-mask-image:linear-gradient(transparent,#000 15%,#000 77%,transparent);mask-image:linear-gradient(transparent,#000 15%,#000 77%,transparent)}
+.a-dot-surface>:not(.a-dot-field){position:relative;z-index:1}
+.a-hero.a-dot-surface::before{display:none}
+.a-dot-canvas{display:block;width:100%;height:100%;pointer-events:none}
+@media(prefers-reduced-motion:reduce){.a-dot-field{animation:none;transition:none}}

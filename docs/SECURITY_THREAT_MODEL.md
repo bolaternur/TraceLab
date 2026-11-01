@@ -1,6 +1,6 @@
-# TraceLab security threat model and authorization boundaries
+# Iznera security threat model and authorization boundaries
 
-Status: implementation baseline for the pilot hardening work. TraceLab remains an internal codename pending naming clearance.
+Status: implementation baseline for the pilot hardening work. Iznera is the product name selected by the owner on 2026-10-28. The rebrand does not change authentication, authorization or data boundaries; no trademark or domain clearance is claimed.
 
 ## Assets and trust boundaries
 

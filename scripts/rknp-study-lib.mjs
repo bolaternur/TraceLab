@@ -55,14 +55,16 @@ function conditionSummary(rows) {
 }
 
 export function summarizeStudy(rows) {
-  const valid = rows.filter((r) => ["baseline", "tracelab"].includes(String(r.condition).toLowerCase()));
+  // New exports use Iznera; old research files retain their original condition value.
+  const condition = (row) => String(row.condition).trim().toLowerCase() === "iznera" ? "tracelab" : String(row.condition).trim().toLowerCase();
+  const valid = rows.filter((r) => ["baseline", "tracelab"].includes(condition(r)));
   const baseline = valid.filter((r) => String(r.condition).toLowerCase() === "baseline");
-  const tracelab = valid.filter((r) => String(r.condition).toLowerCase() === "tracelab");
+  const tracelab = valid.filter((r) => condition(r) === "tracelab");
   const map = new Map();
   for (const row of valid) {
     const key = `${row.participant_code ?? ""}::${row.task_id ?? ""}`;
     const entry = map.get(key) ?? {};
-    entry[String(row.condition).toLowerCase()] = row;
+    entry[condition(row)] = row;
     map.set(key, entry);
   }
   const pairs = [...map.values()].filter((x) => x.baseline && x.tracelab);
@@ -89,14 +91,14 @@ function f(value, suffix = "") {
 
 export function renderMarkdown(summary, sourceName = "pilot measurements") {
   const lines = [
-    "# TraceLab RKNP pilot summary",
+    "# Iznera RKNP pilot summary",
     "",
     `Source: ${sourceName}`,
     `Valid observations: ${summary.rows} · matched participant/task pairs: ${summary.matchedPairs}`,
     "",
     "> This report is descriptive. It does not claim causality or statistical significance by itself. Keep raw data, protocol, sample size and limitations with every competition result.",
     "",
-    "| Outcome | Baseline median/rate | TraceLab median/rate | Paired median Δ (TraceLab − baseline) |",
+    "| Outcome | Baseline median/rate | Iznera median/rate | Paired median Δ (Iznera − baseline) |",
     "|---|---:|---:|---:|",
   ];
   const labels = {
@@ -107,6 +109,6 @@ export function renderMarkdown(summary, sourceName = "pilot measurements") {
   for (const key of NUMERIC_FIELDS) lines.push(`| ${labels[key]} | ${f(summary.baseline.numeric[key])} | ${f(summary.tracelab.numeric[key])} | ${f(summary.pairedDelta[key])} |`);
   lines.push(`| Decision evidence linked | ${f(summary.baseline.binary.decision_evidence_linked == null ? null : summary.baseline.binary.decision_evidence_linked * 100, "%")} | ${f(summary.tracelab.binary.decision_evidence_linked == null ? null : summary.tracelab.binary.decision_evidence_linked * 100, "%")} | — |`);
   lines.push(`| Retrieval task success | ${f(summary.baseline.binary.task_success == null ? null : summary.baseline.binary.task_success * 100, "%")} | ${f(summary.tracelab.binary.task_success == null ? null : summary.tracelab.binary.task_success * 100, "%")} | — |`);
-  lines.push("", "Negative Δ for time outcomes means the TraceLab condition was faster on the matched observations.");
+  lines.push("", "Negative Δ for time outcomes means the Iznera condition was faster on the matched observations.");
   return lines.join("\n") + "\n";
 }

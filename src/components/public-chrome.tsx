@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { brand } from "@/lib/brand";
 import { isLocale, type Locale } from "@/lib/i18n";
 import { LanguageSelect } from "@/components/language-select";
-import { TraceMark } from "@/components/tracelab/brand-mark";
+import { BrandLogo } from "@/components/brand-logo";
 
 export async function PublicNav({ signedIn, locale: fallback }: { signedIn: boolean; locale: Locale }) {
   const raw = (await cookies()).get("pt_lang")?.value;
@@ -14,8 +14,7 @@ export async function PublicNav({ signedIn, locale: fallback }: { signedIn: bool
     <UiElement as="nav" className="sticky top-0 z-50 border-b border-border-subtle bg-surface/90 backdrop-blur-xl" aria-label="Primary">
       <div className="mx-auto flex min-h-16 max-w-[1280px] items-center justify-between gap-3 px-4 sm:px-6">
         <Link href="/" className="flex min-h-11 items-center gap-2.5 rounded-full pr-2 font-semibold">
-          <span className="grid h-9 w-9 place-items-center rounded-[12px] border border-border-subtle bg-canvas text-blueprint"><TraceMark width={25} height={25} /></span>
-          <span className="hidden sm:inline"><UiText text={brand.productName} /></span>
+          <BrandLogo />
         </Link>
         <div className="hidden items-center gap-6 text-sm text-text-2 lg:flex">
           <Link href="/#how" className="hover:text-ink"><UiText text="How it works" /></Link>
@@ -45,7 +44,7 @@ export function PublicFooter() {
   return (
     <footer className="border-t border-border">
       <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-8 text-xs text-text-3 md:flex-row md:items-center md:justify-between">
-        <div>
+        <div><BrandLogo className="mb-3" /><br />
           <UiText text={brand.productName} /> — <UiText text={brand.tagline} /><UiText text="· Student engineering evidence platform. Commercial naming clearance remains pending. " /></div>
         <div className="max-w-xl"><UiText text="GitHub, Onshape, Telegram, Discord, FIRST®, FTC®, VEX®, RECF and ISEF are trademarks of their respective owners. Their use here describes integrations and competition programs only and does not imply endorsement, affiliation or certification. " /></div>
       </div>

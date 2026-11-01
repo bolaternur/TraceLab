@@ -17,5 +17,5 @@ const [project] = await db
   .limit(1);
 
 await seedDemoModels({ teamId: membership.teamId, userId: lead.id, projectId: project?.id });
-console.log("Imported TraceLab seed 3D models into private team storage.");
+console.log("Imported Iznera seed 3D models into private team storage.");
 await pool.end();

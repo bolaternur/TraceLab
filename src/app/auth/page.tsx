@@ -1,32 +1,22 @@
-// locale-wired
-import { UiText } from "@/components/locale-provider";
-import Link from "next/link";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/server/auth";
-import { AuthForm } from "./auth-form";
-import { brand } from "@/lib/brand";
-import { TraceMark } from "@/components/tracelab/brand-mark";
+import { localMailPreviewAllowed } from "@/server/account-contract";
+import { safeInternalPath } from "@/lib/security";
+import { AuthForm, type AuthMode } from "./auth-form";
+import type { AccountLocale } from "./account-copy";
+import "./account.css";
 
 export const dynamic = "force-dynamic";
-
-export default async function AuthPage({ searchParams }: { searchParams: Promise<{ mode?: string; invite?: string; next?: string }> }) {
-  const sp = await searchParams;
-  const user = await getCurrentUser();
-  if (user) redirect(sp.invite ? `/join/${sp.invite}` : "/app");
-  const mode = sp.mode === "signup" ? "signup" : "signin";
-  return (
-    <main id="main" className="grid min-h-dvh bg-canvas place-items-center px-4 py-10">
-      <div className="w-full max-w-sm">
-        <Link href="/" className="mb-6 flex items-center gap-2 font-semibold">
-          <TraceMark className="h-7 w-7 text-text-1" />
-          <UiText text={brand.productName} />
-        </Link>
-        <div className="card p-6">
-          <AuthForm mode={mode} invite={sp.invite} next={sp.next} />
-        </div>
-        <p className="hint mt-4 text-center"><UiText text="Demo account: " /><span className="mono"><UiText text="lead@trace.demo" /></span> / <span className="mono"><UiText text="demo1234" /></span>
-        </p>
-      </div>
-    </main>
-  );
+export const metadata = { title: "Iznera · Account", robots: { index: false, follow: false }, referrer: "no-referrer" as const };
+export default async function AuthPage({ searchParams }: { searchParams: Promise<{ mode?: string; invite?: string; next?: string; locale?: string }> }) {
+  const [params, jar, requestHeaders, user] = await Promise.all([searchParams, cookies(), headers(), getCurrentUser()]);
+  const next = params.invite ? `/join/${encodeURIComponent(params.invite)}` : safeInternalPath(params.next, "/workspace/");
+  if (user && !["reset", "verify", "forgot"].includes(params.mode ?? "")) redirect(next);
+  const mode: AuthMode = ["signin", "signup", "verify", "forgot", "reset"].includes(params.mode ?? "") ? params.mode as AuthMode : "signin";
+  const lang = params.locale ?? jar.get("pt_lang")?.value ?? "ru";
+  const locale: AccountLocale = lang === "en" || lang === "kk" ? lang : "ru";
+  const requestUrl = `${requestHeaders.get("x-forwarded-proto") ?? "http"}://${requestHeaders.get("host") ?? "localhost"}/auth`;
+  const previewAvailable = localMailPreviewAllowed(requestUrl, new Headers(requestHeaders));
+  return <main id="main" className="account-page"><div className="account-container"><AuthForm mode={mode} locale={locale} next={next} previewAvailable={previewAvailable} /></div></main>;
 }

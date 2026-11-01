@@ -20,3 +20,13 @@ test("CSV parser preserves quoted notes with commas", () => {
   const rows = parseCsv('a,b,notes\n1,2,"same task, same student"\n');
   assert.equal(rows[0].notes, "same task, same student");
 });
+
+test("Iznera research condition preserves compatibility with earlier measurements", () => {
+  const csv = "session_id,date,team_code,participant_code,condition,task_id,target_age_days,retrieval_seconds,supporting_evidence_seconds,documentation_seconds,decision_evidence_linked,task_success,notes\n1,2026-10-01,A,P1,baseline,T1,30,60,40,50,0,1,\n2,2026-10-02,A,P1,iznera,T1,30,20,10,15,1,1,\n";
+  const renamed = summarizeStudy(parseCsv(csv));
+  const legacy = summarizeStudy(parseCsv(csv.replace(",iznera,", ",tracelab,")));
+  assert.equal(renamed.matchedPairs, 1);
+  assert.deepEqual(renamed.tracelab, legacy.tracelab);
+  assert.deepEqual(renamed.pairedDelta, legacy.pairedDelta);
+  assert.match(renderMarkdown(renamed, "test.csv"), /Iznera/);
+});

@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
-**Goal:** Make TraceLab's Spatial Home visually read like a Google Stitch+n8n-inspired engineering canvas rather than a dashboard rendered on top of React Flow.
+**Goal:** Make Iznera's Spatial Home visually read like a Google Stitch+n8n-inspired engineering canvas rather than a dashboard rendered on top of React Flow.
 
 **Architecture:** Preserve the existing WorkbenchSnapshot, React Flow state, capture pipeline, route semantics, and evidence relationships. Change only visual composition and presentation primitives: board geometry, board internals, floating chrome, inspector treatment, and responsive fit behavior. Keep the spatial world dark and calm while making evidence workboards feel like independent white engineering artboards.
 
-**Tech Stack:** Next.js 16, React 19, TypeScript 5.9, Tailwind 4, React Flow 12, Motion 12, Zustand, existing TraceLab tokens.
+**Tech Stack:** Next.js 16, React 19, TypeScript 5.9, Tailwind 4, React Flow 12, Motion 12, Zustand, existing Iznera tokens.
 
 **Spec:** `/mnt/data/TraceLab_SPATIAL_WORKBENCH_DESIGN_SPEC.md`
 

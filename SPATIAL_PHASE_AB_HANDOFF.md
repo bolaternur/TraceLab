@@ -1,4 +1,4 @@
-# TraceLab Spatial Workbench — Phase A+B Handoff
+# Iznera Spatial Workbench — Phase A+B Handoff
 
 Date: 2026-09-04
 Scope: spatial foundation + primary `/app` workbench + mobile focused-workboard fallback.

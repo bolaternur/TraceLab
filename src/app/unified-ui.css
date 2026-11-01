@@ -1,0 +1,24 @@
+/* Shared tokens for active account/onboarding/model routes. Legacy screens keep
+   their scoped historical styles; public HTML has the same Astra palette. */
+@font-face{font-family:TraceInter;src:url('/assets/inter-latin.woff2') format('woff2');font-weight:100 900;font-display:swap}
+@font-face{font-family:TraceInter;src:url('/assets/inter-cyrillic.woff2') format('woff2');font-weight:100 900;font-display:swap;unicode-range:U+0301,U+0400-052F,U+2116}
+html:has(:is(.account-page,.tl-setup,.wm-model-page)),body:has(:is(.account-page,.tl-setup,.wm-model-page)){background:#0b0b0e;color:#f5f5f7;color-scheme:dark;scrollbar-color:#61616e #0b0b0e}
+:is(.account-page,.tl-setup,.wm-model-page){
+  --page:#0b0b0e;--surface:#131316;--inset:#1b1b20;--ink:#f5f5f7;--muted:#aaaab4;--accent:#d9dcf0;--line:#29292f;
+  /* The legacy field selector has greater specificity than route field rules.
+     Give its shared tokens the active theme too, including native controls. */
+  --bg-canvas:#0b0b0e;--bg-surface:#0f0f13;--bg-elevated:#1b1b20;--bg-subtle:#1b1b20;
+  --border-default:#29292f;--border-subtle:#29292f;--border-strong:#3a3a44;--trace-blue:#d9dcf0;--shadow-focus:0 0 0 3px rgb(217 220 240 / .18);
+  --text-primary:#f5f5f7;--text-secondary:#aaaab4;--text-tertiary:#92929f;--text:#f5f5f7;--ws-field:#15151a;--ws-control-line:#3a3a44;
+  color:#f5f5f7;font-family:TraceInter,Arial,sans-serif;color-scheme:dark;
+}
+:is(.account-page,.tl-setup) :is(input,select,textarea){caret-color:#f5f5f7}
+:is(.account-page,.tl-setup) input:is(:autofill,:-webkit-autofill){-webkit-text-fill-color:#f5f5f7;caret-color:#f5f5f7;box-shadow:0 0 0 1000px #0f0f13 inset}
+:is(.account-page,.tl-setup,.wm-model-page) :is(h1,h2,h3,h4){color:var(--ink)}
+.wm-model-page header>p{color:var(--muted)}
+.wm-model-page header{margin:28px 0 32px}.wm-model-page h1{font-weight:500;line-height:1.14}
+.wm-model-page .wm-model{background:#131316}
+.wm-model-page .wm-model-hint{padding:7px 12px;border-radius:9px;background:#0b0b0ecc;width:fit-content;max-width:calc(100% - 32px);margin:0 auto 10px}
+.wm-model-page .wm-model-tools button{color:#f5f5f7}
+.wm-model-page .wm-model-stage canvas:focus-visible{outline:2px solid #d9dcf0;outline-offset:-4px}
+@media(prefers-reduced-motion:reduce){:is(.account-page,.tl-setup,.wm-model-page) *{scroll-behavior:auto}}
