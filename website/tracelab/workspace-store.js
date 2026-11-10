@@ -804,6 +804,21 @@ export function createWorkspaceStore(options = {}) {
       if (own(fields, 'recordHistory')) fail('Историю версий можно перенести через импорт JSON, но нельзя задать при создании записи.');
       record.recordHistory = recordHistory(record, recordedAt, 'manual-create');
       project.records.push(record);
+      // Validate and attach the initial reference in the same commit. A failed
+      // target/link must not leave a created record behind or duplicate on retry.
+      if (fields.relatedRecordId) {
+        const related = identifier(fields.relatedRecordId, 'Связанная запись');
+        const target = project.records.find(item => item.id === related && item.id !== id);
+        if (!target) fail('Связанная запись не найдена.');
+        if (project.links.length >= LIMITS.links) fail(`В проекте может быть не больше ${LIMITS.links} связей.`);
+        const testToDecision = target.kind === 'test' && record.kind === 'decision';
+        project.links.push(normalizeLink({
+          id: uniqueId('LINK', projectItemIds(project)),
+          from: testToDecision ? target.id : id, to: testToDecision ? id : target.id,
+          label: fields.relatedRecordLabel || (testToDecision ? 'Испытание обосновывает решение' : 'Связанный материал'),
+          relationType: testToDecision ? 'SUPPORTS' : 'REFERENCES', status: 'accepted', origin: 'student',
+        }));
+      }
       replaceProject(project);
       return id;
     },

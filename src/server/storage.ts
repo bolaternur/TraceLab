@@ -1,10 +1,11 @@
 import { createHash, createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { PrivateSupabaseStorage } from "./private-supabase-storage";
 
 /**
- * Private object storage adapter. Local-disk implementation for this environment;
- * the interface is what an S3/Supabase adapter would implement.
+ * Shared private object storage for legacy and workspace routes.
+ * Switching providers does not migrate objects; preserve keys when migrating.
  */
 export interface StorageAdapter {
   put(key: string, bytes: Buffer, contentType: string): Promise<void>;
@@ -57,7 +58,27 @@ export function lifecycleStorage(adapter: StorageAdapter): StorageAdapter {
   };
 }
 
-export const storage: StorageAdapter = lifecycleStorage(new LocalDiskStorage());
+type StorageEnvironment = Readonly<Record<string, string | undefined>>;
+
+export function configuredStorage(env: StorageEnvironment = process.env): StorageAdapter {
+  const provider = env.STORAGE_PROVIDER || "local";
+  if (provider === "local") return new LocalDiskStorage();
+  if (provider !== "supabase") throw new Error("storage_not_configured");
+  const { SUPABASE_URL: url, SUPABASE_SERVICE_ROLE_KEY: key, SUPABASE_STORAGE_BUCKET: bucket } = env;
+  if (!url || !key || !bucket) throw new Error("storage_not_configured");
+  return new PrivateSupabaseStorage(url, key, bucket);
+}
+
+// Selection stays lazy so importing crypto helpers never needs storage or a DB.
+// One provider serves every route; cloud errors never fall back to local disk.
+let selected: StorageAdapter | undefined;
+const adapter = () => selected ??= configuredStorage();
+export const storage: StorageAdapter = lifecycleStorage({
+  put: (key, bytes, type) => adapter().put(key, bytes, type),
+  get: key => adapter().get(key),
+  delete: key => adapter().delete(key),
+  deletePrefix: prefix => adapter().deletePrefix(prefix),
+});
 
 export const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 export const ALLOWED_UPLOAD_TYPES = new Set([...ALLOWED_IMAGE_TYPES, "text/csv", "application/pdf", "video/mp4"]);

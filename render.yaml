@@ -1,0 +1,57 @@
+# Preview only. Review docs/PUBLIC_RELEASE.md before creating resources.
+# Paid always-on compute is a separate owner choice; this file buys none.
+services:
+  - type: web
+    name: iznera-pilot
+    runtime: node
+    plan: free
+    region: frankfurt
+    autoDeployTrigger: off
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: node scripts/start-production.mjs
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 22.x
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+      - key: TRUST_PROXY
+        value: "true"
+      - key: TRUST_PROXY_HOPS
+        value: "1"
+      - key: AI_PROVIDER
+        value: disabled
+      - key: ENABLE_DEV_SIMULATOR
+        value: "false"
+      - key: DEV_AUTH_BYPASS
+        value: "false"
+      - key: MAIL_TRANSPORT
+        value: resend
+      - key: MAIL_ENABLE_EXTERNAL_DELIVERY
+        value: "true"
+      - key: MAIL_PREVIEW_ENABLED
+        value: "false"
+      - key: STORAGE_PROVIDER
+        value: supabase
+      - key: INDEX_PUBLIC_SITE
+        value: "false"
+      - key: DATABASE_RUNTIME_ROLE
+        value: tracelab_runtime
+      - key: DATABASE_URL
+        sync: false
+      - key: SECRETS_ENCRYPTION_KEY
+        sync: false
+      - key: CRON_SECRET
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        sync: false

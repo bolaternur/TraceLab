@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { BrandLogo } from "@/components/brand-logo";
 import { AccountLanguageSwitcher } from "@/components/account-language-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -9,7 +9,13 @@ import { accountCopy, type AccountLocale } from "./account-copy";
 import { localConfirmation, type LocalMailMessage, type LocalMailPurpose } from "./local-confirmation";
 
 export type AuthMode = "signin" | "signup" | "verify" | "forgot" | "reset";
+const subscribeHydration = () => () => {};
+const clientHydrated = () => true;
+const serverHydrated = () => false;
+
 export function AuthForm({ mode: initialMode, locale: initialLocale, next, previewAvailable }: { mode: AuthMode; locale: AccountLocale; next: string; previewAvailable: boolean }) {
+  // Keep SSR controls inert until React has installed the submit handler.
+  const hydrated = useSyncExternalStore(subscribeHydration, clientHydrated, serverHydrated);
   const [mode, setMode] = useState(initialMode);
   const [locale, setLocale] = useState(initialLocale);
   const [email, setEmail] = useState("");
@@ -79,7 +85,7 @@ export function AuthForm({ mode: initialMode, locale: initialLocale, next, previ
     if (email.trim()) void loadLocalMail("verify_email");
   }
   async function performAction(action: AuthMode | "resend", secret = token) {
-    if (busy.current) return;
+    if (!hydrated || busy.current) return;
     busy.current = true; setPending(true); setResult(""); setFields([]);
     try {
       const response = await fetch(`/api/account/${action}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, displayName, password, token: secret, locale, next }) });
@@ -118,7 +124,8 @@ export function AuthForm({ mode: initialMode, locale: initialLocale, next, previ
     <section className="account-card" aria-labelledby="account-title">
       <h1 id="account-title">{copy[mode]}</h1><p className="account-intro">{intro}</p>
       {previewAvailable && mode !== "reset" && result !== "email_verified" ? <div className="account-local-notice"><strong>{copy.localMode}</strong><p>{copy.localModeNote}</p></div> : null}
-      <form onSubmit={submit} aria-busy={pending}>
+      <form method="post" onSubmit={submit} aria-busy={!hydrated || pending}>
+        <fieldset disabled={!hydrated} aria-labelledby="account-title" style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
         {mode === "signup" ? <div className="account-field"><label htmlFor="displayName">{copy.name}</label><input id="displayName" name="displayName" autoComplete="name" required maxLength={80} value={displayName} onChange={event => setDisplayName(event.target.value)} aria-invalid={fields.includes("displayName")} /><p>{copy.nameHint}</p></div> : null}
         {emailVisible ? <div className="account-field"><label htmlFor="email">{copy.email}</label><input ref={emailInput} id="email" name="email" type="email" autoComplete="email" required maxLength={254} value={email} onChange={event => { localRequest.current++; setMailPending(false); setEmail(event.target.value); setLocalMessages(null); setLocalError(false); }} aria-invalid={fields.includes("email")} /></div> : null}
         {needsPassword ? <div className="account-field"><label htmlFor="password">{mode === "reset" ? copy.newPassword : copy.password}</label><div className="account-password"><input id="password" name="password" type={showPassword ? "text" : "password"} autoComplete={mode === "signin" ? "current-password" : "new-password"} minLength={mode === "signin" ? 1 : 12} maxLength={mode === "signin" ? 200 : 128} required value={password} onChange={event => setPassword(event.target.value)} aria-invalid={fields.includes("password")} /><button type="button" aria-controls="password" aria-pressed={showPassword} onClick={() => setShowPassword(value => !value)}>{showPassword ? copy.hide : copy.show}</button></div>{mode !== "signin" ? <p>{copy.passwordHint}</p> : null}</div> : null}
@@ -128,6 +135,7 @@ export function AuthForm({ mode: initialMode, locale: initialLocale, next, previ
         {result === "email_verified" ? <button className="account-primary" type="button" onClick={() => continueUrl ? navigate(`${continueUrl}&locale=${locale}`) : changeMode("signin")}>{copy.continue}</button> : <button className={showLocalStep && localReady ? "account-request-secondary" : "account-primary"} type="submit" disabled={pending || mailPending || (mode === "reset" && !token)}>{pending ? copy.working : submitText}</button>}
         {mode === "signin" ? <div className="account-support"><button type="button" onClick={() => changeMode("forgot")}>{copy.forgotLink}</button><button type="button" onClick={previewAvailable ? beginLocalConfirmation : () => changeMode("verify")}>{previewAvailable ? copy.localVerifyLink : copy.resend}</button></div> : null}
         <div className="account-switch">{mode === "signin" || mode === "signup" ? <>{mode === "signup" ? copy.already : copy.newHere} <button type="button" onClick={() => changeMode(mode === "signup" ? "signin" : "signup")}>{mode === "signup" ? copy.signin : copy.signup}</button></> : <button type="button" onClick={() => changeMode("signin")}>{copy.back}</button>}</div>
+        </fieldset>
       </form>
     </section>
     <p className="account-free">{copy.free}</p>

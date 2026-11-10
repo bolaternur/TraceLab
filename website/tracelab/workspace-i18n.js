@@ -10,6 +10,20 @@ const entries = {
   'record.iteration': ['Итерация', 'Iteration', 'Итерация'],
   'record.test': ['Испытание', 'Test', 'Сынақ'],
   'record.decision': ['Решение', 'Decision', 'Шешім'],
+  'evidence.heading': ['Полнота записи', 'Record completeness', 'Жазбаның толықтығы'],
+  'evidence.scope': ['Проверяется заполнение и связи, а не научная достоверность. Неполную запись можно сохранить и дополнить.', 'This checks documentation and links, not scientific validity. You can save an incomplete record and complete it later.', 'Бұл тек құжаттың толтырылуы мен байланыстарын тексереді, ғылыми дұрыстығын растамайды. Толық емес жазбаны сақтап, кейін толықтыруға болады.'],
+  'evidence.complete': ['Контекст задокументирован; достоверность отдельно оценивает команда.', 'Context is documented; the team must assess validity separately.', 'Мәнмәтін құжатталған; дұрыстығын команда бөлек бағалайды.'],
+  'evidence.missing': ['Дополните запись: {items}', 'Complete the record: {items}', 'Жазбаны толықтырыңыз: {items}'],
+  'evidence.why': ['Запишите собственное объяснение «Почему?»', 'Write your own reason', 'Өз себебіңізді жазыңыз'],
+  'evidence.support': ['Свяжите материал или испытание принятой связью', 'Add an accepted link to a source or test', 'Материалға не сынаққа қабылданған байланыс қосыңыз'],
+  'evidence.version': ['Укажите версию или свяжите точную итерацию', 'Name the revision or link the exact iteration', 'Нұсқаны көрсетіңіз немесе нақты итерациямен байланыстырыңыз'],
+  'evidence.revision': ['Укажите обозначение версии', 'Name the revision', 'Нұсқа белгісін көрсетіңіз'],
+  'evidence.conditions': ['Запишите условия испытания', 'Record the test conditions', 'Сынақ жағдайларын жазыңыз'],
+  'evidence.criterion': ['Запишите критерий испытания', 'Record the test criterion', 'Сынақ критерийін жазыңыз'],
+  'evidence.result': ['Добавьте измерение или собственное наблюдение', 'Add a measurement or your own observation', 'Өлшемді немесе өз бақылауыңызды қосыңыз'],
+  'evidence.change': ['Опишите изменение', 'Describe the change', 'Өзгерісті сипаттаңыз'],
+  'evidence.outcome': ['Выберите дальнейшее действие', 'Choose the next action', 'Келесі әрекетті таңдаңыз'],
+  'evidence.testRecord': ['Свяжите испытание для указанного результата проверки', 'Link the test behind the reported test outcome', 'Көрсетілген сынақ нәтижесін сынақ жазбасымен байланыстырыңыз'],
   'record.generic': ['Запись', 'Record', 'Жазба'],
   'common.untitled': ['Без названия', 'Untitled', 'Атаусыз'],
   'common.unavailable': ['Не указано', 'Not provided', 'Көрсетілмеген'],
@@ -22,6 +36,8 @@ const entries = {
   'common.zoomOut': ['Уменьшить масштаб', 'Zoom out', 'Кішірейту'],
   'common.zoomReset': ['Масштаб 100 процентов', 'Reset zoom to 100 percent', 'Масштабты 100 пайызға қайтару'],
   'relation.generic': ['Связь', 'Connection', 'Байланыс'],
+  'relation.references': ['Связанный материал', 'Related material', 'Байланысты материал'],
+  'relation.tests': ['Испытание итерации', 'Iteration test', 'Итерация сынағы'],
   'relation.accepted': ['Подтверждённая связь', 'Confirmed connection', 'Расталған байланыс'],
   'relation.suggested': ['Предложено, не подтверждено', 'Suggested, not confirmed', 'Ұсынылған, расталмаған'],
   'relation.noneOutgoing': ['Нет исходящих связей', 'No outgoing connections', 'Шығыс байланыстары жоқ'],
@@ -208,4 +224,10 @@ export function formatDayLabel(value, now = new Date()) {
 
 export function recordType(kind) {
   return t(Object.hasOwn(workspaceMessages[locale], `record.${kind}`) ? `record.${kind}` : 'record.generic');
+}
+
+/** Only the iteration editor's automatic enum labels are interface copy. */
+export function connectionLabel(link) {
+  const key = link.relationType === 'REFERENCES' ? 'relation.references' : link.relationType === 'TESTS' ? 'relation.tests' : null;
+  return link.origin === 'local' && key && link.label === link.relationType ? t(key) : link.label;
 }

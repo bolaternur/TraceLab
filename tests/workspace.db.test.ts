@@ -86,8 +86,16 @@ describe.skipIf(!configured)("unified workspace — real PostgreSQL/RLS (needs i
     const canonical=(await owner.query(`SELECT r.from_type,r.to_type,r.relation_type FROM relations r
       JOIN workspace_entity_map m ON m.entity_id=r.to_id WHERE m.project_id=$1 AND m.local_id=$2`,[projectA,first.result])).rows;
     expect(canonical).toContainEqual({from_type:"test",to_type:"decision",relation_type:"SUPPORTS"});
+    expect(canonical).toHaveLength(1);
     expect((await owner.query("SELECT id FROM tests WHERE project_id=$1",[projectA])).rowCount).toBe(1);
     expect((await owner.query("SELECT id FROM decisions WHERE project_id=$1",[projectA])).rowCount).toBe(1);
+  });
+  it("rolls back record, revision and initial relation when the selected record is missing",async()=>{
+    const before=await getWorkspace(a,{team:teamA,project:projectA}),project=before.projects.find(p=>p.id===projectA)!;
+    await expect(revise(a,"addRecord",[{kind:"decision",title:"Uncommitted choice",status:"draft",relatedRecordId:"missing-record"}])).rejects.toThrow();
+    const after=(await getWorkspace(a,{team:teamA,project:projectA})).projects.find(p=>p.id===projectA)!;
+    expect(after.serverRevision).toBe(project.serverRevision);
+    expect(after.records).toEqual(project.records);expect(after.links).toEqual(project.links);
   });
   it("validates closed decision rationale and preserves originals with append-only annotation versions",async()=>{
     await expect(revise(a,"addRecord",[{kind:"decision",title:"No why",body:"Incomplete"}])).rejects.toThrow();

@@ -453,9 +453,9 @@ const entries = {
     "Кейін байланыстырамын"
   ],
   "record.relatedHint": [
-    "Связь направляется от выбранной существующей записи к новой. Её можно дополнить в панели подробностей.",
-    "The connection points from the selected existing record to the new record. You can add details in the details panel.",
-    "Байланыс таңдалған бар жазбадан жаңа жазбаға бағытталады. Оны мәліметтер панелінде толықтыруға болады."
+    "Запись и выбранная связь сохраняются вместе. Для решения связь с испытанием направлена от испытания; другие связи ссылаются на выбранную запись.",
+    "The record and selected link are saved together. A test supports a new decision; other links reference the selected record.",
+    "Жазба мен таңдалған байланыс бірге сақталады. Сынақ жаңа шешімді негіздейді; өзге байланыстар таңдалған жазбаға сілтейді."
   ],
   "record.save": [
     "Сохранить запись",
@@ -525,7 +525,7 @@ const entries = {
   "decision.draft": [
     "Черновик — обоснование ещё готовится",
     "Draft — rationale in progress",
-    "Жоба — негіздемесі дайындалуда"
+    "Нобай — негіздемесі дайындалуда"
   ],
   "decision.closed": [
     "Завершено — объяснение обязательно",
@@ -623,9 +623,9 @@ const entries = {
     "Байланысты сынақтар: {tests}."
   ],
   "inspector.noTests": [
-    "Связанное испытание не указано. Основание пока не задокументировано полностью.",
-    "No linked test is recorded. The evidence is not fully documented yet.",
-    "Байланысты сынақ көрсетілмеген. Негіздеме әлі толық құжатталмаған."
+    "Связанное испытание не указано. Решение также может опираться на наблюдение в связанном материале.",
+    "No test is linked. A decision can also be based on an observation in a linked source.",
+    "Сынақ байланыстырылмаған. Шешім байланысты материалдағы бақылауға да негізделуі мүмкін."
   ],
   "inspector.noteHistory": [
     "История заметок",

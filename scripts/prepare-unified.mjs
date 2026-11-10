@@ -3,6 +3,7 @@ import { readdir, readFile, writeFile, copyFile } from 'node:fs/promises';
 import path from 'node:path';
 import {themeBootstrap} from '../website/tracelab/theme-bootstrap.js';
 import {themeToggleMarkup} from '../website/tracelab/theme-toggle.js';
+import {applyPublicIndexMetadata} from './search-index-policy.mjs';
 
 const output = path.resolve('public/_presentation');
 const build = spawnSync(process.execPath, ['website/tracelab/build.mjs'], {
@@ -15,6 +16,9 @@ async function markPages(directory) {
     if (entry.isDirectory()) await markPages(file);
     else if (entry.name.endsWith('.html')) {
       let html = await readFile(file, 'utf8');
+      const relative = path.relative(output, file).split(path.sep).join('/');
+      const pagePath = relative === 'index.html' ? '/' : '/' + relative.replace(/\/index\.html$/, '');
+      html = applyPublicIndexMetadata(html, pagePath, process.env);
       html = html.replace('<body', '<body data-runtime="server"');
       if (!html.includes('data-workspace')) html = html.replace('</body>', '<script type="module" src="/product-entry.js"></script></body>');
       await writeFile(file, html);

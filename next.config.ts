@@ -45,7 +45,7 @@ const nextConfig: NextConfig = {
     const assets = ["assets", "materials"];
     const files = ["astra.css", "astra.js", "astra-copy.js", "tracelab.css", "tracelab.js", "workspace.css", "workspace.js", "workspace-store.js", "workspace-views.css", "workspace-views.js", "workspace-shell.css", "workspace-canvas.css", "workspace-canvas.js", "workspace-astra.css", "workspace-server.js", "workspace-product-controls.js", "workspace-i18n.js", "product-entry.js", "workspace-measurements-template.csv"];
     return { beforeFiles: [
-      ...['workspace-timeline-media.js','workspace-handoff.js','workspace-handoff-model.js','workspace-handoff-copy.js','workspace-handoff.css',"workspace-command.js","workspace-offline-account.js","workspace-outbox-backup.js","offline-account.css","workspace-report-model.js","workspace-report-composer.css","workspace-inbox-model.js","workspace-inbox.css",'workspace-media-upload.js','workspace-iterations.js','workspace-iterations-copy.js','workspace-iterations-model.js','workspace-iterations.css','workspace-core.js','workspace-core.css','language-switcher.js','language-switcher.css','theme-bootstrap.js','theme-toggle.js','theme-system.css','theme-public.css','theme-workspace.css','theme-account.css'].map(name=>({source:`/${name}`,destination:`/_presentation/${name}`})),
+      ...['workspace-evidence.js','workspace-timeline-media.js','workspace-handoff.js','workspace-handoff-model.js','workspace-handoff-copy.js','workspace-handoff.css',"workspace-command.js","workspace-offline-account.js","workspace-outbox-backup.js","offline-account.css","workspace-report-model.js","workspace-report-composer.css","workspace-inbox-model.js","workspace-inbox.css",'workspace-media-upload.js','workspace-iterations.js','workspace-iterations-copy.js','workspace-iterations-model.js','workspace-iterations.css','workspace-core.js','workspace-core.css','language-switcher.js','language-switcher.css','theme-bootstrap.js','theme-toggle.js','theme-system.css','theme-public.css','theme-workspace.css','theme-account.css'].map(name=>({source:`/${name}`,destination:`/_presentation/${name}`})),
       ...['astra-dots.js','astra-dots.css','astra-navigation.js','astra-navigation.css','astra-effects.js','astra-effects.css','workspace-sidebar.js','workspace-sidebar.css'].map(name=>({source:`/${name}`,destination:`/_presentation/${name}`})),
       ...['workspace-team.js','workspace-team-copy.js','workspace-inbox.js','workspace-inbox-copy.js','workspace-chat.js','workspace-chat-copy.js','workspace-chat-model.js','workspace-chat-call.js','workspace-chat.css'].map(name=>({source:`/${name}`,destination:`/_presentation/${name}`})),
       {source:'/workspace-record-history.js',destination:'/_presentation/workspace-record-history.js'},
@@ -62,7 +62,9 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders },
       ...['/', '/features', '/about', '/faq', '/research', '/contact', '/privacy-policy', '/materials', '/demo', '/workspace', '/demo/workspace', '/offline-capture.html', '/_presentation/:path*'].map(source=>({source,
-        headers:[{key:'Content-Security-Policy',value:documentCsp({development:isDev})}]}))];
+        headers:[{key:'Content-Security-Policy',value:documentCsp({development:isDev})}]})),
+      ...['/workspace/:path*','/auth/:path*','/account/:path*','/join/:path*','/onboarding/:path*','/demo/:path*','/app/:path*','/api/:path*','/offline/:path*','/offline-capture.html','/_presentation/:path*'].map(source=>({source,
+        headers:[{key:'X-Robots-Tag',value:'noindex, nofollow, noarchive'}]}))];
   },
 };
 

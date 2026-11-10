@@ -3,6 +3,7 @@ import {filterIterations,iterationEvidence,iterationMissing} from './workspace-i
 import {formatDate,formatNumber,recordType} from './workspace-i18n.js';
 import {appendRecordHistory} from './workspace-record-history.js';
 import {workspaceErrorText} from './workspace-shell-i18n.js';
+import {appendEvidenceAssessment,evidenceSummary} from './workspace-evidence.js';
 
 const el=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
 const button=(text,action,cls='wi-button')=>{const node=el('button',cls,text);node.type='button';node.addEventListener('click',action);return node;};
@@ -62,7 +63,21 @@ export function openWorkspaceIteration({store,project=store.getProject(),recordI
   if(!checks.size)evidence.append(el('p','wi-hint',t('noEvidence')));
   const status=el('p','wi-status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');form.append(status);
   let busy=false,dirty=false,savedId=source?.id||null;
-  form.addEventListener('input',()=>{dirty=true;});form.addEventListener('change',()=>{dirty=true;});
+  const completeness=el('div');form.append(completeness);
+  const currentValues=()=>({kind:'iteration',title:name.value,subsystem:subsystem.value,revision:revision.value,problemOrGoal:goal.value,body:change.value,rationale:why.value,testOutcome:testOutcome.value,outcome:disposition.value,nextStep:next.value});
+  function updateCompleteness(){
+    const record={...source,...currentValues(),id:savedId||'__iteration_draft__'},live=store.getProject();
+    const records=[...live.records.filter(item=>item.id!==record.id),record],links=[...live.links];
+    for(const id of selected)links.push({from:record.id,to:id,status:'accepted',relationType:'REFERENCES'});
+    completeness.replaceChildren();
+    appendEvidenceAssessment(completeness,{...live,records,links},record,{
+      onEdit:editable?(_id,key)=>({why,revision,change,outcome:disposition,support:evidence,testRecord:evidence}[key])?.focus():undefined,
+      onOpen:id=>{if(!busy&&(!dirty||confirm(t('discard')))){dialog.close();onSelectRecord(id);}},
+    });
+  }
+  evidence.tabIndex=-1;
+  form.addEventListener('input',()=>{dirty=true;updateCompleteness();});form.addEventListener('change',()=>{dirty=true;updateCompleteness();});
+  updateCompleteness();
   const controls=el('div','wi-actions');form.append(controls);
   const save=button(t(source?.status==='closed'?'update':'save'),()=>submit(source?.status==='closed'?'closed':'draft'),'wi-button wi-primary');
   const close=button(t(source?.status==='closed'?'reopen':'close'),()=>submit(source?.status==='closed'?'draft':'closed'));
@@ -77,7 +92,7 @@ export function openWorkspaceIteration({store,project=store.getProject(),recordI
   form.addEventListener('submit',event=>{event.preventDefault();if(editable)submit(source?.status==='closed'?'closed':'draft');});
   async function submit(state) {
     if(busy||!editable)return;
-    const values={kind:'iteration',title:name.value,subsystem:subsystem.value,revision:revision.value,problemOrGoal:goal.value,body:change.value,rationale:why.value,testOutcome:testOutcome.value,outcome:disposition.value,nextStep:next.value,status:state};
+    const values={...currentValues(),status:state};
     const missing=state==='closed'?iterationMissing(values):[];
     if(missing.length){status.textContent=t('missing')+' '+missing.map(key=>t(key+'Missing')).join(', ');({change,why,outcome:disposition}[missing[0]])?.focus();return;}
     if(!form.reportValidity())return;
@@ -93,7 +108,7 @@ export function openWorkspaceIteration({store,project=store.getProject(),recordI
         try{await store.addLink({from:record.kind==='test'?id:savedId,to:record.kind==='test'?savedId:id,label:record.kind==='test'?'TESTS':'REFERENCES',relationType:record.kind==='test'?'TESTS':'REFERENCES',origin:'local',status:'accepted'});selected.delete(id);checks.get(id).disabled=true;}catch{incomplete=true;}
       }
       dirty=incomplete;
-      if(incomplete){status.textContent=t('linkFailure');return;}
+      if(incomplete){status.textContent=t('linkFailure');updateCompleteness();return;}
       dialog.close();await onSaved(savedId);
     }catch(error){status.textContent=error.code?workspaceErrorText(error):t('error');}
     finally{busy=false;for(const control of controls.querySelectorAll('button'))control.disabled=false;}
@@ -133,6 +148,7 @@ export function mountWorkspaceIterations(container,{store,project=store.getProje
       for(const item of evidence.slice(0,5))actions.append(button(item.record.title,()=>onSelectRecord(item.record.id),'wi-evidence-link'));
       if(!evidence.length)row.append(el('p','wi-hint',t('noEvidence')));
       const missing=iterationMissing(record);if(record.status!=='closed'&&missing.length)row.append(el('p','wi-hint',t('missingLabel')+': '+missing.map(key=>t(key+'Missing')).join(', ')));
+      row.append(el('p','wi-hint',evidenceSummary(project,record)));
       if(record.testOutcome)row.append(el('p','wi-hint',t('testOutcome')+': '+t(record.testOutcome)));
       if(record.outcome)row.append(el('p','wi-hint',t('outcome')+': '+t(record.outcome)));
       if(record.recordHistory?.versions?.length)row.append(el('p','wi-hint',t('versions')+': '+formatNumber(record.recordHistory.versions.length)));

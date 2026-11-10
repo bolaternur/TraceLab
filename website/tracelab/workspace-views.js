@@ -1,3 +1,4 @@
+import {evidenceSummary} from './workspace-evidence.js';
 /* Iznera workspace views. Imported text is always rendered with textContent. */
 const NS = 'http://www.w3.org/2000/svg';
 import { t, recordType, getWorkspaceLocale, formatDate, formatNumber, formatPercent, formatDayKey, formatDayLabel } from './workspace-i18n.js';
@@ -8,7 +9,7 @@ const timelineViewports = new Map();
 const timelineCopy={
   ru:{ungrouped:'Без подсистемы',unassigned:'Без итерации',jump:'Перейти к группе',shown:'Показано',of:'из',more:'Показать ещё',why:'Почему?',missing:'Причина не задокументирована',result:'Результат',version:'Версия',draft:'Черновик',closed:'Завершено',next:'Следующий шаг',pass:'Успешно',fail:'Неуспешно',partial:'Частично',unknown:'Не определён'},
   en:{ungrouped:'No subsystem',unassigned:'No iteration',jump:'Jump to group',shown:'Showing',of:'of',more:'Show more',why:'Why?',missing:'Reason not documented',result:'Result',version:'Version',draft:'Draft',closed:'Closed',next:'Next step',pass:'Pass',fail:'Fail',partial:'Partial',unknown:'Unknown'},
-  kk:{ungrouped:'Ішкі жүйе жоқ',unassigned:'Итерация жоқ',jump:'Топқа өту',shown:'Көрсетілді',of:'барлығы',more:'Тағы көрсету',why:'Неге?',missing:'Себеп құжатталмаған',result:'Нәтиже',version:'Нұсқа',draft:'Жоба жазбасы',closed:'Аяқталған',next:'Келесі қадам',pass:'Сәтті',fail:'Сәтсіз',partial:'Ішінара',unknown:'Анықталмаған'},
+  kk:{ungrouped:'Ішкі жүйе жоқ',unassigned:'Итерация жоқ',jump:'Топқа өту',shown:'Көрсетілді',of:'барлығы',more:'Тағы көрсету',why:'Неге?',missing:'Себеп құжатталмаған',result:'Нәтиже',version:'Нұсқа',draft:'Нобай',closed:'Аяқталған',next:'Келесі қадам',pass:'Сәтті',fail:'Сәтсіз',partial:'Ішінара',unknown:'Анықталмаған'},
 };
 const timelineText=key=>timelineCopy[getWorkspaceLocale()][key];
 const emptyActionCopy={ru:{test:'Добавить первое испытание',study:'Добавить парное измерение'},en:{test:'Add the first test',study:'Add a paired measurement'},kk:{test:'Алғашқы сынақты қосу',study:'Жұпталған өлшем қосу'}};
@@ -238,7 +239,7 @@ export function renderGraph(container, project, { selectedId = null, query = '',
     const row = el('div', `wv-graph-list-row${record.id === selectedId ? ' is-selected' : ''}`);
     const select = button('', 'wv-record-button', () => onSelect(record.id));
     select.setAttribute('aria-pressed', String(record.id === selectedId));
-    select.append(el('span', '', record.title)); row.append(select);
+    select.append(el('span', '', record.title), el('small', 'wv-test-context', evidenceSummary(project, record))); row.append(select);
     const outgoing = links.filter(link => link.from === record.id);
     outgoing.forEach(link => { const relation = el('p', 'wv-relation'); relation.append(el('span', '', `→ ${recordsById.get(link.to)?.title || t('common.untitled')} · ${link.label || t('relation.generic')}`)); if (link.status === 'suggested') relation.append(el('span', 'wv-unconfirmed', t('relation.suggested'))); row.append(relation); });
     if (!outgoing.length) row.append(el('p', 'wv-relation', t('relation.noneOutgoing')));
@@ -271,7 +272,7 @@ export function renderTestChart(container, project, { onSelect = noop,onCreate }
   tests.forEach(record => {
     const percent = Number(record.successes) / Number(record.trials) * 100;
     const row = button('', 'wv-test-row', () => onSelect(record.id));
-    row.setAttribute('aria-label', t('tests.open', { title: record.title, successes: record.successes, trials: record.trials }));
+    row.setAttribute('aria-label', t('tests.open', { title: record.title, successes: record.successes, trials: record.trials })+'. '+evidenceSummary(project, record));
     const head = el('span', 'wv-test-row-head');
     const title = el('span', 'wv-test-title', record.title);
     head.append(title, el('strong', 'wv-test-value', t('tests.ratio', { successes: record.successes, trials: record.trials }))); row.append(head);
@@ -282,6 +283,7 @@ export function renderTestChart(container, project, { onSelect = noop,onCreate }
     row.append(foot);
     if (record.conditions) row.append(el('span', 'wv-test-context', t('tests.conditions', { conditions: record.conditions })));
     if (record.criterion) row.append(el('span', 'wv-test-context', t('tests.criterion', { criterion: record.criterion })));
+    row.append(el('span', 'wv-test-context', evidenceSummary(project, record)));
     chart.append(row);
   });
   if (tests.length) chart.append(disclosureTable([t('record.test'), t('tests.successHeader'), t('tests.ratioHeader'), t('tests.unitHeader'), t('tests.contextHeader')], tests.map(record => [
@@ -313,6 +315,7 @@ export function renderTestChart(container, project, { onSelect = noop,onCreate }
       row.append(el('strong', 'wv-test-title', record.title), el('span', 'wv-test-context', record.body || t('tests.qualitativeEmpty')));
       if (record.conditions) row.append(el('span', 'wv-test-context', t('tests.conditions', { conditions: record.conditions })));
       if (record.criterion) row.append(el('span', 'wv-test-context', t('tests.criterion', { criterion: record.criterion })));
+      row.append(el('span', 'wv-test-context', evidenceSummary(project, record)));
       chart.append(row);
     }
   }

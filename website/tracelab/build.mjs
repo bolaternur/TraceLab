@@ -8,7 +8,7 @@ import {themeBootstrap} from './theme-bootstrap.js';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const assetFiles = ['tracelab.css', 'tracelab.js', 'workspace.css', 'workspace.js', 'workspace-server.js', 'workspace-product-controls.js', 'workspace-i18n.js', 'workspace-views.css', 'workspace-views.js', 'workspace-store.js', 'workspace-shell.css', 'workspace-canvas.css', 'workspace-canvas.js', 'workspace-astra.css', 'astra.css', 'astra.js', 'astra-copy.js'];
 assetFiles.push('workspace-timeline-media.js','workspace-handoff.js','workspace-handoff-model.js','workspace-handoff-copy.js','workspace-handoff.css','workspace-command.js','workspace-outbox.js','workspace-media-upload.js',"workspace-offline-account.js","workspace-outbox-backup.js","offline-account.css","workspace-report-model.js","workspace-report-composer.css","workspace-inbox-model.js","workspace-inbox.css");
-assetFiles.push('workspace-report.js','workspace-core.js','workspace-core.css','workspace-iterations.js','workspace-iterations-copy.js','workspace-iterations-model.js','workspace-iterations.css');
+assetFiles.push('workspace-report.js','workspace-evidence.js','workspace-core.js','workspace-core.css','workspace-iterations.js','workspace-iterations-copy.js','workspace-iterations-model.js','workspace-iterations.css');
 assetFiles.push('workspace-shell-i18n.js');
 assetFiles.push('workspace-media.js','workspace-media-copy.js','workspace-media-editor.js','workspace-media.css');
 assetFiles.push('workspace-filters.js','workspace-sources.js','workspace-sources-copy.js');

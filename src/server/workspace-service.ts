@@ -422,14 +422,6 @@ export async function executeWorkspaceCommand(user: WorkspaceUser, raw: unknown,
             const values=fields(args[0]);
             if(values.recordHistory || values.annotationHistory || values.nativeRef) throw invalid("История источника переносится через подтверждённый импорт.");
             result=memory.addRecord({...values,author:user.displayName});
-            if(values.relatedRecordId) {
-              const related=z.string().max(80).parse(values.relatedRecordId);
-              const created=memory.getProject().records.find(record=>record.id===result)!;
-              const target=before.records.find(record=>record.id===related); if(!target) throw invalid("Связанная запись не найдена.");
-              const testToDecision=target.kind==="test" && created.kind==="decision";
-              memory.addLink({from:testToDecision?target.id:created.id,to:testToDecision?created.id:target.id,
-                label:testToDecision?"Испытание обосновывает решение":"Связанный материал",relationType:testToDecision?"SUPPORTS":"REFERENCES",status:"accepted",origin:"student"});
-            }
           } else if(input.command==="updateRecord") {
             const id=z.string().max(80).parse(args[0]),values=fields(args[1]);
             const existing=before.records.find(record=>record.id===id);

@@ -42,6 +42,32 @@ function record(overrides = {}) {
   return { kind: 'source', title: 'Модель', body: 'Исходная CAD-модель', author: 'Участник P-01', ...overrides };
 }
 
+test('a new record and initial accepted reference are persisted atomically with server-compatible semantics',()=>{
+  const storage=mockStorage(),store=makeStore({storage});personal(store);
+  const testId=store.addRecord(record({kind:'test',title:'Original test'}));
+  let notifications=0;store.subscribe(()=>notifications++);
+  const id=store.addRecord(record({kind:'decision',rationale:'My authored reason',relatedRecordId:testId,relatedRecordLabel:'Сынақ шешімді негіздейді'}));
+  assert.equal(notifications,1);
+  const project=store.getProject();assert.equal(project.links.length,1);
+  assert.deepEqual({...project.links[0],id:undefined},{id:undefined,from:testId,to:id,label:'Сынақ шешімді негіздейді',relationType:'SUPPORTS',status:'accepted',origin:'student'});
+  const current=project.records.find(item=>item.id===id);
+  assert.equal(current.relatedRecordId,undefined);assert.equal(current.recordHistory.versions[0].snapshot.relatedRecordLabel,undefined);
+  const reloaded=makeStore({storage});assert.equal(reloaded.getProject().links.length,1);
+  const sourceId=store.addRecord(record({relatedRecordId:id}));
+  assert.equal(store.getProject().links.at(-1).from,sourceId);assert.equal(store.getProject().links.at(-1).to,id);assert.equal(store.getProject().links.at(-1).relationType,'REFERENCES');
+});
+
+test('an invalid initial reference leaves records, history, persisted state and notifications unchanged',()=>{
+  const storage=mockStorage(),store=makeStore({storage});personal(store);
+  const target=store.addRecord(record());let notifications=0;store.subscribe(()=>notifications++);
+  const before=JSON.stringify(store.getState()),persisted=storage.getItem(STORAGE_KEY);
+  for(const fields of [{relatedRecordId:'missing'},{relatedRecordId:target,relatedRecordLabel:'x'.repeat(241)}]) {
+    assert.throws(()=>store.addRecord(record(fields)));
+    assert.equal(JSON.stringify(store.getState()),before);assert.equal(storage.getItem(STORAGE_KEY),persisted);assert.equal(notifications,0);
+  }
+  assert.equal(store.getProject().records.length,1);
+});
+
 test('rebranding refreshes only exact protected demo labels and preserves authored copies and layout',()=>{
   const store=makeStore(),demo=JSON.parse(JSON.stringify(store.getProject()));
   const oldBody='Повторили подъём той же детали с той же высотой. Значения вымышлены и не измеряют пользу TraceLab.';
