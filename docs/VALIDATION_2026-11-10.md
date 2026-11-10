@@ -25,7 +25,7 @@ This report covers the changes prepared for the RKNP workflow. It is not a user 
 | ESLint, final | Passed, zero warnings |
 | Next.js production build | Passed |
 
-The DB suite ran on a new dedicated PostgreSQL cluster at loopback port 55432. Original database credentials, local environment file and user records were not changed. QA data is deliberately marked artificial and is not included in research results.
+The DB suite ran on a new dedicated PostgreSQL cluster at loopback port 55432. During those automated tests, the original database configuration and user records were not changed. QA data is deliberately marked artificial and is not included in research results. The subsequent user-approved recovery is described below.
 
 ## Browser verification
 
@@ -51,3 +51,13 @@ Before inviting external teams, test actual HTTPS hosting, verified email delive
 No domain, hosting plan or paid service was purchased. No public deployment, Google indexing request or school submission was performed. The research still needs the student's own protocol, real trials, measurements and written analysis.
 
 Setup reference: [PUBLIC_RELEASE.md](PUBLIC_RELEASE.md).
+
+## User-approved local recovery
+
+The previous local PostgreSQL directory was absent. The owner explicitly chose to reconnect the verified backup dated **1 November 2026**. A separate recovery database was created, all 11 backup manifest counts matched, and the requested project was present. The recovered snapshot has 2 users, 2 teams and 2 projects. All 10 referenced storage objects were present; the full separate storage copy contains 12 files and all copied file hashes match their sources.
+
+The active database, PostgreSQL binaries and separate storage copy now live under the canonical project's ignored `.data` directory, outside OneDrive. The previous environment configuration and original storage are preserved. `.env.local` points at the recovered database; it is ignored by Git. This is the historical November 1 state, not a claim to recover later changes.
+
+`npm run dev` now supports explicitly configured existing Windows PostgreSQL paths: `LOCAL_POSTGRES_BIN`, `LOCAL_POSTGRES_DATA`, `LOCAL_POSTGRES_LOG`, using the local port from `DATABASE_URL`. It never initializes, resets or migrates a database. The original default path on port 5432 remains supported. Syntax, targeted lint and three refusal/remote-host checks passed; the real relocated cluster was started successfully through this launcher.
+
+After reconnection, `/api/health` returned 200, the runtime role was verified non-superuser without createdb/createrole/bypassrls, and the home/sign-in pages loaded without JavaScript errors. The sign-in form is interactive. Existing users' passwords were not reset and their sessions were not impersonated. Mail remains local-only until the separate publication task.
