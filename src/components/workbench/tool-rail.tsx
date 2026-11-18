@@ -43,7 +43,7 @@ export function ToolRail({ groups, today, capture, locale }: ToolRailProps) {
 
   return (
     <UiElement as="aside" className="workbench-tool-rail hidden md:flex" aria-label="Spatial workspace tools">
-      <Link href="/app" className="workbench-rail-mark" aria-label="TraceLab workbench" title="Workbench">
+      <Link href="/app" className="workbench-rail-mark" aria-label="Iznera workbench" title="Workbench">
         <TraceMark className="h-7 w-7" />
       </Link>
 

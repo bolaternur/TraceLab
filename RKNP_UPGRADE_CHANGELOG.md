@@ -1,12 +1,12 @@
-# TraceLab — RKNP Daryn competition upgrade
+# Iznera — RKNP Daryn competition upgrade
 
 Date: 2026-09-06
 
-This checkpoint keeps TraceLab's existing evidence/provenance architecture and focuses on competition readiness, scientific defensibility, runtime safety and a memorable judge demo.
+This checkpoint keeps Iznera's existing evidence/provenance architecture and focuses on competition readiness, scientific defensibility, runtime safety and a memorable judge demo.
 
 ## Product / frontend
 
-- Unified competition-facing product identity as **TraceLab** across package metadata, public UI and policy copy.
+- Unified competition-facing product identity as **Iznera** across package metadata, public UI and policy copy.
 - Added **Trace Replay** to the real Engineering Timeline. Replay advances through the authoritative displayed evidence entries; it is not a fake animation layer.
 - Added public **`/showcase`** with a trilingual 60-second evidence replay for judges. Demo numbers are explicitly labeled as demo data and are checked against the seeded engineering example.
 - Added public **`/research`** explaining the research question, hypothesis, experimental design, outcomes and integrity rules in EN/RU/KK.
@@ -64,4 +64,4 @@ Keep the generated `package-lock.json` after a successful install so the competi
 - Seed/showcase numbers are **demo data**, not pilot results.
 - Do not claim performance improvements until the raw pilot CSV contains real observations.
 - Do not claim official VEX/FIRST/Daryn compliance or certification without authorization.
-- TraceLab remains the competition-facing project name; commercial trademark/domain clearance is still required before launch.
+- Iznera remains the competition-facing project name; commercial trademark/domain clearance is still required before launch.

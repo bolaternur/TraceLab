@@ -12,7 +12,7 @@ export default async function ResearchProofPage() {
   const testsLinked = Math.max(0, insight.testsWithoutDecision.length ? 0 : 1);
 
   return <div className="fade-in">
-    <PageHeader title="Research proof" subtitle="Live, derived process evidence for the TraceLab study. These are team-level engineering signals — never a student leaderboard and never fabricated before/after results." />
+    <PageHeader title="Research proof" subtitle="Live, derived process evidence for the Iznera study. These are team-level engineering signals — never a student leaderboard and never fabricated before/after results." />
 
     <section className="mb-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <ProcessHealthCard label="Decision evidence" value={insight.decisionEvidenceRate == null ? "—" : `${insight.decisionEvidenceRate}%`} explanation="Current share of recorded decisions with accepted supporting evidence." href="/app/decisions" tone={insight.decisionEvidenceRate != null && insight.decisionEvidenceRate >= 70 ? "good" : "attention"} icon="decision" />
@@ -25,9 +25,9 @@ export default async function ResearchProofPage() {
       <Section title="Competition experiment">
         <div className="space-y-4 text-sm leading-6 text-text-2">
           <p><strong className="text-ink"><UiText text="Research question." /></strong><UiText text="Can passive provenance capture plus short student-authored rationale reduce documentation effort while improving retrieval of design rationale and evidence?" /></p>
-          <p><strong className="text-ink"><UiText text="Independent variable." /></strong><UiText text="The TraceLab evidence layer. Keep GitHub, CAD, chat and normal workshop tools unchanged." /></p>
+          <p><strong className="text-ink"><UiText text="Independent variable." /></strong><UiText text="The Iznera evidence layer. Keep GitHub, CAD, chat and normal workshop tools unchanged." /></p>
           <p><strong className="text-ink"><UiText text="Comparison." /></strong><UiText text="Measure the same team before and after adoption during real build → test → decision cycles." /></p>
-          <p><strong className="text-ink"><UiText text="Important." /></strong><UiText text="The live cards above describe the current TraceLab dataset. They do not claim causal improvement. Before/after results must be collected separately and reported with sample size and dates." /></p>
+          <p><strong className="text-ink"><UiText text="Important." /></strong><UiText text="The live cards above describe the current Iznera dataset. They do not claim causal improvement. Before/after results must be collected separately and reported with sample size and dates." /></p>
         </div>
       </Section>
       <Section title="Primary outcome measures">

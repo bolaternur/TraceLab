@@ -1,0 +1,9 @@
+export const THEME_STORAGE_KEY:string;
+export const themeCopy:Record<string,{label:string;milk:string;dark:string}>;
+export const themeIconMarkup:string;
+export function themeToggleMarkup(options?:{wide?:boolean}):string;
+export function readTheme(storage?:Storage):'dark'|'milk';
+export function currentTheme(documentRef?:Document):'dark'|'milk';
+export function applyTheme(theme:string,options?:{documentRef?:Document;windowRef?:Window;persist?:boolean;animate?:boolean;storage?:Storage}):boolean;
+export function mountThemeToggle(button:HTMLButtonElement,options?:{locale?:()=>string;documentRef?:Document;windowRef?:Window}):{refresh():void;dispose():void};
+export function mountThemeToggles(documentRef?:Document):{refresh():void;dispose():void};

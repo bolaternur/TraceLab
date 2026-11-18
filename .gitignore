@@ -9,3 +9,4 @@ coverage
 *.tsbuildinfo
 /presentation-dist/
 /website/dist/
+/public/_presentation/

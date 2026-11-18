@@ -1,4 +1,4 @@
-# TraceLab Spatial Workbench — Phase G Visual QA & Composition Handoff
+# Iznera Spatial Workbench — Phase G Visual QA & Composition Handoff
 
 Date: 2026-09-04
 

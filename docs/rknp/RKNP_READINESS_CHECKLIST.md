@@ -1,9 +1,9 @@
-# TraceLab — RKNP readiness checklist
+# Iznera — RKNP readiness checklist
 
 ## Scientific
 - [ ] Research question is stated in one sentence.
 - [ ] H0/H1 are explicit.
-- [ ] Baseline and TraceLab conditions are comparable.
+- [ ] Baseline and Iznera conditions are comparable.
 - [ ] Pilot data is real, anonymized, and reproducible.
 - [ ] Results include negative/null findings and limitations.
 - [ ] No causal claim is made from process-health metrics alone.
@@ -38,7 +38,7 @@ Use the project evidence to answer the review criteria directly:
 
 - **Relevance:** show the observed loss of engineering rationale across GitHub/CAD/photos/tests and pilot interview evidence.
 - **Novelty:** defend the combined student-owned provenance + short human rationale + typed test/decision links + competition-policy controls; do not claim that knowledge graphs themselves are new.
-- **Research method:** pre-register the matched baseline vs TraceLab tasks, preserve raw measurements and explain limitations.
+- **Research method:** pre-register the matched baseline vs Iznera tasks, preserve raw measurements and explain limitations.
 - **Scientific and applied significance:** report retrieval time, supporting-evidence time, documentation time and evidence-link rate from real pilots.
 - **Results vs objectives:** every conclusion must map back to a predeclared outcome; demo/seed numbers are never pilot results.
 - **Presentation:** use the 60-second Showcase, then move immediately to the real research protocol and evidence.

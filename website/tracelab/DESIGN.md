@@ -1,5 +1,5 @@
 ---
-name: TraceLab / Powder adaptation
+name: Iznera / Powder adaptation
 description: The selected Powder landscape and dark work surfaces, adapted for an engineering-history presentation.
 colors:
   page: "#080909"
@@ -40,14 +40,39 @@ typography:
     letterSpacing: "-0.02em"
   body:
     fontFamily: "Inter, Arial, sans-serif"
-    fontSize: "15px"
+    fontSize: "16px"
     fontWeight: 400
     lineHeight: 1.6
   label:
     fontFamily: "Inter, Arial, sans-serif"
-    fontSize: "11px"
+    fontSize: "13px"
     fontWeight: 400
     lineHeight: 1.6
+  control:
+    fontFamily: "Inter, Arial, sans-serif"
+    fontSize: "14px"
+    fontWeight: 500
+    lineHeight: 1.45
+  compact-body:
+    fontFamily: "Inter, Arial, sans-serif"
+    fontSize: "15px"
+    fontWeight: 400
+    lineHeight: 1.6
+  caption:
+    fontFamily: "Inter, Arial, sans-serif"
+    fontSize: "12px"
+    fontWeight: 400
+    lineHeight: 1.5
+  section-body:
+    fontFamily: "Inter, Arial, sans-serif"
+    fontSize: "17px"
+    fontWeight: 400
+    lineHeight: 1.6
+  panel-title:
+    fontFamily: "Inter, Arial, sans-serif"
+    fontSize: "22px"
+    fontWeight: 550
+    lineHeight: 1.3
   canvas-title:
     fontFamily: "Inter, Arial, sans-serif"
     fontSize: "16px"
@@ -160,13 +185,13 @@ components:
     height: "156px"
 ---
 
-# Design System: TraceLab / Powder adaptation
+# Design System: Iznera / Powder adaptation
 
 ## Overview
 
 **Creative North Star: "The selected Powder landscape and engineering work surface"**
 
-This is a scoped adaptation of the user's selected Powder template. Its warm dusk landscape, centered hero, spacious sections and near-black surfaces remain the visual authority. Local Inter and the existing TraceLab icon preserve that continuity.
+This is a scoped adaptation of the user's selected Powder template. Its warm dusk landscape, centered hero, spacious sections and near-black surfaces remain the visual authority. Local Inter preserves interface continuity. The user-approved mechanical Iznera wordmark keeps its transparent background and appears directly on the existing shell, without a white plaque, light panel or surrounding frame.
 
 The engineering example sits in a restrained graphite viewport. Muted metadata, tabular measurements and explicit evidence states give the presentation its working character. The local workspace extends this system into a full-viewport workbench with compact project controls, movable linked records and measured diagrams. This record describes the shipped presentation and local workspace in `build.mjs`, `tracelab.css`, `tracelab.js`, `workspace-surface.mjs`, `workspace.css`, `workspace-views.css`, `workspace-shell.css`, `workspace-canvas.css` and `workspace-canvas.js`; it does not define a replacement identity or the server application's visual system.
 
@@ -290,7 +315,7 @@ Movable HTML nodes retain an ID, type, readable title and compact detail. Each u
 The docked inspector groups record details with thin divisions and text-led related-record actions. Its header exposes a close action; closing restores the view's space. Content uses workbench-inspector padding on desktop and 18px in the compact drawer. Missing authorship, explanation or supporting tests receive explicit text. Annotation history sits in a disclosure, preserving the compact working view. Embedded walkthrough inspectors retain their rounded inset treatment.
 
 ### Test and research diagrams
-Tests use horizontal evidence-green bars with a printed value, context and units. Each test row can select its record. Research measurements use neutral baseline dots and evidence-green TraceLab dots joined by a line; a legend, participant codes, numeric axis and disclosed table keep comparisons readable. Empty views provide a written next action. These encodings describe entered data rather than supplying research claims.
+Tests use horizontal evidence-green bars with a printed value, context and units. Each test row can select its record. Research measurements use neutral baseline dots and evidence-green Iznera dots joined by a line; a legend, participant codes, numeric axis and disclosed table keep comparisons readable. Empty views provide a written next action. These encodings describe entered data rather than supplying research claims.
 
 **The Evidence Encoding Rule.** Accompany diagram color with labels, printed values and a text or table path; distinguish suggested relations through both dashed strokes and explicit status.
 
@@ -302,7 +327,7 @@ Replay advances every three seconds and can be stopped; changing the stage or in
 ## Do's and Don'ts
 
 ### Do:
-- **Do** preserve local Inter, the existing TraceLab icon, the selected dusk landscape and its transparent contours.
+- **Do** preserve local Inter, the supplied Iznera wordmark, the selected dusk landscape and its transparent contours.
 - **Do** keep engineering measurements tabular and distinguish evidence, authorship and missing information.
 - **Do** preserve visible content, keyboard focus and reduced-motion behavior.
 - **Do** use the established pills, surface radii and spacious container rhythm when extending this presentation.
@@ -314,3 +339,39 @@ Replay advances every three seconds and can be stopped; changing the stage or in
 - **Don't** replace the approved Powder visual world while adapting this presentation.
 - **Don't** add pricing grids, invented testimonials, unsupported metrics or unrelated SaaS forms to this scoped site.
 - **Don't** disguise synthetic example measurements as research results.
+
+## Motion components — 29 October 2026
+
+The current Astra presentation keeps its dark neutral surfaces, local Inter, transparent Iznera wordmark and authored content. The supplied Framer Interactive Pattern and Motion Overlay Menu are the interaction references for this refinement. Coral `#fa5b47` is a restrained signal color; primary actions remain warm white. Do not introduce decorative sequence numbers or claims from the source template.
+
+The presentation hero and page introductions have a quiet, pointer-responsive dot field with negative space around the text. The field has at most 700 points (200 on compact layouts), a pixel ratio cap of 1.5, and no idle animation loop. Offscreen, hidden, coarse-pointer and reduced-motion states pause movement. Dots stay outside private work views.
+
+The site header opens a full-screen native dialog with large destination links, RU/EN/KK and workspace shortcuts. Its close bar stays available while the contents scroll. The workspace uses the selected shadcn sidebar described below. Selecting a work view preserves the active team/project and uses the existing view controls. Keyboard focus returns on dismissal; reduced motion removes spatial movement.
+
+The demonstration graph emits one brief coral beam when a record is selected. Hover spotlights are bounded to presentation surfaces and are updated at most once per frame. No effect changes evidence, measurements, roles, account behavior or saved engineering data. Public reference and license details are in `docs/FRAMER_COMPONENTS.md`.
+
+### Language selection
+
+The RU / EN / KK control uses a compact globe, current code and chevron. Its graphite dropdown shows each language in its native script, an optional translated name, and a coral check for the current selection. It stays available in the compact header and shares its styling with account and workspace controls. The menu supports arrows, Home, End, Escape, outside dismissal and restored focus. Opening takes 220 ms, closing 110 ms; reduced motion removes spatial movement. Locale selection changes content in place without resetting the project, entered form values or current view. The free Flowbite language dropdown is the source reference; the native controller and Iznera motion are locally maintained, without a CDN runtime.
+
+### Workspace sidebar
+
+The user selected shadcn Sidebar-07. Its local adaptation has a 248px labelled panel and a 64px icon state, with a 220ms width transition. The same ten existing view controls are grouped under Project, Materials and Team; labels, group names and controls are translated into RU / EN / KK. Graphite surfaces, warm white text and a restrained coral selection retain the Iznera palette. The project context and home action remain visible in the expanded panel; native tooltips identify collapsed icons.
+
+At widths up to 760px the panel becomes a native modal sheet instead of taking space from the canvas. The actual navigation nodes move into the sheet so their listeners, IDs and selection remain intact. Escape, selection and the close control dismiss it and restore focus; scrolling and keyboard focus are isolated while open. Ctrl/Cmd+B toggles navigation outside editable fields. Collapse preference is local, separate from team data. Toggling the sidebar never recreates a view or resets an active chat/voice session. Reduced motion removes spatial transitions.
+
+Record titles, authors, dates and relationship names identify content in the interface. Internal UUIDs remain in stored data, backup keys and navigation attributes, but are omitted from record cards, history rows, graph labels, tooltips, charts and relationship choices. Measurements and authored version labels remain visible.
+
+### Readable type and contrast
+
+The user requested brighter, larger text across the site. Expanded sidebar names use 16px / 500 with `#e6e6ed` on graphite, instead of 13px muted text. Group labels and project metadata use 13–14px, with the selection still distinguished by its coral surface. The main body is 16px; public introductions use 17px, compact working prose 15px, controls 14px, and supporting labels 13px. Small chart axes and timestamps may use 12px where density requires it. Fields use 16px. Large presentation headings retain their existing scale.
+
+Secondary workspace text uses `#c5c5d0`, labels `#dedee7`, and metadata `#bcbcc9`; quieter text stays readable without competing with headings. Inter and the existing local font assets remain authoritative. Size changes must retain full RU / EN / KK labels, mobile scrolling, usable controls and the graph's existing coordinate geometry.
+
+### Milk theme and working hierarchy — 1 November 2026
+
+The user-approved dark theme remains the default. The milk alternative uses page `#f7f6f3`, white panels, inset `#eeebe4`, fields `#fcfbf8`, primary text `#242228`, secondary text `#635f68`, structural lines `#d6d1c8` and control boundaries `#948c82`. Primary milk actions use `#b94132` with white text, links `#ad3b2e`, selection `#f7dfd7` with `#9b3025`. Bright coral stays decorative. Calculated WCAG ratios: primary text/page 14.56:1, secondary text/page 5.77:1, white/primary action 5.43:1, link/page 5.65:1. These token calculations do not replace full rendered accessibility review.
+
+Theme styles cover public pages, workspace, account/onboarding/join, private dialogs, gallery/chat and offline capture. A sun/moon control appears in the wide header or compact sidebar footer. There are no unbounded new animations; reduced motion disables theme movement and command entrance. The preference never changes team data.
+
+Overview, iterations, memory and handoff prioritize readable authored content, related evidence and a useful next action. Decisions start with decisions only; the complete journal is explicit. Quick navigation groups real destinations and current-project record titles. Timeline filters remain in the URL, groups are day/subsystem/iteration and long feeds reveal 100 records at a time. Source, author and revision context is retained; missing rationale is stated rather than synthesized.

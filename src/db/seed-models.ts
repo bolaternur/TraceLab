@@ -68,7 +68,7 @@ export async function seedDemoModels(input: { teamId: string; userId: string; pr
         title: `${model.name} imported`,
         summary: `Converted from ${model.originalFile} to a browser-safe private GLB artifact.`,
         occurredAt: new Date("2026-09-26T00:00:00.000Z"),
-        rawMetadata: { originalFile: model.originalFile, conversion: "TraceLab streaming OBJ optimizer", seed: true },
+        rawMetadata: { originalFile: model.originalFile, conversion: "Iznera streaming OBJ optimizer", seed: true },
         contentHash: digest,
         status: "linked",
       })

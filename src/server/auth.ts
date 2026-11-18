@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { createHash, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
-import { db } from "@/db";
+import { db, pool } from "@/db";
 import { sessions, teamMemberships, teams, users, organizationMemberships } from "@/db/schema";
 import { cache } from "react";
 
@@ -31,12 +31,24 @@ export async function verifyPassword(password: string, stored: string): Promise<
   return candidate.length === expected.length && timingSafeEqual(candidate, expected);
 }
 
-export async function createSession(userId: string) {
+export async function createSession(userId: string, expectedPasswordHash: string) {
+  const jar = await cookies();
+  const previous = jar.get(SESSION_COOKIE)?.value;
   const token = randomBytes(32).toString("base64url");
   const id = hashSessionToken(token);
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
-  await db.insert(sessions).values({ id, userId, expiresAt });
-  const jar = await cookies();
+  // Serialize session issuance with password reset. A credential checked before
+  // a concurrent reset must not create a fresh session after reset revoked them.
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const verified = await client.query("SELECT u.id FROM users u JOIN account_verification v ON v.user_id=u.id WHERE u.id=$1 AND u.password_hash=$2 AND v.verified_at IS NOT NULL FOR UPDATE OF u", [userId, expectedPasswordHash]);
+    if (!verified.rowCount) throw new AuthorizationError("Credentials changed. Sign in again.");
+    if (previous) await client.query("DELETE FROM sessions WHERE id=$1", [hashSessionToken(previous)]);
+    await client.query("INSERT INTO sessions(id,user_id,expires_at) VALUES($1,$2,$3)", [id, userId, expiresAt]);
+    await client.query("COMMIT");
+  } catch (error) { await client.query("ROLLBACK"); throw error; }
+  finally { client.release(); }
   jar.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
@@ -56,25 +68,12 @@ export async function destroySession() {
 
 export type SessionUser = typeof users.$inferSelect;
 
-export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
-  if (process.env.NODE_ENV === "development" && process.env.DEV_AUTH_BYPASS === "true") {
-    const email = process.env.DEV_AUTH_EMAIL ?? "lead@trace.demo";
-    let rows: Array<typeof users.$inferSelect>;
-    try {
-      rows = await db.select().from(users).where(eq(users.email, email)).limit(1);
-    } catch (error) {
-      // Public pages must remain previewable when the optional local database is offline.
-      // Authenticated workspace routes will redirect to sign-in instead of rendering a 500 overlay.
-      console.warn(JSON.stringify({ level: "warn", msg: "dev_auth_bypass_unavailable", email, error: String(error) }));
-      return null;
-    }
-    const user = rows[0];
-    if (!user) {
-      throw new Error(`DEV_AUTH_BYPASS: ${email} was not found. Run npm run db:seed first.`);
-    }
-    return user;
-  }
+export async function isEmailVerified(userId: string) {
+  const result = await pool.query("SELECT user_id FROM account_verification WHERE user_id=$1 AND verified_at IS NOT NULL", [userId]);
+  return Boolean(result.rowCount);
+}
 
+export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE)?.value;
   if (!token) return null;
@@ -95,6 +94,8 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   }
   const row = rows[0];
   if (!row || row.expiresAt.getTime() < Date.now()) return null;
+  // No grandfathering: legacy accounts must confirm their existing address.
+  if (!await isEmailVerified(row.user.id)) return null;
   return row.user;
 });
 

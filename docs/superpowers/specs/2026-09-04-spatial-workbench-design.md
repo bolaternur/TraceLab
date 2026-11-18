@@ -1,18 +1,18 @@
-# TraceLab Spatial Evidence Workbench — Design Specification
+# Iznera Spatial Evidence Workbench — Design Specification
 
 **Date:** 2026-09-04  
 **Status:** Design approved in conversation; written specification pending user review  
-**Scope:** Replace the primary authenticated presentation model with a spatial evidence workbench while preserving TraceLab's evidence, provenance, policy, offline, and team-domain behavior.  
+**Scope:** Replace the primary authenticated presentation model with a spatial evidence workbench while preserving Iznera's evidence, provenance, policy, offline, and team-domain behavior.
 **Primary route:** `/app`  
-**Reference direction:** Google Stitch spatial artboards + n8n/Activepieces flow-builder interaction discipline + TraceLab evidence semantics.
+**Reference direction:** Google Stitch spatial artboards + n8n/Activepieces flow-builder interaction discipline + Iznera evidence semantics.
 
 ---
 
 ## 1. Executive decision
 
-TraceLab will stop treating `/app` as a conventional dashboard page composed of vertically stacked sections. `/app` becomes a full-viewport **Spatial Evidence Workbench** where the engineering project is represented as a small number of meaningful workboards arranged on a dark, pannable/zoomable canvas.
+Iznera will stop treating `/app` as a conventional dashboard page composed of vertically stacked sections. `/app` becomes a full-viewport **Spatial Evidence Workbench** where the engineering project is represented as a small number of meaningful workboards arranged on a dark, pannable/zoomable canvas.
 
-The workbench is not a diagram editor and not a generic workflow builder. Students do not manually draw arbitrary edges or design workflows. The graph is a presentation of **real engineering relationships already present in TraceLab**:
+The workbench is not a diagram editor and not a generic workflow builder. Students do not manually draw arbitrary edges or design workflows. The graph is a presentation of **real engineering relationships already present in Iznera**:
 
 `source event → student rationale → iteration → test → decision → next iteration`
 
@@ -43,9 +43,9 @@ The current frontend already has strong product semantics, but its main presenta
 - `/app/graph/graph-view.tsx` is a hand-built fixed SVG with four columns.
 - most secondary routes are navigated through first-level sidebar links.
 
-This creates a mismatch with TraceLab's product thesis. Engineering history is relational and spatially meaningful, but the UI currently reads like a database-backed SaaS dashboard.
+This creates a mismatch with Iznera's product thesis. Engineering history is relational and spatially meaningful, but the UI currently reads like a database-backed SaaS dashboard.
 
-The supplied visual reference demonstrates the opposite model: a dark world-space canvas with multiple bright work surfaces positioned in a memorable spatial composition. That is a better fit for TraceLab because evidence, tests, decisions, rationale, and iteration are separate artifacts that should be understood together rather than as unrelated menu destinations.
+The supplied visual reference demonstrates the opposite model: a dark world-space canvas with multiple bright work surfaces positioned in a memorable spatial composition. That is a better fit for Iznera because evidence, tests, decisions, rationale, and iteration are separate artifacts that should be understood together rather than as unrelated menu destinations.
 
 ---
 
@@ -55,7 +55,7 @@ The spatial redesign must not change the product into a workflow authoring tool.
 
 These invariants are non-negotiable:
 
-- TraceLab remains **engineering evidence infrastructure**, not a notebook or diagram editor.
+- Iznera remains **engineering evidence infrastructure**, not a notebook or diagram editor.
 - Source provenance stays visible and immutable.
 - Student-authored rationale stays distinguishable from source metadata and AI output.
 - AI never invents causal relationships.
@@ -94,8 +94,8 @@ Relevant source/reference paths:
 Key findings:
 
 - The included Figma example uses `selectionOnDrag`, `SelectionMode.Partial`, `panOnDrag={[1, 2]}`, `panOnScroll`, a modifier for zoom activation, and multi-select modifiers.
-- React Flow exposes the exact primitives needed for TraceLab: controlled nodes/edges, viewport control, custom nodes/edges, `fitView`, `MiniMap`, `Background`, keyboard interaction, selection, `onlyRenderVisibleElements`, and programmatic focus.
-- React Flow should own viewport mathematics and node hit-testing; TraceLab should own domain meaning and presentation.
+- React Flow exposes the exact primitives needed for Iznera: controlled nodes/edges, viewport control, custom nodes/edges, `fitView`, `MiniMap`, `Background`, keyboard interaction, selection, `onlyRenderVisibleElements`, and programmatic focus.
+- React Flow should own viewport mathematics and node hit-testing; Iznera should own domain meaning and presentation.
 
 **Decision:** React Flow becomes the workbench viewport engine and replaces the current hand-built SVG graph for spatial surfaces.
 
@@ -125,7 +125,7 @@ Key findings:
 - The detail/data panel exists outside the canvas interaction layer and supports drawer/split modes.
 - The dotted background is restrained and tool-like.
 
-**Decision:** TraceLab adopts the separation of `domain data`, `canvas presentation state`, and `inspector state`, but not Activepieces' workflow-node visual identity.
+**Decision:** Iznera adopts the separation of `domain data`, `canvas presentation state`, and `inspector state`, but not Activepieces' workflow-node visual identity.
 
 ### 4.3 Excalidraw
 
@@ -146,7 +146,7 @@ Key findings:
 - Canvas input must coexist safely with browser/page behavior.
 - Interaction behavior deserves dedicated regression tests because small input changes can destroy spatial usability.
 
-**Decision:** TraceLab uses a design-tool interaction model rather than the default “wheel always zooms” graph-viewer model.
+**Decision:** Iznera uses a design-tool interaction model rather than the default “wheel always zooms” graph-viewer model.
 
 ### 4.4 Langflow
 
@@ -168,7 +168,7 @@ Key findings:
 - Canvas controls and inspection-panel behavior have accessibility-focused tests.
 - Large visual builders benefit from explicit “fit request” state rather than ad-hoc `setTimeout` calls.
 
-**Decision:** TraceLab must wait for node measurement before initial fit/focus and must test the inspector/control layer separately from evidence semantics.
+**Decision:** Iznera must wait for node measurement before initial fit/focus and must test the inspector/control layer separately from evidence semantics.
 
 ---
 
@@ -181,7 +181,7 @@ Key findings:
 Rejected alternatives:
 
 1. **Canvas skin over current page layout** — rejected because it preserves the dashboard mental model under decorative dots.
-2. **Full n8n-style graph editor** — rejected because TraceLab users should record engineering evidence, not manually author arbitrary workflow topology.
+2. **Full n8n-style graph editor** — rejected because Iznera users should record engineering evidence, not manually author arbitrary workflow topology.
 
 ### 5.2 High-level composition
 
@@ -300,7 +300,7 @@ Normal routes still need stable navigation. When the user leaves `/app`, the she
 
 ### 8.1 Canvas
 
-The default workbench canvas is intentionally graphite even when the rest of TraceLab is in its light theme.
+The default workbench canvas is intentionally graphite even when the rest of Iznera is in its light theme.
 
 Proposed tokens:
 
@@ -326,7 +326,7 @@ Workboards are light physical surfaces on the dark canvas:
 --workboard-shadow: 0 8px 28px rgb(0 0 0 / 0.18);
 ```
 
-They use TraceLab's semantic accent colors only as small structural signals:
+They use Iznera's semantic accent colors only as small structural signals:
 
 - Source / context → Trace Blue.
 - Iteration → Signal Lime.
@@ -362,7 +362,7 @@ Dimensions are design constraints, not exact hard-coded pixels for every viewpor
 
 ### 8.5 Typography
 
-Keep the established TraceLab direction:
+Keep the established Iznera direction:
 
 - Instrument Sans for UI and board titles.
 - IBM Plex Mono for provenance, hashes, timestamps, IDs, relation labels, and technical metadata.
@@ -467,7 +467,7 @@ Reasons:
 
 Initial implementation:
 
-- deterministic default positions from a TraceLab layout function;
+- deterministic default positions from a Iznera layout function;
 - optional user-adjusted coarse workboard positions saved in `localStorage` keyed by `teamId + seasonId + layoutVersion`;
 - `Reset layout` returns to deterministic defaults.
 
@@ -896,7 +896,7 @@ Notes:
 - `motion` is limited to explanatory UI transitions.
 - `zustand` stores transient canvas/inspector state.
 - `react-resizable-panels` provides robust desktop inspector resizing.
-- Phosphor provides generic interface icons; TraceLab-specific evidence semantics remain behind `TraceIcon` or dedicated semantic components.
+- Phosphor provides generic interface icons; Iznera-specific evidence semantics remain behind `TraceIcon` or dedicated semantic components.
 
 Do not add a second graph/canvas library.
 
@@ -1125,7 +1125,7 @@ The spatial redesign does **not** include:
 - replacing existing evidence-domain queries with a new backend;
 - deleting canonical detail routes.
 
-These would increase complexity without improving TraceLab's core evidence loop.
+These would increase complexity without improving Iznera's core evidence loop.
 
 ---
 
@@ -1157,7 +1157,7 @@ Source path:
 Source commit/version:
 License:
 Mechanic adapted:
-TraceLab destination:
+Iznera destination:
 Date:
 ```
 

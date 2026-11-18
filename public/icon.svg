@@ -1,8 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <rect width="64" height="64" rx="15" fill="#111315"/>
-  <path d="M12 18h16v12h13v16h11" fill="none" stroke="#F4F5F1" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="12" cy="18" r="5" fill="#CDEB5A" stroke="#111315" stroke-width="2"/>
-  <rect x="23" y="25" width="10" height="10" rx="2.5" fill="#FF9D57" stroke="#111315" stroke-width="2" transform="rotate(45 28 30)"/>
-  <rect x="36" y="41" width="10" height="10" rx="2.5" fill="#8C83FF" stroke="#111315" stroke-width="2" transform="rotate(45 41 46)"/>
-  <circle cx="52" cy="46" r="5" fill="#F4F5F1" stroke="#111315" stroke-width="2"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><title>Iznera</title><rect width="64" height="64" rx="14" fill="#151518"/><g fill="#f04635" stroke="#ff8a7d" stroke-width=".7"><rect x="10" y="13" width="10" height="10" rx="3"/><rect x="10" y="27" width="10" height="25" rx="3"/><path d="M27 14h26v8L37 43h16v9H26v-8l16-21H27z"/></g><g fill="#bfc1c3" stroke="#262629" stroke-width="1"><circle cx="15" cy="18" r="2.2"/><circle cx="15" cy="32" r="2.2"/><circle cx="15" cy="47" r="2.2"/><circle cx="31" cy="18.5" r="2.2"/><circle cx="48" cy="18.5" r="2.2"/><circle cx="31" cy="47.5" r="2.2"/><circle cx="48" cy="47.5" r="2.2"/></g></svg>

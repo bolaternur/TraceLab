@@ -1,6 +1,6 @@
-# TraceLab — Build. Test. Decide. Remember.
+# Iznera — Build. Test. Decide. Remember.
 
-TraceLab connects code, CAD, photos, tests and student reasoning into a traceable
+Iznera connects code, CAD, photos, tests and student reasoning into a traceable
 engineering history. It preserves evidence provenance and student authorship.
 
 **Current state: demonstration MVP, not production-ready.**

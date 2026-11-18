@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Turn the existing TraceLab functional MVP into a coherent Living Evidence Lab frontend while preserving domain logic, provenance, policy gates, offline capture, and tenant boundaries.
+**Goal:** Turn the existing Iznera functional MVP into a coherent Living Evidence Lab frontend while preserving domain logic, provenance, policy gates, offline capture, and tenant boundaries.
 
 **Architecture:** Keep the existing Next.js/React/Tailwind application and server/domain layer. Build a semantic frontend layer around evidence objects, a context-first Today screen, workshop capture, 30-second Why, engineering timeline, bounded trace view, policy-aware outputs, and process-health views. Avoid new runtime dependencies until the repository can install packages again; the current pass uses dependency-free React/Tailwind components and keeps the code ready for later Base UI/shadcn adoption.
 

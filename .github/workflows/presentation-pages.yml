@@ -1,4 +1,4 @@
-name: Publish TraceLab presentation
+name: Publish Iznera presentation
 on:
   push:
     branches: [main]

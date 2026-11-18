@@ -1,4 +1,4 @@
-# TraceLab Spatial Engineering Timeline — Phase D Handoff
+# Iznera Spatial Engineering Timeline — Phase D Handoff
 
 Date: 2026-09-04
 

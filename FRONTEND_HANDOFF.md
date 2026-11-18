@@ -1,4 +1,4 @@
-# TraceLab Living Evidence Lab — Frontend Handoff
+# Iznera Living Evidence Lab — Frontend Handoff
 
 **Date:** 2026-09-04  
 **Workspace:** `tracelab_frontend_build`  
@@ -27,7 +27,7 @@ The frontend has been moved away from a generic notebook/dashboard mental model 
 - **Cross-season handoff:** “Start here next season” framing with failures, unresolved questions and decision links.
 - **Onboarding:** progressive four-step flow — Project → Competition → Workshop defaults → Trust — while preserving the existing `createTeam` server contract.
 - **Organization:** continuity-first team archive, access, retention and audit instead of a generic metric dashboard.
-- **Public landing/auth/offline/docs:** aligned with the same evidence vocabulary and TraceLab identity; old `Quick Capture`, `Time Machine`, `grid-paper` and generic KPI language removed.
+- **Public landing/auth/offline/docs:** aligned with the same evidence vocabulary and Iznera identity; old `Quick Capture`, `Time Machine`, `grid-paper` and generic KPI language removed.
 
 ## Backend/domain invariants intentionally preserved
 

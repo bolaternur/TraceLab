@@ -1,8 +1,8 @@
-# TraceLab Spatial Workbench Implementation Plan
+# Iznera Spatial Workbench Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
-**Goal:** Replace the authenticated `/app` dashboard mental model with a full-viewport spatial evidence workbench while preserving TraceLab authorization, provenance, policy, offline capture, deep links, and accessible secondary routes.
+**Goal:** Replace the authenticated `/app` dashboard mental model with a full-viewport spatial evidence workbench while preserving Iznera authorization, provenance, policy, offline capture, deep links, and accessible secondary routes.
 
 **Architecture:** Keep `src/app/app/layout.tsx` and route pages as Server Components for authorization and domain loading. Normalize database/query rows into a serializable `WorkbenchSnapshot`, then cross one explicit client boundary into `WorkbenchShell`, where React Flow owns viewport/node interaction and a small Zustand store owns transient selection/focus/inspector state. Coarse workboards summarize real evidence on `/app`; fine-grained evidence topology remains a separate `/app/graph` phase.
 

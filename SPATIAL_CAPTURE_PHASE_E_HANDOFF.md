@@ -1,8 +1,8 @@
-# TraceLab Spatial Capture — Phase E Handoff
+# Iznera Spatial Capture — Phase E Handoff
 
 **Checkpoint:** Spatial Workbench A+B+C+D+E  
 **Date:** 2026-09-04  
-**Phase goal:** Move capture from a separate form-first route into the Spatial Workbench while preserving TraceLab's existing offline-first, server-authoritative evidence pipeline.
+**Phase goal:** Move capture from a separate form-first route into the Spatial Workbench while preserving Iznera's existing offline-first, server-authoritative evidence pipeline.
 
 ## What Phase E changes
 
@@ -312,7 +312,7 @@ Test desktop and phone-width behavior for:
 
 ## Third-party source status
 
-Phase E did not adapt additional third-party source files. It uses Motion and the existing TraceLab stack already recorded in the repository provenance ledger, so `docs/frontend/THIRD_PARTY_SOURCE_LEDGER.md` did not require a new source-code entry for this phase.
+Phase E did not adapt additional third-party source files. It uses Motion and the existing Iznera stack already recorded in the repository provenance ledger, so `docs/frontend/THIRD_PARTY_SOURCE_LEDGER.md` did not require a new source-code entry for this phase.
 
 ## Phase boundary
 
